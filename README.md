@@ -12,7 +12,7 @@ val config = CassandraConfig.Default
 val cluster = CreateCluster(config)
 val name = for {
   session <- cluster.connect()
-  resultSet = session.execute("SELECT name FROM users")
+  resultSet <- session.execute("SELECT name FROM users")
 } yield {
   val row = resultSet.one()
   row.decode[String]("name")
