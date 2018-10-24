@@ -1,40 +1,62 @@
-name := "scassandra"
+import Dependencies._
 
-organization := "com.evolutiongaming"
+lazy val commonSettings = Seq(
+  organization := "com.evolutiongaming",
+  homepage := Some(new URL("http://github.com/evolution-gaming/scassandra")),
+  startYear := Some(2018),
+  organizationName := "Evolution Gaming",
+  organizationHomepage := Some(url("http://evolutiongaming.com")),
+  bintrayOrganization := Some("evolutiongaming"),
+  scalaVersion := crossScalaVersions.value.last,
+  crossScalaVersions := Seq("2.11.12", "2.12.7"),
+  scalacOptions ++= Seq(
+    "-encoding", "UTF-8",
+    "-feature",
+    "-unchecked",
+    "-deprecation",
+    "-Yno-adapted-args",
+    "-Ywarn-dead-code",
+    "-Ywarn-numeric-widen",
+    "-Xfuture",
+    "-Xlint",
+    "-language:higherKinds"),
+  scalacOptions in(Compile, doc) ++= Seq("-groups", "-implicits", "-no-link-warnings"),
+  resolvers += Resolver.bintrayRepo("evolutiongaming", "maven"),
+  licenses := Seq(("MIT", url("https://opensource.org/licenses/MIT"))),
+  releaseCrossBuild := true)
 
-homepage := Some(new URL("http://github.com/evolution-gaming/scassandra"))
+lazy val root = (project in file(".")
+  settings (name := "scassandra")
+  settings commonSettings
+  settings (
+    skip in publish := true,
+    skip / publishArtifact := true)
+  aggregate(scassandra, tests))
 
-startYear := Some(2018)
+lazy val scassandra = (project in file("scassandra")
+  settings (name := "scassandra")
+  settings commonSettings
+  settings (libraryDependencies ++= Seq(
+    `config-tools`,
+    `future-helper`,
+    scalatest % Test,
+    nel,
+    `cassandra-driver`,
+    `executor-tools`)))
 
-organizationName := "Evolution Gaming"
-
-organizationHomepage := Some(url("http://evolutiongaming.com"))
-
-bintrayOrganization := Some("evolutiongaming")
-
-scalaVersion := crossScalaVersions.value.last
-
-crossScalaVersions := Seq("2.11.12", "2.12.7")
-
-scalacOptions ++= Seq(
-  "-encoding", "UTF-8",
-  "-feature",
-  "-unchecked",
-  "-deprecation",
-  "-Xfatal-warnings",
-  "-Xlint",
-  "-Yno-adapted-args",
-  "-Ywarn-dead-code",
-  "-Ywarn-numeric-widen",
-  "-Xfuture"
-)
-
-scalacOptions in (Compile,doc) ++= Seq("-groups", "-implicits", "-no-link-warnings")
-
-resolvers += Resolver.bintrayRepo("evolutiongaming", "maven")
-
-libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % "3.0.5" % Test)
-
-licenses := Seq(("MIT", url("https://opensource.org/licenses/MIT")))
-
-releaseCrossBuild := true
+lazy val tests = (project in file("tests")
+  settings (name := "tests")
+  settings commonSettings
+  settings Seq(
+    skip in publish := true,
+    skip / publishArtifact := true,
+    Test / fork := true,
+    Test / parallelExecution := false)
+  dependsOn scassandra % "test->test;compile->compile"
+  settings (libraryDependencies ++= Seq(
+    `cassandra-launcher` % Test,
+    Slf4j.api % Test,
+    Slf4j.`log4j-over-slf4j` % Test,
+    Logback.core % Test,
+    Logback.classic % Test,
+    scalatest % Test)))

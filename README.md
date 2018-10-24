@@ -2,6 +2,18 @@
 
 ### Cassandra client in scala - wrapper over java client
 
+## Example
+
+```scala
+import com.evolutiongaming.scassandra._
+
+val config = CassandraConfig.Default
+val cluster = CreateCluster(config)
+val session = Await.result(cluster.connect(), 3.seconds)
+val resultSet: Future[ResultSet] = session.execute("SELECT now() FROM system.local")
+
+``` 
+
 ## Setup
 
 ```scala
