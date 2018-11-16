@@ -8,9 +8,7 @@ object Dependencies {
 
   val `config-tools` = "com.evolutiongaming" %% "config-tools" % "1.0.3"
 
-  val `scala-tools` = "com.evolutiongaming" %% "scala-tools" % "2.2"
-
-  val nel = "com.evolutiongaming" %% "nel" % "1.3.2"
+  val nel = "com.evolutiongaming" %% "nel" % "1.3.3"
 
   val `future-helper` = "com.evolutiongaming" %% "future-helper" % "1.0.3"
 

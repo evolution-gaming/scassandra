@@ -1,20 +1,32 @@
 package com.evolutiongaming.scassandra
 
-import com.evolutiongaming.scassandra.ConfigHelpers._
 import com.evolutiongaming.config.ConfigHelper._
 import com.evolutiongaming.nel.Nel
+import com.evolutiongaming.scassandra.ConfigHelpers._
 import com.typesafe.config.{Config, ConfigException}
 
 /**
   * See [[https://docs.datastax.com/en/cassandra/3.0/cassandra/architecture/archDataDistributeReplication.html]]
   */
-sealed trait ReplicationStrategyConfig {
-  def asCql: String
-}
+sealed trait ReplicationStrategyConfig
 
 object ReplicationStrategyConfig {
 
   val Default: ReplicationStrategyConfig = Simple.Default
+
+  implicit val ToCqlImpl: ToCql[ReplicationStrategyConfig] = new ToCql[ReplicationStrategyConfig] {
+    
+    def apply(a: ReplicationStrategyConfig) = a match {
+      case a: Simple          =>
+        s"'SimpleStrategy','replication_factor':${ a.replicationFactor }"
+        
+      case a: NetworkTopology =>
+        val factors = a.replicationFactors
+          .map { dcFactor => s"'${ dcFactor.name }':${ dcFactor.replicationFactor }" }
+          .mkString(",")
+        s"'NetworkTopologyStrategy',$factors"
+    }
+  }
 
 
   def apply(config: Config): ReplicationStrategyConfig = {
@@ -30,9 +42,7 @@ object ReplicationStrategyConfig {
   }
 
 
-  final case class Simple(replicationFactor: Int = 1) extends ReplicationStrategyConfig {
-    def asCql: String = s"'SimpleStrategy','replication_factor':$replicationFactor"
-  }
+  final case class Simple(replicationFactor: Int = 1) extends ReplicationStrategyConfig
 
   object Simple {
     val Default: Simple = Simple()
@@ -47,15 +57,7 @@ object ReplicationStrategyConfig {
 
 
   final case class NetworkTopology(
-    replicationFactors: Nel[NetworkTopology.DcFactor] = Nel(NetworkTopology.DcFactor())) extends ReplicationStrategyConfig {
-
-    def asCql: String = {
-      val factors = replicationFactors
-        .map { dcFactor => s"'${ dcFactor.name }':${ dcFactor.replicationFactor }" }
-        .mkString(",")
-      s"'NetworkTopologyStrategy',$factors"
-    }
-  }
+    replicationFactors: Nel[NetworkTopology.DcFactor] = Nel(NetworkTopology.DcFactor())) extends ReplicationStrategyConfig
 
   object NetworkTopology {
 

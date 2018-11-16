@@ -14,6 +14,7 @@ import scala.collection.JavaConverters._
 trait Encode[-A] { self =>
 
   def apply(statement: BoundStatement, name: String, value: A): BoundStatement
+  
 
   final def imap[B](f: B => A): Encode[B] = new Encode[B] {
     def apply(statement: BoundStatement, name: String, value: B) = self(statement, name, f(value))
@@ -33,11 +34,27 @@ object Encode {
     }
   }
 
+  
+  implicit val BoolImpl: Encode[Boolean] = new Encode[Boolean] {
+    def apply(statement: BoundStatement, name: String, value: Boolean) = statement.setBool(name, value)
+  }
+
+  implicit val BoolOptImpl: Encode[Option[Boolean]] = opt[Boolean]
+
+
   implicit val StrImpl: Encode[String] = new Encode[String] {
     def apply(statement: BoundStatement, name: String, value: String) = statement.setString(name, value)
   }
 
   implicit val StrOptImpl: Encode[Option[String]] = opt[String]
+
+
+  implicit val ShortImpl: Encode[Short] = new Encode[Short] {
+    def apply(statement: BoundStatement, name: String, value: Short) = statement.setShort(name, value)
+  }
+
+  implicit val ShortOptImpl: Encode[Option[Short]] = opt[Short]
+
 
   implicit val IntImpl: Encode[Int] = new Encode[Int] {
     def apply(statement: BoundStatement, name: String, value: Int) = statement.setInt(name, value)
@@ -45,11 +62,27 @@ object Encode {
 
   implicit val IntOptImpl: Encode[Option[Int]] = opt[Int]
 
+
   implicit val LongImpl: Encode[Long] = new Encode[Long] {
     def apply(statement: BoundStatement, name: String, value: Long) = statement.setLong(name, value)
   }
 
   implicit val LongOptImpl: Encode[Option[Long]] = opt[Long]
+
+
+  implicit val FloatImpl: Encode[Float] = new Encode[Float] {
+    def apply(statement: BoundStatement, name: String, value: Float) = statement.setFloat(name, value)
+  }
+
+  implicit val FloatOptImpl: Encode[Option[Float]] = opt[Float]
+
+
+  implicit val DoubleImpl: Encode[Double] = new Encode[Double] {
+    def apply(statement: BoundStatement, name: String, value: Double) = statement.setDouble(name, value)
+  }
+
+  implicit val DoubleOptImpl: Encode[Option[Double]] = opt[Double]
+
 
   implicit val InstantImpl: Encode[Instant] = new Encode[Instant] {
     def apply(statement: BoundStatement, name: String, value: Instant) = {
@@ -59,6 +92,14 @@ object Encode {
   }
 
   implicit val InstantOptImpl: Encode[Option[Instant]] = opt[Instant]
+
+
+  implicit val BigDecimalImpl: Encode[BigDecimal] = new Encode[BigDecimal] {
+    def apply(statement: BoundStatement, name: String, value: BigDecimal) = statement.setDecimal(name, value.bigDecimal)
+  }
+
+  implicit val BigDecimalOptImpl: Encode[Option[BigDecimal]] = opt[BigDecimal]
+
 
   implicit val SetStrImpl: Encode[Set[String]] = new Encode[Set[String]] {
     def apply(statement: BoundStatement, name: String, value: Set[String]) = {
@@ -71,6 +112,16 @@ object Encode {
     def apply(statement: BoundStatement, name: String, value: Array[Byte]) = {
       val bytes = ByteBuffer.wrap(value)
       statement.setBytes(name, bytes)
+    }
+  }
+
+  object Ops {
+    
+    implicit class BoundStatementOps(val self: BoundStatement) extends AnyVal {
+
+      def encode[T](name: String, value: T)(implicit encode: Encode[T]): BoundStatement = {
+        encode(self, name, value)
+      }
     }
   }
 }

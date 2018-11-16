@@ -5,9 +5,10 @@ import com.evolutiongaming.concurrent.CurrentThreadExecutionContext
 import com.google.common.util.concurrent.ListenableFuture
 
 import scala.concurrent.{ExecutionException, Future, Promise}
+import scala.language.implicitConversions
 import scala.util.{Failure, Try}
 
-object CassandraHelper {
+object syntax {
 
   implicit class ListenableFutureOps[T](val self: ListenableFuture[T]) extends AnyVal {
 
@@ -32,27 +33,13 @@ object CassandraHelper {
     }
   }
 
+  implicit def encodeOps(a: BoundStatement) = new Encode.Ops.BoundStatementOps(a)
 
-  implicit class BoundStatementOps(val self: BoundStatement) extends AnyVal {
+  implicit def decodeOps(a: Row) = new Decode.Ops.RowOps(a)
 
-    def encode[T](name: String, value: T)(implicit encode: Encode[T]): BoundStatement = {
-      encode(self, name, value)
-    }
+  implicit def encodeRowOps(a: BoundStatement) = new EncodeRow.Ops.BoundStatementOps(a)
 
-    def encode[T](value: T)(implicit encode: EncodeRow[T]): BoundStatement = {
-      encode(self, value)
-    }
-  }
+  implicit def decodeRowOps(a: Row) = new DecodeRow.Ops.RowOps(a)
 
-
-  implicit class RowOps(val self: Row) extends AnyVal {
-
-    def decode[T](name: String)(implicit decode: Decode[T]): T = {
-      decode(self, name)
-    }
-
-    def decode[T](implicit decode: DecodeRow[T]): T = {
-      decode(self)
-    }
-  }
+  implicit def toCqlOps[A](a: A) = new ToCql.Ops.IdOps(a)
 }

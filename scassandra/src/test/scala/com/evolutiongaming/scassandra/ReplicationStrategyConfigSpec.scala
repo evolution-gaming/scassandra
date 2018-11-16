@@ -2,6 +2,7 @@ package com.evolutiongaming.scassandra
 
 import com.evolutiongaming.scassandra.ReplicationStrategyConfig.NetworkTopology.DcFactor
 import com.evolutiongaming.scassandra.ReplicationStrategyConfig._
+import com.evolutiongaming.scassandra.syntax._
 import com.evolutiongaming.nel.Nel
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{FunSuite, Matchers}
@@ -25,12 +26,12 @@ class ReplicationStrategyConfigSpec extends FunSuite with Matchers {
     ReplicationStrategyConfig(config.getConfig("network-topology")) shouldEqual expected
   }
 
-  test("Simple.asCql") {
-    Simple(2).asCql shouldEqual s"'SimpleStrategy','replication_factor':2"
+  test("Simple.toCql") {
+    Simple(2).toCql shouldEqual s"'SimpleStrategy','replication_factor':2"
   }
 
-  test("NetworkTopology.asCql") {
+  test("NetworkTopology.toCql") {
     val config = NetworkTopology(Nel(DcFactor("dc1", 2), DcFactor("dc2", 3)))
-    config.asCql shouldEqual "'NetworkTopologyStrategy','dc1':2,'dc2':3"
+    config.toCql shouldEqual "'NetworkTopologyStrategy','dc1':2,'dc2':3"
   }
 }
