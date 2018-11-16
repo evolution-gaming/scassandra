@@ -48,7 +48,7 @@ object CassandraConfig {
 
   def apply(config: Config): CassandraConfig = {
 
-    def get[T: FromConf](name: String) = config.getOpt[T](name)
+    def get[A: FromConf](name: String) = config.getOpt[A](name)
 
     val pooling = get[Config]("pooling").fold(PoolingConfig.Default)(PoolingConfig.apply)
     val query = get[Config]("query").fold(QueryConfig.Default)(QueryConfig.apply)

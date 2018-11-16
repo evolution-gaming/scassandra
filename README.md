@@ -6,7 +6,7 @@
 
 ```scala
 import com.evolutiongaming.scassandra._
-import com.evolutiongaming.scassandra.CassandraHelper._
+import com.evolutiongaming.scassandra.syntax._
 
 val config = CassandraConfig.Default
 val cluster = CreateCluster(config)

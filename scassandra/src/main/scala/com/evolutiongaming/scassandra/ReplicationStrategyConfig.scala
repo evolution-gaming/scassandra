@@ -31,7 +31,7 @@ object ReplicationStrategyConfig {
 
   def apply(config: Config): ReplicationStrategyConfig = {
 
-    def get[T: FromConf](name: String) = config.getOpt[T](name)
+    def get[A: FromConf](name: String) = config.getOpt[A](name)
 
     val strategy = get[String]("replication-strategy").map(_.toLowerCase).collect {
       case "simple"          => get[Config]("simple").fold(Simple.Default)(Simple.apply)
@@ -49,7 +49,7 @@ object ReplicationStrategyConfig {
 
     def apply(config: Config): Simple = {
 
-      def get[T: FromConf](name: String) = config.getOpt[T](name)
+      def get[A: FromConf](name: String) = config.getOpt[A](name)
 
       Simple(replicationFactor = get[Int]("replication-factor") getOrElse Default.replicationFactor)
     }

@@ -24,7 +24,7 @@ object ReconnectionConfig {
 
   def apply(config: Config): ReconnectionConfig = {
 
-    def get[T: FromConf](name: String) = config.getOpt[T](name)
+    def get[A: FromConf](name: String) = config.getOpt[A](name)
 
     ReconnectionConfig(
       minDelay = get[FiniteDuration]("min-delay") getOrElse Default.minDelay,

@@ -40,7 +40,7 @@ object PoolingConfig {
       config.getOpt[Config](name).fold(default) { config => HostConfig(config, default) }
     }
 
-    def get[T: FromConf](name: String) = config.getOpt[T](name)
+    def get[A: FromConf](name: String) = config.getOpt[A](name)
 
     PoolingConfig(
       local = group("local", Default.local),

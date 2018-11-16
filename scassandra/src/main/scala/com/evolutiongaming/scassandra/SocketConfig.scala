@@ -41,7 +41,7 @@ object SocketConfig {
 
   def apply(config: Config): SocketConfig = {
 
-    def get[T: FromConf](name: String) = config.getOpt[T](name)
+    def get[A: FromConf](name: String) = config.getOpt[A](name)
 
     SocketConfig(
       connectTimeout = get[FiniteDuration]("connect-timeout") getOrElse Default.connectTimeout,

@@ -1,15 +1,15 @@
 package com.evolutiongaming.scassandra
 
-import com.datastax.driver.core.Row
+import com.datastax.driver.core.GettableByNameData
 
 
 trait DecodeRow[A] extends { self =>
 
-  def apply(row: Row): A
-  
+  def apply(data: GettableByNameData): A
+
 
   final def map[B](f: A => B): DecodeRow[B] = new DecodeRow[B] {
-    def apply(row: Row) = f(self(row))
+    def apply(data: GettableByNameData) = f(self(data))
   }
 }
 
@@ -17,16 +17,16 @@ object DecodeRow {
 
   def apply[A](implicit decode: DecodeRow[A]): DecodeRow[A] = decode
 
-  def apply[A](name: String)(implicit decode: Decode[A]): DecodeRow[A] = new DecodeRow[A] {
-    def apply(row: Row) = decode(row, name)
+  def apply[A](name: String)(implicit decode: DecodeByName[A]): DecodeRow[A] = new DecodeRow[A] {
+    def apply(data: GettableByNameData) = decode(data, name)
   }
 
 
   object Ops {
 
-    implicit class RowOps(val self: Row) extends AnyVal {
+    implicit class GettableByNameDataOps(val self: GettableByNameData) extends AnyVal {
 
-      def decode[T](implicit decode: DecodeRow[T]): T = decode(self)
+      def decode[A](implicit decode: DecodeRow[A]): A = decode(self)
     }
   }
 }

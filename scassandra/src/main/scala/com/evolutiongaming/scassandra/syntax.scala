@@ -1,6 +1,6 @@
 package com.evolutiongaming.scassandra
 
-import com.datastax.driver.core.{BoundStatement, Row}
+import com.datastax.driver.core.{GettableByIndexData, GettableByNameData, SettableData}
 import com.evolutiongaming.concurrent.CurrentThreadExecutionContext
 import com.google.common.util.concurrent.ListenableFuture
 
@@ -10,20 +10,18 @@ import scala.util.{Failure, Try}
 
 object syntax {
 
-  implicit class ListenableFutureOps[T](val self: ListenableFuture[T]) extends AnyVal {
+  implicit class ListenableFutureOps[A](val self: ListenableFuture[A]) extends AnyVal {
 
-    // TODO
-    def await(): Try[T] = {
+    def await(): Try[A] = {
       val safe = Try(self.get())
       safe.recoverWith { case failure: ExecutionException => Failure(failure.getCause) }
     }
 
-    // TODO
-    def asScala(): Future[T] = {
+    def asScala(): Future[A] = {
       if (self.isDone) {
         Future.fromTry(await())
       } else {
-        val promise = Promise[T]
+        val promise = Promise[A]
         val runnable = new Runnable {
           def run() = promise.complete(await())
         }
@@ -33,13 +31,41 @@ object syntax {
     }
   }
 
-  implicit def encodeOps(a: BoundStatement) = new Encode.Ops.BoundStatementOps(a)
+  implicit class SettableDataOps[A <: SettableData[A]](val self: A) extends AnyVal {
 
-  implicit def decodeOps(a: Row) = new Decode.Ops.RowOps(a)
+    def encode[B](name: String, value: B)(implicit encode: EncodeByName[B]): A = {
+      encode(self, name, value)
+    }
 
-  implicit def encodeRowOps(a: BoundStatement) = new EncodeRow.Ops.BoundStatementOps(a)
+    def encode[B](idx: Int, value: B)(implicit encode: EncodeByIdx[B]): A = {
+      encode(self, idx, value)
+    }
 
-  implicit def decodeRowOps(a: Row) = new DecodeRow.Ops.RowOps(a)
+    def encode[B](value: B)(implicit encode: EncodeRow[B]): A = {
+      encode(self, value)
+    }
+  }
+
+
+  implicit class GettableByNameDataOps(val self: GettableByNameData) extends AnyVal {
+
+    def decode[A](name: String)(implicit decode: DecodeByName[A]): A = {
+      decode(self, name)
+    }
+
+    def decode[A](implicit decode: DecodeRow[A]): A = {
+      decode(self)
+    }
+  }
+
+
+  implicit class GettableByIdxDataOps(val self: GettableByIndexData) extends AnyVal {
+
+    def decode[A](idx: Int)(implicit decode: DecodeByIdx[A]): A = {
+      decode(self, idx)
+    }
+  }
+
 
   implicit def toCqlOps[A](a: A) = new ToCql.Ops.IdOps(a)
 }

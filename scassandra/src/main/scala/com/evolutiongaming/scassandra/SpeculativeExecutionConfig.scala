@@ -23,7 +23,7 @@ object SpeculativeExecutionConfig {
   val Default: SpeculativeExecutionConfig = SpeculativeExecutionConfig()
 
   def apply(config: Config): SpeculativeExecutionConfig = {
-    def get[T: FromConf](name: String) = config.getOpt[T](name)
+    def get[A: FromConf](name: String) = config.getOpt[A](name)
 
     SpeculativeExecutionConfig(
       delay = get[FiniteDuration]("delay") getOrElse Default.delay,

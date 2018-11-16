@@ -1,15 +1,15 @@
 package com.evolutiongaming.scassandra
 
-import com.datastax.driver.core.BoundStatement
+import com.datastax.driver.core.SettableData
 
 
 trait EncodeRow[-A] { self =>
 
-  def apply(statement: BoundStatement, value: A): BoundStatement
+  def apply[B <: SettableData[B]](data: B, value: A): B
 
 
   final def imap[B](f: B => A): EncodeRow[B] = new EncodeRow[B] {
-    def apply(statement: BoundStatement, value: B) = self(statement, f(value))
+    def apply[C <: SettableData[C]](data: C, value: B) = self(data, f(value))
   }
 }
 
@@ -17,17 +17,15 @@ object EncodeRow {
 
   def apply[A](implicit encode: EncodeRow[A]): EncodeRow[A] = encode
 
-  def apply[A](name: String)(implicit encode: Encode[A]): EncodeRow[A] = new EncodeRow[A] {
-    def apply(statement: BoundStatement, value: A) = encode(statement, name, value)
+  def apply[A](name: String)(implicit encode: EncodeByName[A]): EncodeRow[A] = new EncodeRow[A] {
+    def apply[B <: SettableData[B]](data: B, value: A) = encode(data, name, value)
   }
 
   object Ops {
 
-    implicit class BoundStatementOps(val self: BoundStatement) extends AnyVal {
+    implicit class SettableDataOps[A <: SettableData[A]](val self: A) extends AnyVal {
 
-      def encode[T](value: T)(implicit encode: EncodeRow[T]): BoundStatement = {
-        encode(self, value)
-      }
+      def encode[B](value: B)(implicit encode: EncodeRow[B]): A = encode(self, value)
     }
   }
 }

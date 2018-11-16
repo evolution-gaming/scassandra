@@ -27,7 +27,7 @@ object LoadBalancingConfig {
 
   def apply(config: Config): LoadBalancingConfig = {
 
-    def get[T: FromConf](name: String) = config.getOpt[T](name)
+    def get[A: FromConf](name: String) = config.getOpt[A](name)
 
     LoadBalancingConfig(
       localDc = get[String]("local-dc") getOrElse Default.localDc,

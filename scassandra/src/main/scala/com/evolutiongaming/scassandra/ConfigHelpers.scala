@@ -6,8 +6,7 @@ import com.typesafe.config.ConfigException
 
 object ConfigHelpers {
 
-  // TODO copied from com.evolutiongaming.skafka.producer.ProducerConfig
-  implicit def nelFromConf[T](implicit fromConf: FromConf[List[T]]): FromConf[Nel[T]] = {
+  implicit def nelFromConf[A](implicit fromConf: FromConf[List[A]]): FromConf[Nel[A]] = {
     FromConf { case (conf, path) =>
       val list = fromConf(conf, path)
       list match {
