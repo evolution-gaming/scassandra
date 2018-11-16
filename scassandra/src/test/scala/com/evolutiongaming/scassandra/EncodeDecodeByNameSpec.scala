@@ -15,15 +15,18 @@ class EncodeDecodeByNameSpec extends WordSpec with Matchers {
 
     () => {
       val data = DataMock()
-      val actual = data
-        .encode[A]("0", expected)
-        .decode[A]("0")
-      actual shouldEqual expected
 
-      val actualOpt = data
+      data
+        .encode[A]("0", expected)
+        .decode[A]("0") shouldEqual expected
+
+      data
         .encode[Option[A]]("1", Some(expected))
-        .decode[Option[A]]("1")
-      actualOpt shouldEqual Some(expected)
+        .decode[Option[A]]("1") shouldEqual Some(expected)
+
+      data
+        .encode[Option[A]]("2", None)
+        .decode[Option[A]]("2") shouldEqual None
     }
   }
 

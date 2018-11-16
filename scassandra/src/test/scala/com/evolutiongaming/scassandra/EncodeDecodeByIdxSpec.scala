@@ -15,15 +15,18 @@ class EncodeDecodeByIdxSpec extends WordSpec with Matchers {
 
     () => {
       val data = DataMock()
-      val actual = data
-        .encodeAt[A](0, expected)
-        .decodeAt[A](0)
-      actual shouldEqual expected
 
-      val actualOpt = data
+      data
+        .encodeAt[A](0, expected)
+        .decodeAt[A](0) shouldEqual expected
+
+      data
         .encodeAt[Option[A]](1, Some(expected))
-        .decodeAt[Option[A]](1)
-      actualOpt shouldEqual Some(expected)
+        .decodeAt[Option[A]](1) shouldEqual Some(expected)
+
+      data
+        .encodeAt[Option[A]](2, None)
+        .decodeAt[Option[A]](2) shouldEqual None
     }
   }
 

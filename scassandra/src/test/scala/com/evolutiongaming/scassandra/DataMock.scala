@@ -42,7 +42,7 @@ case class DataMock(
   def setSet[E](i: Int, v: SetJ[E], elementsType: TypeToken[E]) = copy(byIdx = byIdx.updated(i, v))
   def setUDTValue(i: Int, v: UDTValue) = copy(byIdx = byIdx.updated(i, v))
   def setTupleValue(i: Int, v: TupleValue) = copy(byIdx = byIdx.updated(i, v))
-  def setToNull(i: Int) = notSupported()
+  def setToNull(i: Int) = copy(byIdx = byIdx - i)
   def set[V](i: Int, v: V, targetClass: Class[V]) = notSupported()
   def set[V](i: Int, v: V, targetType: TypeToken[V]) = notSupported()
   def set[V](i: Int, v: V, codec: TypeCodec[V]) = notSupported()
@@ -75,12 +75,12 @@ case class DataMock(
   def setSet[E](name: String, v: SetJ[E], elementsType: TypeToken[E]) = copy(byName = byName.updated(name, v))
   def setUDTValue(name: String, v: UDTValue) = copy(byName = byName.updated(name, v))
   def setTupleValue(name: String, v: TupleValue) = copy(byName = byName.updated(name, v))
-  def setToNull(name: String) = notSupported()
+  def setToNull(name: String) = copy(byName = byName - name)
   def set[V](name: String, v: V, targetClass: Class[V]) = notSupported()
   def set[V](name: String, v: V, targetType: TypeToken[V]) = notSupported()
   def set[V](name: String, v: V, codec: TypeCodec[V]) = notSupported()
 
-  def isNull(name: String) = false
+  def isNull(name: String) = !byName.contains(name)
   def getBool(name: String) = byName.getOrElse(name, null).asInstanceOf[Boolean]
   def getByte(name: String) = byName.getOrElse(name, null).asInstanceOf[Byte]
   def getShort(name: String) = byName.getOrElse(name, null).asInstanceOf[Short]
@@ -111,7 +111,7 @@ case class DataMock(
   def get[T](name: String, targetType: TypeToken[T]) = notSupported()
   def get[T](name: String, codec: TypeCodec[T]) = notSupported()
 
-  def isNull(i: Int) = false
+  def isNull(i: Int) = !byIdx.contains(i)
   def getBool(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[Boolean]
   def getByte(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[Byte]
   def getShort(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[Short]
