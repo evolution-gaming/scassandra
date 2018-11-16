@@ -1,6 +1,6 @@
 package com.evolutiongaming.scassandra
 
-import java.math.BigInteger
+import java.math.{BigInteger, BigDecimal => BigDecimalJ}
 import java.net.InetAddress
 import java.nio.ByteBuffer
 import java.util.{Date, UUID, List => ListJ, Map => MapJ, Set => SetJ}
@@ -8,11 +8,11 @@ import java.util.{Date, UUID, List => ListJ, Map => MapJ, Set => SetJ}
 import com.datastax.driver.core._
 import com.google.common.reflect.TypeToken
 
-case class SettableDataMock(
+case class DataMock(
   byName: Map[String, Any] = Map.empty,
-  byIdx: Map[Int, Any] = Map.empty) extends SettableData[SettableDataMock] {
+  byIdx: Map[Int, Any] = Map.empty) extends SettableData[DataMock] with GettableData {
 
-  def notSupported() = sys.error("not support")
+  private def notSupported() = sys.error("not support")
 
   def setBool(i: Int, v: Boolean) = copy(byIdx = byIdx.updated(i, v))
   def setByte(i: Int, v: Byte) = copy(byIdx = byIdx.updated(i, v))
@@ -37,15 +37,16 @@ case class SettableDataMock(
   def setMap[K, V](i: Int, v: MapJ[K, V]) = copy(byIdx = byIdx.updated(i, v))
   def setMap[K, V](i: Int, v: MapJ[K, V], keysClass: Class[K], valuesClass: Class[V]) = notSupported()
   def setMap[K, V](i: Int, v: MapJ[K, V], keysType: TypeToken[K], valuesType: TypeToken[V]) = notSupported()
-  def setSet[E](i: Int, v: SetJ[E]) = notSupported()
-  def setSet[E](i: Int, v: SetJ[E], elementsClass: Class[E]) = notSupported()
-  def setSet[E](i: Int, v: SetJ[E], elementsType: TypeToken[E]) = notSupported()
+  def setSet[E](i: Int, v: SetJ[E]) = copy(byIdx = byIdx.updated(i, v))
+  def setSet[E](i: Int, v: SetJ[E], elementsClass: Class[E]) = copy(byIdx = byIdx.updated(i, v))
+  def setSet[E](i: Int, v: SetJ[E], elementsType: TypeToken[E]) = copy(byIdx = byIdx.updated(i, v))
   def setUDTValue(i: Int, v: UDTValue) = copy(byIdx = byIdx.updated(i, v))
   def setTupleValue(i: Int, v: TupleValue) = copy(byIdx = byIdx.updated(i, v))
   def setToNull(i: Int) = notSupported()
   def set[V](i: Int, v: V, targetClass: Class[V]) = notSupported()
   def set[V](i: Int, v: V, targetType: TypeToken[V]) = notSupported()
   def set[V](i: Int, v: V, codec: TypeCodec[V]) = notSupported()
+
   def setBool(name: String, v: Boolean) = copy(byName = byName.updated(name, v))
   def setByte(name: String, v: Byte) = copy(byName = byName.updated(name, v))
   def setShort(name: String, v: Short) = copy(byName = byName.updated(name, v))
@@ -78,4 +79,66 @@ case class SettableDataMock(
   def set[V](name: String, v: V, targetClass: Class[V]) = notSupported()
   def set[V](name: String, v: V, targetType: TypeToken[V]) = notSupported()
   def set[V](name: String, v: V, codec: TypeCodec[V]) = notSupported()
+
+  def isNull(name: String) = false
+  def getBool(name: String) = byName.getOrElse(name, null).asInstanceOf[Boolean]
+  def getByte(name: String) = byName.getOrElse(name, null).asInstanceOf[Byte]
+  def getShort(name: String) = byName.getOrElse(name, null).asInstanceOf[Short]
+  def getInt(name: String) = byName.getOrElse(name, null).asInstanceOf[Int]
+  def getLong(name: String) = byName.getOrElse(name, null).asInstanceOf[Long]
+  def getTimestamp(name: String) = byName.getOrElse(name, null).asInstanceOf[Date]
+  def getDate(name: String) = byName.getOrElse(name, null).asInstanceOf[LocalDate]
+  def getTime(name: String) = byName.getOrElse(name, null).asInstanceOf[Long]
+  def getFloat(name: String) = byName.getOrElse(name, null).asInstanceOf[Float]
+  def getDouble(name: String) = byName.getOrElse(name, null).asInstanceOf[Double]
+  def getBytesUnsafe(name: String) = byName.getOrElse(name, null).asInstanceOf[ByteBuffer]
+  def getBytes(name: String) = byName.getOrElse(name, null).asInstanceOf[ByteBuffer]
+  def getString(name: String) = byName.getOrElse(name, null).asInstanceOf[String]
+  def getVarint(name: String) = byName.getOrElse(name, null).asInstanceOf[BigInteger]
+  def getDecimal(name: String) = byName.getOrElse(name, null).asInstanceOf[BigDecimalJ]
+  def getUUID(name: String) = byName.getOrElse(name, null).asInstanceOf[UUID]
+  def getInet(name: String) = byName.getOrElse(name, null).asInstanceOf[InetAddress]
+  def getList[T](name: String, elementsClass: Class[T]) = notSupported()
+  def getList[T](name: String, elementsType: TypeToken[T]) = notSupported()
+  def getSet[T](name: String, elementsClass: Class[T]) = byName.getOrElse(name, null).asInstanceOf[SetJ[T]]
+  def getSet[T](name: String, elementsType: TypeToken[T]) = notSupported()
+  def getMap[K, V](name: String, keysClass: Class[K], valuesClass: Class[V]) = notSupported()
+  def getMap[K, V](name: String, keysType: TypeToken[K], valuesType: TypeToken[V]) = notSupported()
+  def getUDTValue(name: String) = notSupported()
+  def getTupleValue(name: String) = notSupported()
+  def getObject(name: String) = notSupported()
+  def get[T](name: String, targetClass: Class[T]) = notSupported()
+  def get[T](name: String, targetType: TypeToken[T]) = notSupported()
+  def get[T](name: String, codec: TypeCodec[T]) = notSupported()
+
+  def isNull(i: Int) = false
+  def getBool(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[Boolean]
+  def getByte(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[Byte]
+  def getShort(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[Short]
+  def getInt(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[Int]
+  def getLong(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[Long]
+  def getTimestamp(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[Date]
+  def getDate(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[LocalDate]
+  def getTime(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[Long]
+  def getFloat(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[Float]
+  def getDouble(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[Double]
+  def getBytesUnsafe(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[ByteBuffer]
+  def getBytes(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[ByteBuffer]
+  def getString(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[String]
+  def getVarint(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[BigInteger]
+  def getDecimal(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[BigDecimalJ]
+  def getUUID(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[UUID]
+  def getInet(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[InetAddress]
+  def getList[T](i: Int, elementsClass: Class[T]) = notSupported()
+  def getList[T](i: Int, elementsType: TypeToken[T]) = notSupported()
+  def getSet[T](i: Int, elementsClass: Class[T]) = byIdx.getOrElse(i, null).asInstanceOf[SetJ[T]]
+  def getSet[T](i: Int, elementsType: TypeToken[T]) = byIdx.getOrElse(i, null).asInstanceOf[SetJ[T]]
+  def getMap[K, V](i: Int, keysClass: Class[K], valuesClass: Class[V]) = notSupported()
+  def getMap[K, V](i: Int, keysType: TypeToken[K], valuesType: TypeToken[V]) = notSupported()
+  def getUDTValue(i: Int) = notSupported()
+  def getTupleValue(i: Int) = notSupported()
+  def getObject(i: Int) = notSupported()
+  def get[T](i: Int, targetClass: Class[T]) = notSupported()
+  def get[T](i: Int, targetType: TypeToken[T]) = notSupported()
+  def get[T](i: Int, codec: TypeCodec[T]) = notSupported()
 }

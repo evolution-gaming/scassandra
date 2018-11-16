@@ -37,7 +37,7 @@ object syntax {
       encode(self, name, value)
     }
 
-    def encode[B](idx: Int, value: B)(implicit encode: EncodeByIdx[B]): A = {
+    def encodeAt[B](idx: Int, value: B)(implicit encode: EncodeByIdx[B]): A = {
       encode(self, idx, value)
     }
 
@@ -61,7 +61,7 @@ object syntax {
 
   implicit class GettableByIdxDataOps(val self: GettableByIndexData) extends AnyVal {
 
-    def decode[A](idx: Int)(implicit decode: DecodeByIdx[A]): A = {
+    def decodeAt[A](idx: Int)(implicit decode: DecodeByIdx[A]): A = {
       decode(self, idx)
     }
   }

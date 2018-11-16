@@ -114,7 +114,7 @@ object DecodeByIdx {
 
     implicit class GettableByIndexDataOps(val self: GettableByIndexData) extends AnyVal {
 
-      def decode[A](idx: Int)(implicit decode: DecodeByIdx[A]): A = decode(self, idx)
+      def decodeAt[A](idx: Int)(implicit decode: DecodeByIdx[A]): A = decode(self, idx)
     }
   }
 }

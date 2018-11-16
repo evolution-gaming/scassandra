@@ -8,24 +8,24 @@ class SyntaxSpec extends WordSpec with Matchers {
   "Syntax" should {
 
     "decode by name" in {
-      val data = GettableByNameDataMock()
-      data.decode[String]("name") shouldEqual "name"
+      val data = DataMock(byName = Map(("key", "value")))
+      data.decode[String]("key") shouldEqual "value"
     }
 
     "decode by idx" in {
-      val data = GettableByIdxDataMock()
-      data.decode[String](0) shouldEqual "0"
+      val data = DataMock(byIdx = Map((0, "value")))
+      data.decodeAt[String](0) shouldEqual "value"
     }
 
     "encode by name" in {
-      val data = SettableDataMock()
+      val data = DataMock()
       val data1 = data.encode("name", "str")
       data1.byName.get("name") shouldEqual Some("str")
     }
 
     "encode by idx" in {
-      val data = SettableDataMock()
-      val data1 = data.encode(0, "str")
+      val data = DataMock()
+      val data1 = data.encodeAt(0, "str")
       data1.byIdx.get(0) shouldEqual Some("str")
     }
   }

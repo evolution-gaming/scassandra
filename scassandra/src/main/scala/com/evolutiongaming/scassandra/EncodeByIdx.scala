@@ -120,7 +120,7 @@ object EncodeByIdx {
 
     implicit class SettableDataOps[A <: SettableData[A]](val self: A) extends AnyVal {
 
-      def encode[B](idx: Int, value: B)(implicit encode: EncodeByIdx[B]): A = {
+      def encodeAt[B](idx: Int, value: B)(implicit encode: EncodeByIdx[B]): A = {
         encode(self, idx, value)
       }
     }
