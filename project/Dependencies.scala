@@ -12,7 +12,7 @@ object Dependencies {
 
   val `future-helper` = "com.evolutiongaming" %% "future-helper" % "1.0.3"
 
-  val `cassandra-launcher` = "com.evolutiongaming" %% "cassandra-launcher" % "0.0.1"
+  val `cassandra-launcher` = "com.evolutiongaming" %% "cassandra-launcher" % "0.0.2"
 
   val `cassandra-driver` = "com.datastax.cassandra" % "cassandra-driver-core" % "3.6.0"
 

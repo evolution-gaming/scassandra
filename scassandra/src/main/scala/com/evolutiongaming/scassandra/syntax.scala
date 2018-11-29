@@ -37,12 +37,20 @@ object syntax {
       encode(self, name, value)
     }
 
+    def encode[B](value: B)(implicit encode: EncodeRow[B]): A = {
+      encode(self, value)
+    }
+
     def encodeAt[B](idx: Int, value: B)(implicit encode: EncodeByIdx[B]): A = {
       encode(self, idx, value)
     }
 
-    def encode[B](value: B)(implicit encode: EncodeRow[B]): A = {
-      encode(self, value)
+    def encodeSome[B](name: String, value: Option[B])(implicit encode: EncodeByName[B]): A = {
+      value.fold(self)(encode(self, name, _))
+    }
+
+    def encodeSome[B](value: Option[B])(implicit encode: EncodeRow[B]): A = {
+      value.fold(self)(encode(self, _))
     }
   }
 

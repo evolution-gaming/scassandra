@@ -22,7 +22,7 @@ object EncodeByName {
 
   def apply[A](implicit encode: EncodeByName[A]): EncodeByName[A] = encode
 
-  implicit def opt[A](implicit encode: EncodeByName[A]): EncodeByName[Option[A]] = new EncodeByName[Option[A]] {
+  implicit def noneAsNull[A](implicit encode: EncodeByName[A]): EncodeByName[Option[A]] = new EncodeByName[Option[A]] {
 
     def apply[B <: SettableData[B]](data: B, name: String, value: Option[A]) = {
       value match {
@@ -32,54 +32,64 @@ object EncodeByName {
     }
   }
 
+  def noneAsUnset[A](implicit encode: EncodeByName[A]): EncodeByName[Option[A]] = new EncodeByName[Option[A]] {
+
+    def apply[B <: SettableData[B]](data: B, name: String, value: Option[A]) = {
+      value match {
+        case Some(value) => encode(data, name, value)
+        case None        => data
+      }
+    }
+  }
+
 
   implicit val BoolImpl: EncodeByName[Boolean] = new EncodeByName[Boolean] {
     def apply[B <: SettableData[B]](data: B, name: String, value: Boolean) = data.setBool(name, value)
   }
 
-  implicit val BoolOptImpl: EncodeByName[Option[Boolean]] = opt[Boolean]
+  implicit val BoolOptImpl: EncodeByName[Option[Boolean]] = noneAsNull[Boolean]
 
 
   implicit val StrImpl: EncodeByName[String] = new EncodeByName[String] {
     def apply[B <: SettableData[B]](data: B, name: String, value: String) = data.setString(name, value)
   }
 
-  implicit val StrOptImpl: EncodeByName[Option[String]] = opt[String]
+  implicit val StrOptImpl: EncodeByName[Option[String]] = noneAsNull[String]
 
 
   implicit val ShortImpl: EncodeByName[Short] = new EncodeByName[Short] {
     def apply[B <: SettableData[B]](data: B, name: String, value: Short) = data.setShort(name, value)
   }
 
-  implicit val ShortOptImpl: EncodeByName[Option[Short]] = opt[Short]
+  implicit val ShortOptImpl: EncodeByName[Option[Short]] = noneAsNull[Short]
 
 
   implicit val IntImpl: EncodeByName[Int] = new EncodeByName[Int] {
     def apply[B <: SettableData[B]](data: B, name: String, value: Int) = data.setInt(name, value)
   }
 
-  implicit val IntOptImpl: EncodeByName[Option[Int]] = opt[Int]
+  implicit val IntOptImpl: EncodeByName[Option[Int]] = noneAsNull[Int]
 
 
   implicit val LongImpl: EncodeByName[Long] = new EncodeByName[Long] {
     def apply[B <: SettableData[B]](data: B, name: String, value: Long) = data.setLong(name, value)
   }
 
-  implicit val LongOptImpl: EncodeByName[Option[Long]] = opt[Long]
+  implicit val LongOptImpl: EncodeByName[Option[Long]] = noneAsNull[Long]
 
 
   implicit val FloatImpl: EncodeByName[Float] = new EncodeByName[Float] {
     def apply[B <: SettableData[B]](data: B, name: String, value: Float) = data.setFloat(name, value)
   }
 
-  implicit val FloatOptImpl: EncodeByName[Option[Float]] = opt[Float]
+  implicit val FloatOptImpl: EncodeByName[Option[Float]] = noneAsNull[Float]
 
 
   implicit val DoubleImpl: EncodeByName[Double] = new EncodeByName[Double] {
     def apply[B <: SettableData[B]](data: B, name: String, value: Double) = data.setDouble(name, value)
   }
 
-  implicit val DoubleOptImpl: EncodeByName[Option[Double]] = opt[Double]
+  implicit val DoubleOptImpl: EncodeByName[Option[Double]] = noneAsNull[Double]
 
 
   implicit val InstantImpl: EncodeByName[Instant] = new EncodeByName[Instant] {
@@ -90,7 +100,7 @@ object EncodeByName {
     }
   }
 
-  implicit val InstantOptImpl: EncodeByName[Option[Instant]] = opt[Instant]
+  implicit val InstantOptImpl: EncodeByName[Option[Instant]] = noneAsNull[Instant]
 
 
   implicit val BigDecimalImpl: EncodeByName[BigDecimal] = new EncodeByName[BigDecimal] {
@@ -99,7 +109,7 @@ object EncodeByName {
     }
   }
 
-  implicit val BigDecimalOptImpl: EncodeByName[Option[BigDecimal]] = opt[BigDecimal]
+  implicit val BigDecimalOptImpl: EncodeByName[Option[BigDecimal]] = noneAsNull[BigDecimal]
 
 
   implicit val SetStrImpl: EncodeByName[Set[String]] = new EncodeByName[Set[String]] {
