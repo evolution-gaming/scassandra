@@ -12,12 +12,17 @@ final case class LoadBalancingConfig(
   usedHostsPerRemoteDc: Int = 0,
   allowRemoteDcsForLocalConsistencyLevel: Boolean = false) {
 
-  def asJava: LoadBalancingPolicy = {
-    val policy = DCAwareRoundRobinPolicy.builder
-      .withLocalDc(localDc)
-      .withUsedHostsPerRemoteDc(usedHostsPerRemoteDc)
-      .build()
-    new TokenAwarePolicy(policy)
+  def asJava: Option[LoadBalancingPolicy] = {
+    if (localDc.nonEmpty) {
+      val policy = DCAwareRoundRobinPolicy.builder
+        .withLocalDc(localDc)
+        .withUsedHostsPerRemoteDc(usedHostsPerRemoteDc)
+        .build()
+      val tokenAwarePolicy = new TokenAwarePolicy(policy)
+      Some(tokenAwarePolicy)
+    } else {
+      None
+    }
   }
 }
 
