@@ -47,11 +47,13 @@ object ReplicationStrategyConfig {
   object Simple {
     val Default: Simple = Simple()
 
-    def apply(config: Config): Simple = {
+    def apply(config: Config): Simple = apply(config, Default)
+
+    def apply(config: Config, default: => Simple): Simple = {
 
       def get[A: FromConf](name: String) = config.getOpt[A](name)
 
-      Simple(replicationFactor = get[Int]("replication-factor") getOrElse Default.replicationFactor)
+      Simple(replicationFactor = get[Int]("replication-factor") getOrElse default.replicationFactor)
     }
   }
 

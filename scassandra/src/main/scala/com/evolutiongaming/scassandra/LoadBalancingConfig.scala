@@ -30,13 +30,16 @@ object LoadBalancingConfig {
 
   val Default: LoadBalancingConfig = LoadBalancingConfig()
 
-  def apply(config: Config): LoadBalancingConfig = {
+  
+  def apply(config: Config): LoadBalancingConfig = apply(config, Default)
+
+  def apply(config: Config, default: => LoadBalancingConfig): LoadBalancingConfig = {
 
     def get[A: FromConf](name: String) = config.getOpt[A](name)
 
     LoadBalancingConfig(
-      localDc = get[String]("local-dc") getOrElse Default.localDc,
-      usedHostsPerRemoteDc = get[Int]("used-hosts-per-remote-dc") getOrElse Default.usedHostsPerRemoteDc,
-      allowRemoteDcsForLocalConsistencyLevel = get[Boolean]("allow-remote-dcs-for-local-consistency-level") getOrElse Default.allowRemoteDcsForLocalConsistencyLevel)
+      localDc = get[String]("local-dc") getOrElse default.localDc,
+      usedHostsPerRemoteDc = get[Int]("used-hosts-per-remote-dc") getOrElse default.usedHostsPerRemoteDc,
+      allowRemoteDcsForLocalConsistencyLevel = get[Boolean]("allow-remote-dcs-for-local-consistency-level") getOrElse default.allowRemoteDcsForLocalConsistencyLevel)
   }
 }

@@ -54,23 +54,26 @@ object QueryConfig {
     }
   }
 
-  def apply(config: Config): QueryConfig = {
+
+  def apply(config: Config): QueryConfig = apply(config, Default)
+
+  def apply(config: Config, default: => QueryConfig): QueryConfig = {
 
     def get[A: FromConf](name: String) = config.getOpt[A](name)
 
     QueryConfig(
-      consistency = get[ConsistencyLevel]("consistency") getOrElse Default.consistency,
-      serialConsistency = get[ConsistencyLevel]("serial-consistency") getOrElse Default.serialConsistency,
-      fetchSize = get[Int]("fetch-size") getOrElse Default.fetchSize,
-      defaultIdempotence = get[Boolean]("default-idempotence") getOrElse Default.defaultIdempotence,
-      maxPendingRefreshNodeListRequests = get[Int]("max-pending-refresh-node-list-requests") getOrElse Default.maxPendingRefreshNodeListRequests,
-      maxPendingRefreshNodeRequests = get[Int]("max-pending-refresh-node-requests") getOrElse Default.maxPendingRefreshNodeRequests,
-      maxPendingRefreshSchemaRequests = get[Int]("max-pending-refresh-schema-requests") getOrElse Default.maxPendingRefreshSchemaRequests,
-      refreshNodeListInterval = get[FiniteDuration]("refresh-node-list-interval") getOrElse Default.refreshNodeListInterval,
-      refreshNodeInterval = get[FiniteDuration]("refresh-node-interval") getOrElse Default.refreshNodeInterval,
-      refreshSchemaInterval = get[FiniteDuration]("refresh-schema-interval") getOrElse Default.refreshSchemaInterval,
-      metadata = get[Boolean]("metadata") getOrElse Default.metadata,
-      rePrepareOnUp = get[Boolean]("re-prepare-on-up") getOrElse Default.rePrepareOnUp,
-      prepareOnAllHosts = get[Boolean]("prepare-on-all-hosts") getOrElse Default.prepareOnAllHosts)
+      consistency = get[ConsistencyLevel]("consistency") getOrElse default.consistency,
+      serialConsistency = get[ConsistencyLevel]("serial-consistency") getOrElse default.serialConsistency,
+      fetchSize = get[Int]("fetch-size") getOrElse default.fetchSize,
+      defaultIdempotence = get[Boolean]("default-idempotence") getOrElse default.defaultIdempotence,
+      maxPendingRefreshNodeListRequests = get[Int]("max-pending-refresh-node-list-requests") getOrElse default.maxPendingRefreshNodeListRequests,
+      maxPendingRefreshNodeRequests = get[Int]("max-pending-refresh-node-requests") getOrElse default.maxPendingRefreshNodeRequests,
+      maxPendingRefreshSchemaRequests = get[Int]("max-pending-refresh-schema-requests") getOrElse default.maxPendingRefreshSchemaRequests,
+      refreshNodeListInterval = get[FiniteDuration]("refresh-node-list-interval") getOrElse default.refreshNodeListInterval,
+      refreshNodeInterval = get[FiniteDuration]("refresh-node-interval") getOrElse default.refreshNodeInterval,
+      refreshSchemaInterval = get[FiniteDuration]("refresh-schema-interval") getOrElse default.refreshSchemaInterval,
+      metadata = get[Boolean]("metadata") getOrElse default.metadata,
+      rePrepareOnUp = get[Boolean]("re-prepare-on-up") getOrElse default.rePrepareOnUp,
+      prepareOnAllHosts = get[Boolean]("prepare-on-all-hosts") getOrElse default.prepareOnAllHosts)
   }
 }

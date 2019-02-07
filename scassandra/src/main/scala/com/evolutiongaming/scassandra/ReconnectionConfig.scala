@@ -22,12 +22,15 @@ object ReconnectionConfig {
 
   val Default: ReconnectionConfig = ReconnectionConfig()
 
-  def apply(config: Config): ReconnectionConfig = {
+  
+  def apply(config: Config): ReconnectionConfig = apply(config, Default)
+
+  def apply(config: Config, default: => ReconnectionConfig): ReconnectionConfig = {
 
     def get[A: FromConf](name: String) = config.getOpt[A](name)
 
     ReconnectionConfig(
-      minDelay = get[FiniteDuration]("min-delay") getOrElse Default.minDelay,
-      maxDelay = get[FiniteDuration]("max-delay") getOrElse Default.maxDelay)
+      minDelay = get[FiniteDuration]("min-delay") getOrElse default.minDelay,
+      maxDelay = get[FiniteDuration]("max-delay") getOrElse default.maxDelay)
   }
 }

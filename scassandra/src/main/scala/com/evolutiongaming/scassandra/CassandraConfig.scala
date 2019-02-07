@@ -3,8 +3,8 @@ package com.evolutiongaming.scassandra
 import com.datastax.driver.core.ProtocolOptions.Compression
 import com.datastax.driver.core.ProtocolVersion
 import com.evolutiongaming.config.ConfigHelper._
-import com.evolutiongaming.scassandra.ConfigHelpers._
 import com.evolutiongaming.nel.Nel
+import com.evolutiongaming.scassandra.ConfigHelpers._
 import com.typesafe.config.{Config, ConfigException}
 
 /**
@@ -46,22 +46,31 @@ object CassandraConfig {
     }
   }
 
-  def apply(config: Config): CassandraConfig = {
+
+  def apply(config: Config): CassandraConfig = apply(config, Default)
+
+  def apply(config: Config, default: => CassandraConfig): CassandraConfig = {
 
     def get[A: FromConf](name: String) = config.getOpt[A](name)
 
-    val pooling = get[Config]("pooling").fold(PoolingConfig.Default)(PoolingConfig.apply)
-    val query = get[Config]("query").fold(QueryConfig.Default)(QueryConfig.apply)
-    val reconnection = get[Config]("reconnection").fold(ReconnectionConfig.Default)(ReconnectionConfig.apply)
-    val socket = get[Config]("socket").fold(SocketConfig.Default)(SocketConfig.apply)
+    val pooling = get[Config]("pooling").fold(default.pooling)(PoolingConfig.apply(_, default.pooling))
+    val query = get[Config]("query").fold(default.query)(QueryConfig.apply(_, default.query))
+    val reconnection = get[Config]("reconnection").fold(default.reconnection)(ReconnectionConfig.apply(_, default.reconnection))
+    val socket = get[Config]("socket").fold(default.socket)(SocketConfig.apply(_, default.socket))
     val authentication = get[Config]("authentication").map(AuthenticationConfig.apply)
-    val loadBalancing = get[Config]("load-balancing").map(LoadBalancingConfig.apply)
-    val speculativeExecution = get[Config]("speculative-execution").map(SpeculativeExecutionConfig.apply)
+    val loadBalancing = get[Config]("load-balancing").map { config =>
+      default.loadBalancing.fold(LoadBalancingConfig(config)) { loadBalancing => LoadBalancingConfig(config, loadBalancing) }
+    }
+    val speculativeExecution = get[Config]("speculative-execution").map { config =>
+      default.speculativeExecution.fold(SpeculativeExecutionConfig(config)) { speculativeExecution =>
+        SpeculativeExecutionConfig(config, speculativeExecution)
+      }
+    }
 
     CassandraConfig(
-      name = get[String]("name") getOrElse Default.name,
-      port = get[Int]("port") getOrElse Default.port,
-      contactPoints = get[Nel[String]]("contact-points") getOrElse Default.contactPoints,
+      name = get[String]("name") getOrElse default.name,
+      port = get[Int]("port") getOrElse default.port,
+      contactPoints = get[Nel[String]]("contact-points") getOrElse default.contactPoints,
       protocolVersion = get[ProtocolVersion]("protocol-version"),
       pooling = pooling,
       query = query,
@@ -70,7 +79,7 @@ object CassandraConfig {
       authentication = authentication,
       loadBalancing = loadBalancing,
       speculativeExecution = speculativeExecution,
-      compression = get[Compression]("compression") getOrElse Default.compression,
-      logQueries = get[Boolean]("log-queries") getOrElse Default.logQueries)
+      compression = get[Compression]("compression") getOrElse default.compression,
+      logQueries = get[Boolean]("log-queries") getOrElse default.logQueries)
   }
 }

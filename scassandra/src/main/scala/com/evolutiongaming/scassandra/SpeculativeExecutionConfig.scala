@@ -22,11 +22,14 @@ object SpeculativeExecutionConfig {
 
   val Default: SpeculativeExecutionConfig = SpeculativeExecutionConfig()
 
-  def apply(config: Config): SpeculativeExecutionConfig = {
+
+  def apply(config: Config): SpeculativeExecutionConfig = apply(config, Default)
+
+  def apply(config: Config, default: => SpeculativeExecutionConfig): SpeculativeExecutionConfig = {
     def get[A: FromConf](name: String) = config.getOpt[A](name)
 
     SpeculativeExecutionConfig(
-      delay = get[FiniteDuration]("delay") getOrElse Default.delay,
-      maxExecutions = get[Int]("max-executions") getOrElse Default.maxExecutions)
+      delay = get[FiniteDuration]("delay") getOrElse default.delay,
+      maxExecutions = get[Int]("max-executions") getOrElse default.maxExecutions)
   }
 }

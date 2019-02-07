@@ -34,7 +34,10 @@ object PoolingConfig {
 
   val Default: PoolingConfig = PoolingConfig()
 
-  def apply(config: Config): PoolingConfig = {
+
+  def apply(config: Config): PoolingConfig = apply(config, Default)
+
+  def apply(config: Config, default: => PoolingConfig): PoolingConfig = {
 
     def group(name: String, default: HostConfig) = {
       config.getOpt[Config](name).fold(default) { config => HostConfig(config, default) }
@@ -43,12 +46,12 @@ object PoolingConfig {
     def get[A: FromConf](name: String) = config.getOpt[A](name)
 
     PoolingConfig(
-      local = group("local", Default.local),
-      remote = group("remote", Default.remote),
-      poolTimeout = get[FiniteDuration]("pool-timeout") getOrElse Default.poolTimeout,
-      idleTimeout = get[FiniteDuration]("idle-timeout") getOrElse Default.idleTimeout,
-      maxQueueSize = get[Int]("max-queue-size") getOrElse Default.maxQueueSize,
-      heartbeatInterval = get[FiniteDuration]("heartbeat-interval") getOrElse Default.heartbeatInterval)
+      local = group("local", default.local),
+      remote = group("remote", default.remote),
+      poolTimeout = get[FiniteDuration]("pool-timeout") getOrElse default.poolTimeout,
+      idleTimeout = get[FiniteDuration]("idle-timeout") getOrElse default.idleTimeout,
+      maxQueueSize = get[Int]("max-queue-size") getOrElse default.maxQueueSize,
+      heartbeatInterval = get[FiniteDuration]("heartbeat-interval") getOrElse default.heartbeatInterval)
   }
 
 
@@ -72,7 +75,8 @@ object PoolingConfig {
       connectionsPerHostMin = 1,
       connectionsPerHostMax = 4)
 
-    def apply(config: Config, default: HostConfig): HostConfig = {
+    
+    def apply(config: Config, default: => HostConfig): HostConfig = {
       HostConfig(
         newConnectionThreshold = config.getOpt[Int]("new-connection-threshold") getOrElse default.newConnectionThreshold,
         maxRequestsPerConnection = config.getOpt[Int]("max-requests-per-connection") getOrElse default.maxRequestsPerConnection,
