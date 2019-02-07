@@ -6,11 +6,12 @@ import java.util.concurrent.atomic.AtomicInteger
 import com.datastax.driver.core.{QueryLogger, Cluster => ClusterJ}
 
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContextExecutor
 
 object CreateCluster {
   private val clusterId = new AtomicInteger(0)
 
-  def apply(config: CassandraConfig): Cluster = {
+  def apply(config: CassandraConfig)(implicit ec: ExecutionContextExecutor): Cluster = {
 
     val port = config.port
 

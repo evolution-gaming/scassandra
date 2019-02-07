@@ -3,11 +3,10 @@ package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.{Session => SessionJ, _}
 import com.evolutiongaming.scassandra.syntax._
-import com.evolutiongaming.concurrent.CurrentThreadExecutionContext
 import com.evolutiongaming.concurrent.FutureHelper._
 
 import scala.collection.JavaConverters._
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContextExecutor, Future}
 
 /**
   * See [[com.datastax.driver.core.Session]]
@@ -39,25 +38,25 @@ trait Session {
 
 object Session {
 
-  def apply(session: SessionJ): Session = new Session {
+  def apply(session: SessionJ)(implicit ec: ExecutionContextExecutor): Session = new Session {
 
     def loggedKeyspace = Option(session.getLoggedKeyspace)
 
-    def init = session.initAsync().asScala().map(_ => this)(CurrentThreadExecutionContext)
+    def init = session.initAsync().asScala.map(_ => this)
 
-    def execute(query: String) = session.executeAsync(query).asScala()
+    def execute(query: String) = session.executeAsync(query).asScala
 
-    def execute(query: String, values: Any*) = session.executeAsync(query, values).asScala()
+    def execute(query: String, values: Any*) = session.executeAsync(query, values).asScala
 
-    def execute(query: String, values: Map[String, AnyRef]) = session.executeAsync(query, values.asJava).asScala()
+    def execute(query: String, values: Map[String, AnyRef]) = session.executeAsync(query, values.asJava).asScala
 
-    def execute(statement: Statement) = session.executeAsync(statement).asScala()
+    def execute(statement: Statement) = session.executeAsync(statement).asScala
 
-    def prepare(query: String) = session.prepareAsync(query).asScala()
+    def prepare(query: String) = session.prepareAsync(query).asScala
 
-    def prepare(statement: RegularStatement) = session.prepareAsync(statement).asScala()
+    def prepare(statement: RegularStatement) = session.prepareAsync(statement).asScala
 
-    def close() = session.closeAsync().asScala().unit
+    def close() = session.closeAsync().asScala.unit
 
     def closed = session.isClosed
 

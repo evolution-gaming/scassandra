@@ -1,6 +1,7 @@
 package com.evolutiongaming.scassandra
 
 import com.evolutiongaming.cassandra.StartCassandra
+import com.evolutiongaming.concurrent.CurrentThreadExecutionContext
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
 import scala.concurrent.Await
@@ -12,7 +13,7 @@ class CassandraSpec extends WordSpec with BeforeAndAfterAll with Matchers {
 
   private lazy val shutdownCassandra = StartCassandra()
 
-  private val cluster = CreateCluster(config)
+  private val cluster = CreateCluster(config)(CurrentThreadExecutionContext)
 
   private val timeout = 30.seconds
 
