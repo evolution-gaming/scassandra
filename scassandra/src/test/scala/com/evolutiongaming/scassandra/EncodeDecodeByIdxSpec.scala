@@ -1,6 +1,7 @@
 package com.evolutiongaming.scassandra
 
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 import com.evolutiongaming.scassandra.syntax._
 import org.scalatest.{Matchers, WordSpec}
@@ -40,7 +41,7 @@ class EncodeDecodeByIdxSpec extends WordSpec with Matchers {
         ("BigDecimal", of(BigDecimal(0))),
         ("Double", of(0d)),
         ("Float", of(0f)),
-        ("Instant", of(Instant.now())),
+        ("Instant", of(Instant.now().truncatedTo(ChronoUnit.MILLIS))),
         ("Set", of(Set("str"))))
     } {
       s"encode & decode $name" in test()
