@@ -3,32 +3,23 @@ package com.evolutiongaming.scassandra
 import java.util.concurrent.Executor
 
 import com.datastax.driver.core.{GettableByIndexData, GettableByNameData, SettableData, Statement}
-import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFuture}
 
-import scala.concurrent.{ExecutionException, Future, Promise}
+import scala.concurrent.{Future, Promise}
 import scala.language.implicitConversions
-import scala.util.{Failure, Try}
 
 object syntax {
 
   implicit class ListenableFutureOps[A](val self: ListenableFuture[A]) extends AnyVal {
 
-    def await(): Try[A] = {
-      val safe = Try(self.get())
-      safe.recoverWith { case failure: ExecutionException => Failure(failure.getCause) }
-    }
-
     def asScala(implicit executor: Executor): Future[A] = {
-      if (self.isDone) {
-        Future.fromTry(await())
-      } else {
-        val promise = Promise[A]
-        val runnable = new Runnable {
-          def run() = promise.complete(await())
-        }
-        self.addListener(runnable, executor)
-        promise.future
+      val promise = Promise[A]
+      val callback = new FutureCallback[A] {
+        def onSuccess(result: A) = promise.success(result)
+        def onFailure(cause: Throwable) = promise.failure(cause)
       }
+      Futures.addCallback(self, callback, executor)
+      promise.future
     }
   }
 
