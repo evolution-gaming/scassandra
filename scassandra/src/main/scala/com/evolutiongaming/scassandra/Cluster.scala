@@ -12,11 +12,15 @@ trait Cluster {
 
   def connect(keyspace: String): Future[Session]
 
-  def close(): Future[Unit]
-
   def clusterName: String
 
   def newSession(): Session
+
+  def metadata: Metadata
+
+  def close(): Future[Unit]
+
+  def isClosed: Boolean
 }
 
 object Cluster {
@@ -29,11 +33,15 @@ object Cluster {
 
       def connect(keyspace: String) = cluster.connectAsync(keyspace).asScala.map(Session(_))
 
-      def close() = cluster.closeAsync().asScala.flatMap(_ => Future.unit)
-
       def clusterName = cluster.getClusterName
 
       def newSession() = Session(cluster.newSession())
+
+      def close() = cluster.closeAsync().asScala.flatMap(_ => Future.unit)
+
+      def isClosed = cluster.isClosed
+
+      def metadata = Metadata(cluster.getMetadata)
     }
   }
 }

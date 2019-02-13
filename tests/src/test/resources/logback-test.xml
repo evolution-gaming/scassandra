@@ -13,7 +13,6 @@
 	<logger name="org.apache.cassandra.config.DatabaseDescriptor" level="ERROR"/>
 	<logger name="org.apache.cassandra.service.StartupChecks" level="ERROR"/>
 	<logger name="org.apache.cassandra.db.SystemKeyspace" level="ERROR"/>
-	<logger name="akka.persistence.kafka.journal.KafkaJournal" level="DEBUG"/>
 
 	<root level="WARN">
 		<appender-ref ref="console"/>
