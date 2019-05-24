@@ -9,9 +9,21 @@ import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContextExecutor
 
 object CreateCluster {
-  private val clusterId = new AtomicInteger(0)
 
-  def apply(config: CassandraConfig)(implicit ec: ExecutionContextExecutor): Cluster = {
+  private val clusterId = new AtomicInteger(0)
+  
+
+  def apply(config: CassandraConfig)(implicit executor: ExecutionContextExecutor): Cluster = {
+    apply(config, executor, clusterId.getAndDecrement())
+  }
+
+  def apply(config: CassandraConfig, executor: ExecutionContextExecutor, clusterId: Int): Cluster = {
+    val cluster = java(config, clusterId)
+    Cluster(cluster)(executor)
+  }
+
+
+  def java(config: CassandraConfig, clusterId: Int): ClusterJ = {
 
     val port = config.port
 
@@ -25,7 +37,7 @@ object CreateCluster {
       }
     }
 
-    val clusterName = s"${ config.name }-${ clusterId.getAndDecrement() }"
+    val clusterName = s"${ config.name }-$clusterId"
 
     val builder = ClusterJ.builder
       .addContactPointsWithPorts(contactPoints.toList.asJava)
@@ -49,6 +61,6 @@ object CreateCluster {
       cluster.register(logger)
     }
 
-    Cluster(cluster)
+    cluster
   }
 }

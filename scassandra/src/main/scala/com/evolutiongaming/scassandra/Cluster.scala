@@ -24,7 +24,7 @@ trait Cluster {
 
 object Cluster {
 
-  def apply(cluster: ClusterJ)(implicit ec: ExecutionContextExecutor): Cluster = {
+  def apply(cluster: ClusterJ)(implicit executor: ExecutionContextExecutor): Cluster = {
 
     new Cluster {
 
