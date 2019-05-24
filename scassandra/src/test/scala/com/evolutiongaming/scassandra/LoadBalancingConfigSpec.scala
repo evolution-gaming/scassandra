@@ -14,7 +14,6 @@ class LoadBalancingConfigSpec extends FunSuite with Matchers {
     val config = ConfigFactory.parseURL(getClass.getResource("load-balancing.conf"))
     val expected = LoadBalancingConfig(
       localDc = "local",
-      usedHostsPerRemoteDc = 1,
       allowRemoteDcsForLocalConsistencyLevel = true)
     LoadBalancingConfig(config) shouldEqual expected
   }

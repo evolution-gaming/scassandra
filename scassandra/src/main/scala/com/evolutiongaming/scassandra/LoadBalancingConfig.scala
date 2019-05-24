@@ -9,14 +9,12 @@ import com.typesafe.config.Config
   */
 final case class LoadBalancingConfig(
   localDc: String = "localDc",
-  usedHostsPerRemoteDc: Int = 0,
   allowRemoteDcsForLocalConsistencyLevel: Boolean = false) {
 
   def asJava: Option[LoadBalancingPolicy] = {
     if (localDc.nonEmpty) {
       val policy = DCAwareRoundRobinPolicy.builder
         .withLocalDc(localDc)
-        .withUsedHostsPerRemoteDc(usedHostsPerRemoteDc)
         .build()
       val tokenAwarePolicy = new TokenAwarePolicy(policy)
       Some(tokenAwarePolicy)
@@ -39,7 +37,6 @@ object LoadBalancingConfig {
 
     LoadBalancingConfig(
       localDc = get[String]("local-dc") getOrElse default.localDc,
-      usedHostsPerRemoteDc = get[Int]("used-hosts-per-remote-dc") getOrElse default.usedHostsPerRemoteDc,
       allowRemoteDcsForLocalConsistencyLevel = get[Boolean]("allow-remote-dcs-for-local-consistency-level") getOrElse default.allowRemoteDcsForLocalConsistencyLevel)
   }
 }

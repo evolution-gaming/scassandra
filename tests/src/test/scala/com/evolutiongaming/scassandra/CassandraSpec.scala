@@ -25,6 +25,7 @@ class CassandraSpec extends WordSpec with BeforeAndAfterAll with Matchers {
   override def beforeAll() = {
     super.beforeAll()
     shutdownCassandra
+    ()
   }
 
   override def afterAll() = {

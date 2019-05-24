@@ -2,7 +2,6 @@ package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.{Cluster => ClusterJ}
 import com.evolutiongaming.scassandra.syntax._
-import com.evolutiongaming.concurrent.FutureHelper._
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 
