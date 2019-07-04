@@ -1,29 +1,14 @@
 package com.evolutiongaming.scassandra
 
 import java.net.InetSocketAddress
-import java.util.concurrent.atomic.AtomicInteger
 
 import com.datastax.driver.core.{QueryLogger, Cluster => ClusterJ}
 
 import scala.collection.JavaConverters._
-import scala.concurrent.ExecutionContextExecutor
 
-object CreateCluster {
+object CreateClusterJ {
 
-  private val clusterId = new AtomicInteger(0)
-  
-
-  def apply(config: CassandraConfig)(implicit executor: ExecutionContextExecutor): Cluster = {
-    apply(config, executor, clusterId.getAndDecrement())
-  }
-
-  def apply(config: CassandraConfig, executor: ExecutionContextExecutor, clusterId: Int): Cluster = {
-    val cluster = java(config, clusterId)
-    Cluster(cluster)(executor)
-  }
-
-
-  def java(config: CassandraConfig, clusterId: Int): ClusterJ = {
+  def apply(config: CassandraConfig, clusterId: Int): ClusterJ = {
 
     val port = config.port
 

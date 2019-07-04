@@ -26,8 +26,10 @@ lazy val scassandra = (project in file("scassandra")
   settings (name := "scassandra")
   settings commonSettings
   settings (libraryDependencies ++= Seq(
+    Cats.core,
+    Cats.effect,
     `config-tools`,
-    `future-helper`,
+    `cats-helper`,
     scalatest % Test,
     nel,
     `cassandra-driver`,

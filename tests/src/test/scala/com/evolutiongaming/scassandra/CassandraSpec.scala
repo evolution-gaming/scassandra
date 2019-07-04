@@ -1,26 +1,31 @@
 package com.evolutiongaming.scassandra
 
+import cats.effect.{IO, Resource}
+import cats.implicits._
 import com.evolutiongaming.cassandra.StartCassandra
-import com.evolutiongaming.concurrent.CurrentThreadExecutionContext
+import com.evolutiongaming.catshelper.EffectHelper._
+import com.evolutiongaming.scassandra.IOSuite._
 import com.evolutiongaming.scassandra.syntax._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 class CassandraSpec extends WordSpec with BeforeAndAfterAll with Matchers {
 
   private val config = CassandraConfig.Default
 
-  implicit val ec = CurrentThreadExecutionContext
-
   private lazy val shutdownCassandra = StartCassandra()
 
-  private val cluster = CreateCluster(config)
+  private lazy val (cluster, clusterRelease) = {
+    val cassandraClusterOf = CassandraClusterOf.of[IO]
+    val cassandraCluster = for {
+      cassandraClusterOf <- Resource.liftF(cassandraClusterOf)
+      cassandraCluster   <- cassandraClusterOf(config)
+    } yield cassandraCluster
 
-  private val timeout = 30.seconds
+    cassandraCluster.allocated.toTry.get
+  }
 
-  private lazy val session = Await.result(cluster.connect(), timeout)
+  private lazy val (session, sessionRelease) = cluster.connect.allocated.toTry.get
 
   override def beforeAll() = {
     super.beforeAll()
@@ -29,7 +34,6 @@ class CassandraSpec extends WordSpec with BeforeAndAfterAll with Matchers {
   }
 
   override def afterAll() = {
-    Await.result(cluster.close(), timeout)
     shutdownCassandra()
     super.afterAll()
   }
@@ -37,11 +41,7 @@ class CassandraSpec extends WordSpec with BeforeAndAfterAll with Matchers {
   "Cassandra" should {
 
     "clusterName" in {
-      cluster.clusterName should startWith(config.name)
-    }
-
-    "isClosed" in {
-      cluster.isClosed shouldEqual false
+      cluster.clusterName.toTry.get should startWith(config.name)
     }
 
     "connect" in {
@@ -55,43 +55,39 @@ class CassandraSpec extends WordSpec with BeforeAndAfterAll with Matchers {
     "Session" should {
 
       "init" in {
-        Await.result(session.init, timeout)
-      }
-
-      "closed" in {
-        session.closed shouldEqual false
+        session.init.toTry.get
       }
 
       "State" should {
 
         "connectedHosts" in {
-          session.state.connectedHosts.nonEmpty shouldEqual true
+          session.state.connectedHosts.toTry.get.nonEmpty shouldEqual true
         }
 
         "openConnections" in {
           val state = session.state
           for {
-            host <- state.connectedHosts
+            host <- state.connectedHosts.toTry.get
           } {
-            state.openConnections(host) should be > 0
+            state.openConnections(host).toTry.get should be > 0
           }
         }
 
         "trashedConnections" in {
           val state = session.state
           for {
-            host <- state.connectedHosts
+            host <- state.connectedHosts.toTry.get
           } {
-            state.trashedConnections(host) shouldEqual 0
+            state.trashedConnections(host).toTry.get shouldEqual 0
           }
         }
 
         "inFlightQueries" in {
           val state = session.state
           for {
-            host <- state.connectedHosts
+            host <- state.connectedHosts.toTry.get
           } {
-            state.inFlightQueries(host) shouldEqual 0
+            state.inFlightQueries(host).toTry.get shouldEqual 0
           }
         }
       }
@@ -99,12 +95,12 @@ class CassandraSpec extends WordSpec with BeforeAndAfterAll with Matchers {
 
       "create keyspace" in {
         val query = CreateKeyspaceIfNotExists(keyspace, ReplicationStrategyConfig.Default)
-        Await.result(session.execute(query), timeout)
+        session.execute(query).toTry.get
       }
 
       "create table" in {
         val query = s"CREATE TABLE IF NOT EXISTS $keyspace.$table (key TEXT PRIMARY KEY, value TEXT, timestamp TIMESTAMP)"
-        Await.result(session.execute(query), timeout)
+        session.execute(query).toTry.get
       }
 
       "select" in {
@@ -119,12 +115,12 @@ class CassandraSpec extends WordSpec with BeforeAndAfterAll with Matchers {
           Option(result.one())
         }
 
-        Await.result(result, timeout) shouldEqual None
+        result.toTry.get shouldEqual None
       }
     }
 
 
-    lazy val metadata = cluster.metadata
+    lazy val metadata = cluster.metadata.toTry.get
 
     "Metadata" should {
 
@@ -133,17 +129,17 @@ class CassandraSpec extends WordSpec with BeforeAndAfterAll with Matchers {
       }
 
       "schema" in {
-        metadata.schema() should startWith("CREATE KEYSPACE system_traces")
+        metadata.schema should startWith("CREATE KEYSPACE system_traces")
       }
 
-      lazy val keyspaceMetadata = cluster.metadata.keyspace(keyspace)
+      lazy val keyspaceMetadata = cluster.metadata.toTry.get.keyspace(keyspace)
 
       "keyspace" in {
         keyspaceMetadata.isDefined shouldEqual true
       }
 
       "keyspaces" in {
-        cluster.metadata.keyspaces().map(_.name).toSet shouldEqual Set(
+        cluster.metadata.toTry.get.keyspaces.map(_.name).toSet shouldEqual Set(
           keyspace,
           "system_traces",
           "system",
@@ -193,7 +189,11 @@ class CassandraSpec extends WordSpec with BeforeAndAfterAll with Matchers {
     }
 
     "session.close" in {
-      Await.result(session.close(), timeout)
+      sessionRelease.toTry.get
+    }
+
+    "cluster.close" in {
+      clusterRelease.toTry.get
     }
   }
 }
