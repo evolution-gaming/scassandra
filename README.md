@@ -6,19 +6,21 @@
 
 ```scala
 import com.evolutiongaming.scassandra._
-import com.evolutiongaming.scassandra.syntax._
 
 val config = CassandraConfig.Default
-val cluster = CreateCluster(config)
+val session = for {
+  cluster <- CassandraCluster.of[IO](config, clusterId = 0)
+  session <- cluster.connect
+} yield session
+
 val name = for {
-  session <- cluster.connect()
-  resultSet <- session.execute("SELECT name FROM users")
+  resultSet <- session.use { session => session.execute("SELECT name FROM users") }
 } yield {
   val row = resultSet.one()
   row.decode[String]("name")
 }
-Await.result(name, 3.seconds)
 
+name.unsafeRunSync()
 ``` 
 
 ## Setup
