@@ -12,7 +12,7 @@ import scala.collection.JavaConverters._
 /**
   * See [[com.datastax.driver.core.Session]]
   */
-trait Session[F[_]] {
+trait CassandraSession[F[_]] {
 
   def loggedKeyspace: F[Option[String]]
 
@@ -30,14 +30,14 @@ trait Session[F[_]] {
 
   def prepare(statement: RegularStatement): F[PreparedStatement]
 
-  def state: Session.State[F]
+  def state: CassandraSession.State[F]
 }
 
-object Session {
+object CassandraSession {
 
-  def apply[F[_] : Sync : FromGFuture](session: SessionJ): Session[F] = {
+  def apply[F[_] : Sync : FromGFuture](session: SessionJ): CassandraSession[F] = {
 
-    new Session[F] {
+    new CassandraSession[F] {
 
       val loggedKeyspace = {
         for {
@@ -79,19 +79,19 @@ object Session {
   }
 
 
-  def of[F[_] : Sync : FromGFuture](session: F[SessionJ]): Resource[F, Session[F]] = {
+  def of[F[_] : Sync : FromGFuture](session: F[SessionJ]): Resource[F, CassandraSession[F]] = {
     val result = for {
       session <- session
     } yield {
       val release = FromGFuture[F].apply { session.closeAsync() }.void
-      (Session[F](session), release)
+      (CassandraSession[F](session), release)
     }
     Resource(result)
   }
 
 
   /**
-    * See [[com.evolutiongaming.scassandra.Session.State]]
+    * See [[com.evolutiongaming.scassandra.CassandraSession.State]]
     */
   trait State[F[_]] {
 
@@ -148,9 +148,9 @@ object Session {
   }
 
 
-  implicit class SessionOps[F[_]](val self: Session[F]) extends AnyVal {
+  implicit class SessionOps[F[_]](val self: CassandraSession[F]) extends AnyVal {
 
-    def mapK[G[_]](f: F ~> G): Session[G] = new Session[G] {
+    def mapK[G[_]](f: F ~> G): CassandraSession[G] = new CassandraSession[G] {
 
       def loggedKeyspace = f(self.loggedKeyspace)
 

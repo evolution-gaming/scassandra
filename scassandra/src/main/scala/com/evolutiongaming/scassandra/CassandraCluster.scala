@@ -8,13 +8,13 @@ import com.evolutiongaming.scassandra.util.FromGFuture
 
 trait CassandraCluster[F[_]] {
 
-  def connect: Resource[F, Session[F]]
+  def connect: Resource[F, CassandraSession[F]]
 
-  def connect(keyspace: String): Resource[F, Session[F]]
+  def connect(keyspace: String): Resource[F, CassandraSession[F]]
 
   def clusterName: F[String]
 
-  def newSession: Resource[F, Session[F]]
+  def newSession: Resource[F, CassandraSession[F]]
 
   def metadata: F[Metadata]
 }
@@ -26,13 +26,13 @@ object CassandraCluster {
     new CassandraCluster[F] {
 
       val connect = {
-        Session.of {
+        CassandraSession.of {
           FromGFuture[F].apply { cluster.connectAsync() }
         }
       }
 
       def connect(keyspace: String) = {
-        Session.of {
+        CassandraSession.of {
           FromGFuture[F].apply { cluster.connectAsync(keyspace) }
         }
       }
@@ -42,7 +42,7 @@ object CassandraCluster {
       }
 
       val newSession = {
-        Session.of {
+        CassandraSession.of {
           Sync[F].delay { cluster.newSession() }
         }
       }
