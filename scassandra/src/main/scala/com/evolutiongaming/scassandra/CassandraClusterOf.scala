@@ -12,6 +12,9 @@ trait CassandraClusterOf[F[_]] {
 
 object CassandraClusterOf {
 
+  def apply[F[_]](implicit F: CassandraClusterOf[F]): CassandraClusterOf[F] = F
+  
+
   def of[F[_] : Sync : FromGFuture]: F[CassandraClusterOf[F]] = {
     for {
       clusterId  <- Ref[F].of(0)

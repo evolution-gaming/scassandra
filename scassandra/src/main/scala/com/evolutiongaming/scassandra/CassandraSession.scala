@@ -35,6 +35,9 @@ trait CassandraSession[F[_]] {
 
 object CassandraSession {
 
+  def apply[F[_]](implicit F: CassandraSession[F]): CassandraSession[F] = F
+
+
   def apply[F[_] : Sync : FromGFuture](session: SessionJ): CassandraSession[F] = {
 
     new CassandraSession[F] {
