@@ -1,5 +1,6 @@
 package com.evolutiongaming.scassandra
 
+import cats.arrow.FunctionK
 import cats.effect.{IO, Resource}
 import cats.implicits._
 import com.evolutiongaming.cassandra.StartCassandra
@@ -20,7 +21,9 @@ class CassandraSpec extends WordSpec with BeforeAndAfterAll with Matchers {
     val cassandraCluster = for {
       cassandraClusterOf <- Resource.liftF(cassandraClusterOf)
       cassandraCluster   <- cassandraClusterOf(config)
-    } yield cassandraCluster
+    } yield {
+      cassandraCluster.mapK(FunctionK.id)
+    }
 
     cassandraCluster.allocated.toTry.get
   }
