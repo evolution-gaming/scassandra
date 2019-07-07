@@ -128,21 +128,21 @@ class CassandraSpec extends WordSpec with BeforeAndAfterAll with Matchers {
     "Metadata" should {
 
       "clusterName" in {
-        metadata.clusterName shouldEqual "Test Cluster"
+        metadata.clusterName.toTry.get shouldEqual "Test Cluster"
       }
 
       "schema" in {
-        metadata.schema should startWith("CREATE KEYSPACE system_traces")
+        metadata.schema.toTry.get should startWith("CREATE KEYSPACE system_traces")
       }
 
-      lazy val keyspaceMetadata = cluster.metadata.toTry.get.keyspace(keyspace)
+      lazy val keyspaceMetadata = cluster.metadata.toTry.get.keyspace(keyspace).toTry.get
 
       "keyspace" in {
         keyspaceMetadata.isDefined shouldEqual true
       }
 
       "keyspaces" in {
-        cluster.metadata.toTry.get.keyspaces.map(_.name).toSet shouldEqual Set(
+        cluster.metadata.toTry.get.keyspaces.toTry.get.map(_.name).toSet shouldEqual Set(
           keyspace,
           "system_traces",
           "system",
@@ -160,19 +160,19 @@ class CassandraSpec extends WordSpec with BeforeAndAfterAll with Matchers {
         }
 
         "schema" in {
-          keyspaceMetadata1.schema() should startWith("CREATE KEYSPACE tmp_keyspace WITH REPLICATION = { 'class' : 'org.apache.cassandra.locator.SimpleStrategy', 'replication_factor': '1' } AND DURABLE_WRITES = true;")
+          keyspaceMetadata1.schema.toTry.get should startWith("CREATE KEYSPACE tmp_keyspace WITH REPLICATION = { 'class' : 'org.apache.cassandra.locator.SimpleStrategy', 'replication_factor': '1' } AND DURABLE_WRITES = true;")
         }
 
         "asCql" in {
-          keyspaceMetadata1.asCql() shouldEqual "CREATE KEYSPACE tmp_keyspace WITH REPLICATION = { 'class' : 'org.apache.cassandra.locator.SimpleStrategy', 'replication_factor': '1' } AND DURABLE_WRITES = true;"
+          keyspaceMetadata1.asCql.toTry.get shouldEqual "CREATE KEYSPACE tmp_keyspace WITH REPLICATION = { 'class' : 'org.apache.cassandra.locator.SimpleStrategy', 'replication_factor': '1' } AND DURABLE_WRITES = true;"
         }
 
         "tables" in {
-          keyspaceMetadata1.tables().map(_.name).toSet shouldEqual Set(table)
+          keyspaceMetadata1.tables.toTry.get.map(_.name).toSet shouldEqual Set(table)
         }
 
         "table" in {
-          keyspaceMetadata1.table(table).map(_.name) shouldEqual Some(table)
+          keyspaceMetadata1.table(table).toTry.get.map(_.name) shouldEqual Some(table)
         }
 
         "durableWrites" in {
@@ -184,7 +184,7 @@ class CassandraSpec extends WordSpec with BeforeAndAfterAll with Matchers {
         }
 
         "replication" in {
-          keyspaceMetadata1.replication shouldEqual Map(
+          keyspaceMetadata1.replication.toTry.get shouldEqual Map(
             ("class", "org.apache.cassandra.locator.SimpleStrategy"),
             ("replication_factor", "1"))
         }

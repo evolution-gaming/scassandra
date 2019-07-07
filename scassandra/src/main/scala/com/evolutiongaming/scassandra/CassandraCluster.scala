@@ -16,7 +16,7 @@ trait CassandraCluster[F[_]] {
 
   def newSession: Resource[F, CassandraSession[F]]
 
-  def metadata: F[Metadata]
+  def metadata: F[Metadata[F]]
 }
 
 object CassandraCluster {
@@ -81,7 +81,7 @@ object CassandraCluster {
   }
 
 
-  implicit class ClusterOps[F[_]](val self: CassandraCluster[F]) extends AnyVal {
+  implicit class CassandraClusterOps[F[_]](val self: CassandraCluster[F]) extends AnyVal {
 
     def mapK[G[_]](f: F ~> G)(implicit F: Sync[F], G: Sync[G]): CassandraCluster[G] = new CassandraCluster[G] {
 
@@ -111,7 +111,13 @@ object CassandraCluster {
         }
       }
 
-      def metadata = f(self.metadata)
+      def metadata = {
+        for {
+          a <- f(self.metadata)
+        } yield {
+          a.mapK(f)
+        }
+      }
     }
   }
 }
