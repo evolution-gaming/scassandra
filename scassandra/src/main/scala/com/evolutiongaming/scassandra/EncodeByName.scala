@@ -5,8 +5,7 @@ import java.time.Instant
 import java.util.Date
 
 import com.datastax.driver.core.SettableData
-
-import scala.collection.JavaConverters._
+import com.evolutiongaming.util.ToJava
 
 trait EncodeByName[-A] { self =>
 
@@ -117,7 +116,7 @@ object EncodeByName {
 
   implicit val SetStrImpl: EncodeByName[Set[String]] = new EncodeByName[Set[String]] {
     def apply[B <: SettableData[B]](data: B, name: String, value: Set[String]) = {
-      val set = value.asJava
+      val set = ToJava.from(value)
       data.setSet(name, set, classOf[String])
     }
   }

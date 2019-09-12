@@ -6,8 +6,7 @@ import cats.implicits._
 import cats.~>
 import com.datastax.driver.core.{Session => SessionJ, _}
 import com.evolutiongaming.scassandra.util.FromGFuture
-
-import scala.collection.JavaConverters._
+import com.evolutiongaming.util.{ToScala, ToJava}
 
 /**
   * See [[com.datastax.driver.core.Session]]
@@ -61,7 +60,7 @@ object CassandraSession {
       }
 
       def execute(query: String, values: Map[String, AnyRef]) = {
-        val values1 = values.asJava
+        val values1 = ToJava.from(values)
         FromGFuture[F].apply { session.executeAsync(query, values1) }
       }
 
@@ -116,7 +115,7 @@ object CassandraSession {
           for {
             a <- Sync[F].delay { state.getConnectedHosts }
           } yield {
-            a.asScala
+            ToScala.from(a)
           }
         }
 

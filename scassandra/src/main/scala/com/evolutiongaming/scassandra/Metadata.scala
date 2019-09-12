@@ -4,8 +4,7 @@ import cats.effect.Sync
 import cats.implicits._
 import cats.{FlatMap, ~>}
 import com.datastax.driver.core.{KeyspaceMetadata => KeyspaceMetadataJ, Metadata => MetadataJ, TableMetadata => TableMetadataJ}
-
-import scala.collection.JavaConverters._
+import com.evolutiongaming.util.ToScala
 
 trait Metadata[F[_]] {
 
@@ -40,7 +39,7 @@ object Metadata {
       val keyspaces = {
         Sync[F].delay {
           for {
-            keyspace <- metadata.getKeyspaces.asScala.toList
+            keyspace <- ToScala.from(metadata.getKeyspaces).toList
           } yield {
             KeyspaceMetadata(keyspace)
           }
@@ -125,7 +124,7 @@ object KeyspaceMetadata {
       val tables = {
         Sync[F].delay {
           for {
-            tableMetadata <- keyspaceMetadata.getTables.asScala.toList
+            tableMetadata <- ToScala.from(keyspaceMetadata.getTables).toList
           } yield {
             TableMetadata(tableMetadata)
           }
@@ -137,7 +136,7 @@ object KeyspaceMetadata {
       val virtual = keyspaceMetadata.isVirtual
 
       val replication = {
-        Sync[F].delay { keyspaceMetadata.getReplication.asScala.toMap }
+        Sync[F].delay { ToScala.from(keyspaceMetadata.getReplication).toMap }
       }
     }
   }
