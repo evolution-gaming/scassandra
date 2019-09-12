@@ -3,8 +3,7 @@ package com.evolutiongaming.scassandra
 import java.net.InetSocketAddress
 
 import com.datastax.driver.core.{QueryLogger, Cluster => ClusterJ}
-
-import scala.collection.JavaConverters._
+import com.evolutiongaming.util.ToJava
 
 object CreateClusterJ {
 
@@ -25,7 +24,7 @@ object CreateClusterJ {
     val clusterName = s"${ config.name }-$clusterId"
 
     val builder = ClusterJ.builder
-      .addContactPointsWithPorts(contactPoints.toList.asJava)
+      .addContactPointsWithPorts(ToJava.from(contactPoints.toList))
       .withClusterName(clusterName)
       .withPoolingOptions(config.pooling.asJava)
       .withReconnectionPolicy(config.reconnection.asJava)

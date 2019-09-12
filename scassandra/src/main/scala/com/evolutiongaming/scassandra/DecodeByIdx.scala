@@ -3,8 +3,7 @@ package com.evolutiongaming.scassandra
 import java.time.Instant
 
 import com.datastax.driver.core.GettableByIndexData
-
-import scala.collection.JavaConverters._
+import com.evolutiongaming.util.ToScala
 
 trait DecodeByIdx[A] extends { self =>
 
@@ -98,7 +97,7 @@ object DecodeByIdx {
   implicit val SetStrImpl: DecodeByIdx[Set[String]] = new DecodeByIdx[Set[String]] {
     def apply(data: GettableByIndexData, idx: Int) = {
       val set = data.getSet(idx, classOf[String])
-      set.asScala.toSet
+      ToScala.from(set).toSet
     }
   }
 

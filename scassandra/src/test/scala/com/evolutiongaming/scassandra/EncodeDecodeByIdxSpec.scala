@@ -37,7 +37,7 @@ class EncodeDecodeByIdxSpec extends WordSpec with Matchers {
       (name, test) <- List(
         ("String", of("string")),
         ("Int", of(0)),
-        ("Long", of(0l)),
+        ("Long", of(0L)),
         ("BigDecimal", of(BigDecimal(0))),
         ("Double", of(0d)),
         ("Float", of(0f)),
