@@ -1,8 +1,9 @@
 package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.policies.{ExponentialReconnectionPolicy, ReconnectionPolicy}
-import com.evolutiongaming.config.ConfigHelper._
 import com.typesafe.config.Config
+import pureconfig.{ConfigReader, ConfigSource}
+import pureconfig.generic.semiauto.deriveReader
 
 import scala.concurrent.duration._
 
@@ -22,15 +23,12 @@ object ReconnectionConfig {
 
   val Default: ReconnectionConfig = ReconnectionConfig()
 
-  
+  implicit val configReaderReconnectionConfig: ConfigReader[ReconnectionConfig] = deriveReader
+
+  @deprecated("use ConfigReader instead", "1.1.5")
   def apply(config: Config): ReconnectionConfig = apply(config, Default)
 
   def apply(config: Config, default: => ReconnectionConfig): ReconnectionConfig = {
-
-    def get[A: FromConf](name: String) = config.getOpt[A](name)
-
-    ReconnectionConfig(
-      minDelay = get[FiniteDuration]("min-delay") getOrElse default.minDelay,
-      maxDelay = get[FiniteDuration]("max-delay") getOrElse default.maxDelay)
+    ConfigSource.fromConfig(config).load[ReconnectionConfig] getOrElse default
   }
 }

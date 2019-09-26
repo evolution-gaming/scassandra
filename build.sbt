@@ -8,7 +8,7 @@ lazy val commonSettings = Seq(
   organizationHomepage := Some(url("http://evolutiongaming.com")),
   bintrayOrganization := Some("evolutiongaming"),
   scalaVersion := crossScalaVersions.value.head,
-  crossScalaVersions := Seq("2.12.10", "2.13.0"),
+  crossScalaVersions := Seq("2.13.0", "2.12.10"),
   scalacOptions in(Compile, doc) ++= Seq("-groups", "-implicits", "-no-link-warnings"),
   resolvers += Resolver.bintrayRepo("evolutiongaming", "maven"),
   licenses := Seq(("MIT", url("https://opensource.org/licenses/MIT"))),
@@ -33,7 +33,9 @@ lazy val scassandra = (project in file("scassandra")
     scalatest % Test,
     nel,
     `cassandra-driver`,
-    `executor-tools`)))
+    `executor-tools`,
+    Pureconfig.pureconfig,
+    Pureconfig.cats)))
 
 lazy val tests = (project in file("tests")
   settings (name := "tests")

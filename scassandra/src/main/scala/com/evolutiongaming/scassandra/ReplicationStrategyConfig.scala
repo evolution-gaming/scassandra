@@ -4,6 +4,8 @@ import com.evolutiongaming.config.ConfigHelper._
 import com.evolutiongaming.nel.Nel
 import com.evolutiongaming.scassandra.ConfigHelpers._
 import com.typesafe.config.{Config, ConfigException}
+import pureconfig.generic.semiauto.deriveReader
+import pureconfig.{ConfigCursor, ConfigReader, ConfigSource}
 
 /**
   * See [[https://docs.datastax.com/en/cassandra/3.0/cassandra/architecture/archDataDistributeReplication.html]]
@@ -13,6 +15,16 @@ sealed trait ReplicationStrategyConfig
 object ReplicationStrategyConfig {
 
   val Default: ReplicationStrategyConfig = Simple.Default
+
+  implicit val configReaderReplicationStrategyConfig: ConfigReader[ReplicationStrategyConfig] = {
+    cursor: ConfigCursor => {
+      for {
+        cursor <- cursor.asObjectCursor
+      } yield {
+        fromConfig(cursor.value.toConfig)
+      }
+    }
+  }
 
   implicit val ToCqlImpl: ToCql[ReplicationStrategyConfig] = new ToCql[ReplicationStrategyConfig] {
     
@@ -28,14 +40,18 @@ object ReplicationStrategyConfig {
     }
   }
 
+  @deprecated("use ConfigReader instead", "1.1.5")
+  def apply(config: Config): ReplicationStrategyConfig = fromConfig(config)
 
-  def apply(config: Config): ReplicationStrategyConfig = {
+  def fromConfig(config: Config): ReplicationStrategyConfig = {
 
-    def get[A: FromConf](name: String) = config.getOpt[A](name)
+    val source = ConfigSource.fromConfig(config)
 
-    val strategy = get[String]("replication-strategy").map(_.toLowerCase).collect {
-      case "simple"          => get[Config]("simple").fold(Simple.Default)(Simple.apply)
-      case "networktopology" => get[Config]("network-topology").fold(NetworkTopology.Default)(NetworkTopology.apply)
+    def get[A: ConfigReader](name: String) = source.at(name).load[A]
+
+    val strategy = get[String]("replication-strategy").toOption.map(_.toLowerCase).collect {
+      case "simple"          => get[Simple]("simple") getOrElse Simple.Default
+      case "networktopology" => get[NetworkTopology]("network-topology") getOrElse NetworkTopology.Default
     }
 
     strategy getOrElse Simple.Default
@@ -45,10 +61,15 @@ object ReplicationStrategyConfig {
   final case class Simple(replicationFactor: Int = 1) extends ReplicationStrategyConfig
 
   object Simple {
+
     val Default: Simple = Simple()
 
+    implicit val configReaderSimple: ConfigReader[Simple] = deriveReader
+
+    @deprecated("use ConfigReader instead", "1.1.5")
     def apply(config: Config): Simple = apply(config, Default)
 
+    @deprecated("use ConfigReader instead", "1.1.5")
     def apply(config: Config, default: => Simple): Simple = {
 
       def get[A: FromConf](name: String) = config.getOpt[A](name)
@@ -65,7 +86,22 @@ object ReplicationStrategyConfig {
 
     val Default: NetworkTopology = NetworkTopology()
 
-    def apply(config: Config): NetworkTopology = {
+    implicit val configReaderNetworkTopology: ConfigReader[NetworkTopology] = {
+      cursor: ConfigCursor => {
+        for {
+          cursor <- cursor.asObjectCursor
+        } yield {
+          fromConfig(cursor.value.toConfig)
+        }
+      }
+    }
+
+
+    @deprecated("use ConfigReader instead", "1.1.5")
+    def apply(config: Config): NetworkTopology = fromConfig(config)
+
+
+    private def fromConfig(config: Config): NetworkTopology = {
       val replicationFactors = {
         val path = "replication-factors"
         config.get[Nel[String]](path).map { str =>

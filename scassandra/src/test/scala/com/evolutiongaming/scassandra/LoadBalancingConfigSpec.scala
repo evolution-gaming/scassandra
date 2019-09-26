@@ -1,13 +1,15 @@
 package com.evolutiongaming.scassandra
 
+import cats.implicits._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{FunSuite, Matchers}
+import pureconfig.ConfigSource
 
 class LoadBalancingConfigSpec extends FunSuite with Matchers {
 
   test("apply from empty config") {
     val config = ConfigFactory.empty()
-    LoadBalancingConfig(config) shouldEqual LoadBalancingConfig.Default
+    ConfigSource.fromConfig(config).load[LoadBalancingConfig] shouldEqual LoadBalancingConfig.Default.asRight
   }
 
   test("apply from config") {
@@ -15,6 +17,6 @@ class LoadBalancingConfigSpec extends FunSuite with Matchers {
     val expected = LoadBalancingConfig(
       localDc = "local",
       allowRemoteDcsForLocalConsistencyLevel = true)
-    LoadBalancingConfig(config) shouldEqual expected
+    ConfigSource.fromConfig(config).load[LoadBalancingConfig] shouldEqual expected.asRight
   }
 }

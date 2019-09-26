@@ -5,7 +5,9 @@ import com.datastax.driver.core.ProtocolVersion
 import com.evolutiongaming.config.ConfigHelper._
 import com.evolutiongaming.nel.Nel
 import com.evolutiongaming.scassandra.ConfigHelpers._
-import com.typesafe.config.{Config, ConfigException}
+import com.evolutiongaming.scassandra.util.{ConfigReaderFromEnum}
+import com.typesafe.config.Config
+import pureconfig.{ConfigCursor, ConfigReader, ConfigSource}
 
 /**
   * See [[https://docs.datastax.com/en/developer/java-driver/3.5/manual/#setting-up-the-driver]]
@@ -30,48 +32,47 @@ object CassandraConfig {
 
   val Default: CassandraConfig = CassandraConfig()
 
-  private implicit val CompressionFromConf = FromConf[Compression] { (conf, path) =>
-    val str = conf.getString(path)
-    val value = Compression.values().find { _.name equalsIgnoreCase str }
-    value getOrElse {
-      throw new ConfigException.BadValue(conf.origin(), path, s"Cannot parse Compression from $str")
-    }
-  }
+  implicit val configReaderCompression: ConfigReader[Compression] = ConfigReaderFromEnum(Compression.values())
 
-  private implicit val ProtocolVersionFromConf = FromConf[ProtocolVersion] { (conf, path) =>
-    val str = conf.getString(path)
-    val value = ProtocolVersion.values().find { _.name equalsIgnoreCase str }
-    value getOrElse {
-      throw new ConfigException.BadValue(conf.origin(), path, s"Cannot parse ProtocolVersion from $str")
-    }
-  }
+  implicit val configReaderProtocolVersion: ConfigReader[ProtocolVersion] = ConfigReaderFromEnum(ProtocolVersion.values())
 
-
-  def apply(config: Config): CassandraConfig = apply(config, Default)
-
-  def apply(config: Config, default: => CassandraConfig): CassandraConfig = {
-
-    def get[A: FromConf](name: String) = config.getOpt[A](name)
-
-    val pooling = get[Config]("pooling").fold(default.pooling)(PoolingConfig.apply(_, default.pooling))
-    val query = get[Config]("query").fold(default.query)(QueryConfig.apply(_, default.query))
-    val reconnection = get[Config]("reconnection").fold(default.reconnection)(ReconnectionConfig.apply(_, default.reconnection))
-    val socket = get[Config]("socket").fold(default.socket)(SocketConfig.apply(_, default.socket))
-    val authentication = get[Config]("authentication").map(AuthenticationConfig.apply)
-    val loadBalancing = get[Config]("load-balancing").map { config =>
-      default.loadBalancing.fold(LoadBalancingConfig(config)) { loadBalancing => LoadBalancingConfig(config, loadBalancing) }
-    }
-    val speculativeExecution = get[Config]("speculative-execution").map { config =>
-      default.speculativeExecution.fold(SpeculativeExecutionConfig(config)) { speculativeExecution =>
-        SpeculativeExecutionConfig(config, speculativeExecution)
+  implicit val configReaderCassandraConfig: ConfigReader[CassandraConfig] = {
+    cursor: ConfigCursor => {
+      for {
+        cursor <- cursor.asObjectCursor
+      } yield {
+        fromConfig(cursor.value.toConfig, Default)
       }
     }
+  }
+
+
+  @deprecated("use ConfigReader instead", "1.1.5")
+  def apply(config: Config): CassandraConfig = fromConfig(config, Default)
+
+  @deprecated("use ConfigReader instead", "1.1.5")
+  def apply(config: Config, default: => CassandraConfig): CassandraConfig = fromConfig(config, default)
+
+  
+  def fromConfig(config: Config, default: => CassandraConfig): CassandraConfig = {
+
+    val source = ConfigSource.fromConfig(config)
+
+    def get[A: ConfigReader](name: String) = source.at(name).load[A]
+
+    val pooling = get[PoolingConfig]("pooling") getOrElse default.pooling
+    val query = get[QueryConfig]("query") getOrElse default.query
+    val reconnection = get[ReconnectionConfig]("reconnection") getOrElse default.reconnection
+    val socket = get[SocketConfig]("socket") getOrElse default.socket
+    val authentication = get[AuthenticationConfig]("authentication").toOption orElse default.authentication
+    val loadBalancing = get[LoadBalancingConfig]("load-balancing").toOption orElse default.loadBalancing
+    val speculativeExecution = get[SpeculativeExecutionConfig]("speculative-execution").toOption orElse default.speculativeExecution
 
     CassandraConfig(
       name = get[String]("name") getOrElse default.name,
       port = get[Int]("port") getOrElse default.port,
-      contactPoints = get[Nel[String]]("contact-points") getOrElse default.contactPoints,
-      protocolVersion = get[ProtocolVersion]("protocol-version"),
+      contactPoints = config.getOpt[Nel[String]]("contact-points") getOrElse default.contactPoints,
+      protocolVersion = get[ProtocolVersion]("protocol-version").toOption orElse default.protocolVersion,
       pooling = pooling,
       query = query,
       reconnection = reconnection,

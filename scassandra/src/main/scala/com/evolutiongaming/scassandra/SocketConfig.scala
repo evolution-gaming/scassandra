@@ -1,8 +1,9 @@
 package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.SocketOptions
-import com.evolutiongaming.config.ConfigHelper._
 import com.typesafe.config.Config
+import pureconfig.{ConfigReader, ConfigSource}
+import pureconfig.generic.semiauto.deriveReader
 
 import scala.concurrent.duration._
 
@@ -39,21 +40,13 @@ object SocketConfig {
 
   val Default: SocketConfig = SocketConfig()
 
+  implicit val configReaderSocketConfig: ConfigReader[SocketConfig] = deriveReader
 
+
+  @deprecated("use ConfigReader instead", "1.1.5")
   def apply(config: Config): SocketConfig = apply(config, Default)
 
   def apply(config: Config, default: => SocketConfig): SocketConfig = {
-
-    def get[A: FromConf](name: String) = config.getOpt[A](name)
-
-    SocketConfig(
-      connectTimeout = get[FiniteDuration]("connect-timeout") getOrElse default.connectTimeout,
-      readTimeout = get[FiniteDuration]("read-timeout") getOrElse default.readTimeout,
-      keepAlive = get[Boolean]("keep-alive") orElse default.keepAlive,
-      reuseAddress = get[Boolean]("reuse-address") orElse default.reuseAddress,
-      soLinger = get[Int]("so-linger") orElse default.soLinger,
-      tcpNoDelay = get[Boolean]("tcp-no-delay") orElse default.tcpNoDelay,
-      receiveBufferSize = get[Int]("receive-buffer-size") orElse default.receiveBufferSize,
-      sendBufferSize = get[Int]("send-buffer-size") orElse default.sendBufferSize)
+    ConfigSource.fromConfig(config).load[SocketConfig] getOrElse default
   }
 }

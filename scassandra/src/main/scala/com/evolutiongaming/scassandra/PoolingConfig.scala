@@ -1,8 +1,8 @@
 package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.{HostDistance, PoolingOptions => PoolingOptionsJ}
-import com.evolutiongaming.config.ConfigHelper._
 import com.typesafe.config.Config
+import pureconfig.{ConfigCursor, ConfigReader, ConfigSource}
 
 import scala.concurrent.duration._
 
@@ -34,16 +34,28 @@ object PoolingConfig {
 
   val Default: PoolingConfig = PoolingConfig()
 
+  implicit val configReaderPoolingConfig: ConfigReader[PoolingConfig] = {
+    cursor: ConfigCursor => {
+      for {
+        cursor <- cursor.asObjectCursor
+      } yield {
+        apply(cursor.value.toConfig)
+      }
+    }
+  }
+
 
   def apply(config: Config): PoolingConfig = apply(config, Default)
 
   def apply(config: Config, default: => PoolingConfig): PoolingConfig = {
 
+    val source = ConfigSource.fromConfig(config)
+
     def group(name: String, default: HostConfig) = {
-      config.getOpt[Config](name).fold(default) { config => HostConfig(config, default) }
+      source.at(name).load[Config].fold(_ => default, config => HostConfig(config, default))
     }
 
-    def get[A: FromConf](name: String) = config.getOpt[A](name)
+    def get[A: ConfigReader](name: String) = source.at(name).load[A]
 
     PoolingConfig(
       local = group("local", default.local),
@@ -77,11 +89,16 @@ object PoolingConfig {
 
     
     def apply(config: Config, default: => HostConfig): HostConfig = {
+
+      val source = ConfigSource.fromConfig(config)
+
+      def get[A: ConfigReader](name: String) = source.at(name).load[A]
+
       HostConfig(
-        newConnectionThreshold = config.getOpt[Int]("new-connection-threshold") getOrElse default.newConnectionThreshold,
-        maxRequestsPerConnection = config.getOpt[Int]("max-requests-per-connection") getOrElse default.maxRequestsPerConnection,
-        connectionsPerHostMin = config.getOpt[Int]("connections-per-host-min") getOrElse default.connectionsPerHostMin,
-        connectionsPerHostMax = config.getOpt[Int]("connections-per-host-max") getOrElse default.connectionsPerHostMax)
+        newConnectionThreshold = get[Int]("new-connection-threshold") getOrElse default.newConnectionThreshold,
+        maxRequestsPerConnection = get[Int]("max-requests-per-connection") getOrElse default.maxRequestsPerConnection,
+        connectionsPerHostMin = get[Int]("connections-per-host-min") getOrElse default.connectionsPerHostMin,
+        connectionsPerHostMax = get[Int]("connections-per-host-max") getOrElse default.connectionsPerHostMax)
     }
   }
 

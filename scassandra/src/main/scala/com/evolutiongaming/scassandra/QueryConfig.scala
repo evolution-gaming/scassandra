@@ -1,8 +1,10 @@
 package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.{ConsistencyLevel, QueryOptions}
-import com.evolutiongaming.config.ConfigHelper._
-import com.typesafe.config.{Config, ConfigException}
+import com.evolutiongaming.scassandra.util.ConfigReaderFromEnum
+import com.typesafe.config.Config
+import pureconfig.generic.semiauto.deriveReader
+import pureconfig.{ConfigReader, ConfigSource}
 
 import scala.concurrent.duration._
 
@@ -46,34 +48,17 @@ object QueryConfig {
 
   val Default: QueryConfig = QueryConfig()
 
-  private implicit val ConsistencyLevelFromConf = FromConf[ConsistencyLevel] { (conf, path) =>
-    val str = conf.getString(path)
-    val value = ConsistencyLevel.values().find { _.name equalsIgnoreCase str }
-    value getOrElse {
-      throw new ConfigException.BadValue(conf.origin(), path, s"Cannot parse ConsistencyLevel from $str")
-    }
-  }
+  implicit val configReaderConsistencyLevel: ConfigReader[ConsistencyLevel] = ConfigReaderFromEnum(ConsistencyLevel.values())
 
+  implicit val configReaderQueryConfig: ConfigReader[QueryConfig] = deriveReader
 
+  @deprecated("use ConfigReader instead", "1.1.5")
   def apply(config: Config): QueryConfig = apply(config, Default)
 
-  def apply(config: Config, default: => QueryConfig): QueryConfig = {
-
-    def get[A: FromConf](name: String) = config.getOpt[A](name)
-
-    QueryConfig(
-      consistency = get[ConsistencyLevel]("consistency") getOrElse default.consistency,
-      serialConsistency = get[ConsistencyLevel]("serial-consistency") getOrElse default.serialConsistency,
-      fetchSize = get[Int]("fetch-size") getOrElse default.fetchSize,
-      defaultIdempotence = get[Boolean]("default-idempotence") getOrElse default.defaultIdempotence,
-      maxPendingRefreshNodeListRequests = get[Int]("max-pending-refresh-node-list-requests") getOrElse default.maxPendingRefreshNodeListRequests,
-      maxPendingRefreshNodeRequests = get[Int]("max-pending-refresh-node-requests") getOrElse default.maxPendingRefreshNodeRequests,
-      maxPendingRefreshSchemaRequests = get[Int]("max-pending-refresh-schema-requests") getOrElse default.maxPendingRefreshSchemaRequests,
-      refreshNodeListInterval = get[FiniteDuration]("refresh-node-list-interval") getOrElse default.refreshNodeListInterval,
-      refreshNodeInterval = get[FiniteDuration]("refresh-node-interval") getOrElse default.refreshNodeInterval,
-      refreshSchemaInterval = get[FiniteDuration]("refresh-schema-interval") getOrElse default.refreshSchemaInterval,
-      metadata = get[Boolean]("metadata") getOrElse default.metadata,
-      rePrepareOnUp = get[Boolean]("re-prepare-on-up") getOrElse default.rePrepareOnUp,
-      prepareOnAllHosts = get[Boolean]("prepare-on-all-hosts") getOrElse default.prepareOnAllHosts)
+  @deprecated("use ConfigReader instead", "1.1.5")
+  def apply(config: Config, default: => QueryConfig): QueryConfig = fromConfig(config, default)
+  
+  def fromConfig(config: Config, default: => QueryConfig): QueryConfig = {
+    ConfigSource.fromConfig(config).load[QueryConfig] getOrElse default
   }
 }

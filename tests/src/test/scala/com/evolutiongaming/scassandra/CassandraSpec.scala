@@ -4,7 +4,7 @@ import cats.arrow.FunctionK
 import cats.effect.{IO, Resource}
 import cats.implicits._
 import com.evolutiongaming.cassandra.StartCassandra
-import com.evolutiongaming.catshelper.EffectHelper._
+import com.evolutiongaming.catshelper.CatsHelper._
 import com.evolutiongaming.scassandra.IOSuite._
 import com.evolutiongaming.scassandra.syntax._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}

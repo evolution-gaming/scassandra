@@ -1,7 +1,9 @@
 package com.evolutiongaming.scassandra
 
+import cats.implicits._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{FunSuite, Matchers}
+import pureconfig.ConfigSource
 
 import scala.concurrent.duration._
 
@@ -9,7 +11,7 @@ class SpeculativeExecutionConfigSpec extends FunSuite with Matchers {
 
   test("apply from empty config") {
     val config = ConfigFactory.empty()
-    SpeculativeExecutionConfig(config) shouldEqual SpeculativeExecutionConfig.Default
+    ConfigSource.fromConfig(config).load[SpeculativeExecutionConfig] shouldEqual SpeculativeExecutionConfig.Default.asRight
   }
 
   test("apply from config") {
@@ -17,6 +19,6 @@ class SpeculativeExecutionConfigSpec extends FunSuite with Matchers {
     val expected = SpeculativeExecutionConfig(
       delay = 1.millis,
       maxExecutions = 3)
-    SpeculativeExecutionConfig(config) shouldEqual expected
+    ConfigSource.fromConfig(config).load[SpeculativeExecutionConfig] shouldEqual expected.asRight
   }
 }

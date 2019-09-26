@@ -1,8 +1,10 @@
 package com.evolutiongaming.scassandra
 
+import cats.implicits._
 import com.datastax.driver.core.ConsistencyLevel
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{FunSuite, Matchers}
+import pureconfig.ConfigSource
 
 import scala.concurrent.duration._
 
@@ -10,11 +12,10 @@ class QueryConfigSpec extends FunSuite with Matchers {
 
   test("apply from empty config") {
     val config = ConfigFactory.empty()
-    QueryConfig(config) shouldEqual QueryConfig.Default
+    ConfigSource.fromConfig(config).load[QueryConfig] shouldEqual QueryConfig.Default.asRight
   }
 
   test("apply from config") {
-    val config = ConfigFactory.parseURL(getClass.getResource("query.conf"))
     val expected = QueryConfig(
       consistency = ConsistencyLevel.ALL,
       serialConsistency = ConsistencyLevel.QUORUM,
@@ -29,6 +30,7 @@ class QueryConfigSpec extends FunSuite with Matchers {
       metadata = false,
       rePrepareOnUp = false,
       prepareOnAllHosts = false)
-    QueryConfig(config) shouldEqual expected
+    val config = ConfigFactory.parseURL(getClass.getResource("query.conf"))
+    ConfigSource.fromConfig(config).load[QueryConfig] shouldEqual expected.asRight
   }
 }

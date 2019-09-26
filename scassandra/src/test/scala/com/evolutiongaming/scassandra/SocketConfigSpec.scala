@@ -1,7 +1,9 @@
 package com.evolutiongaming.scassandra
 
+import cats.implicits._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{FunSuite, Matchers}
+import pureconfig.ConfigSource
 
 import scala.concurrent.duration._
 
@@ -9,7 +11,7 @@ class SocketConfigSpec extends FunSuite with Matchers {
 
   test("apply from empty config") {
     val config = ConfigFactory.empty()
-    SocketConfig(config) shouldEqual SocketConfig.Default
+    ConfigSource.fromConfig(config).load[SocketConfig] shouldEqual SocketConfig.Default.asRight
   }
 
   test("apply from config") {
@@ -23,6 +25,6 @@ class SocketConfigSpec extends FunSuite with Matchers {
       tcpNoDelay = Some(false),
       receiveBufferSize = Some(4),
       sendBufferSize = Some(5))
-    SocketConfig(config) shouldEqual expected
+    ConfigSource.fromConfig(config).load[SocketConfig] shouldEqual expected.asRight
   }
 }

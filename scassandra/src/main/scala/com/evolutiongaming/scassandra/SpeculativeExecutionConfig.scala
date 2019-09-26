@@ -1,8 +1,9 @@
 package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.policies.{ConstantSpeculativeExecutionPolicy, SpeculativeExecutionPolicy}
-import com.evolutiongaming.config.ConfigHelper._
 import com.typesafe.config.Config
+import pureconfig.generic.semiauto.deriveReader
+import pureconfig.{ConfigReader, ConfigSource}
 
 import scala.concurrent.duration._
 
@@ -22,14 +23,13 @@ object SpeculativeExecutionConfig {
 
   val Default: SpeculativeExecutionConfig = SpeculativeExecutionConfig()
 
+  implicit val configReaderSpeculativeExecutionConfig: ConfigReader[SpeculativeExecutionConfig] = deriveReader
 
+
+  @deprecated("use ConfigReader instead", "1.1.5")
   def apply(config: Config): SpeculativeExecutionConfig = apply(config, Default)
 
   def apply(config: Config, default: => SpeculativeExecutionConfig): SpeculativeExecutionConfig = {
-    def get[A: FromConf](name: String) = config.getOpt[A](name)
-
-    SpeculativeExecutionConfig(
-      delay = get[FiniteDuration]("delay") getOrElse default.delay,
-      maxExecutions = get[Int]("max-executions") getOrElse default.maxExecutions)
+    ConfigSource.fromConfig(config).load[SpeculativeExecutionConfig] getOrElse default
   }
 }

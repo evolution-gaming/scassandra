@@ -1,8 +1,9 @@
 package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.policies.{DCAwareRoundRobinPolicy, LoadBalancingPolicy, TokenAwarePolicy}
-import com.evolutiongaming.config.ConfigHelper._
 import com.typesafe.config.Config
+import pureconfig.{ConfigReader, ConfigSource}
+import pureconfig.generic.semiauto.deriveReader
 
 /**
   * See [[https://docs.datastax.com/en/developer/java-driver/3.5/manual/load_balancing/]]
@@ -28,15 +29,16 @@ object LoadBalancingConfig {
 
   val Default: LoadBalancingConfig = LoadBalancingConfig()
 
-  
+  implicit val configReaderLoadBalancingConfig: ConfigReader[LoadBalancingConfig] = deriveReader
+
+
+  @deprecated("use ConfigReader instead", "1.1.5")
   def apply(config: Config): LoadBalancingConfig = apply(config, Default)
 
-  def apply(config: Config, default: => LoadBalancingConfig): LoadBalancingConfig = {
+  @deprecated("use ConfigReader instead", "1.1.5")
+  def apply(config: Config, default: => LoadBalancingConfig): LoadBalancingConfig = fromConfig(config, default)
 
-    def get[A: FromConf](name: String) = config.getOpt[A](name)
-
-    LoadBalancingConfig(
-      localDc = get[String]("local-dc") getOrElse default.localDc,
-      allowRemoteDcsForLocalConsistencyLevel = get[Boolean]("allow-remote-dcs-for-local-consistency-level") getOrElse default.allowRemoteDcsForLocalConsistencyLevel)
+  def fromConfig(config: Config, default: => LoadBalancingConfig): LoadBalancingConfig = {
+    ConfigSource.fromConfig(config).load[LoadBalancingConfig] getOrElse default
   }
 }
