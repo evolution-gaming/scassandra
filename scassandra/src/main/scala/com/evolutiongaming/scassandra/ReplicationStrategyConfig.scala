@@ -26,18 +26,15 @@ object ReplicationStrategyConfig {
     }
   }
 
-  implicit val ToCqlImpl: ToCql[ReplicationStrategyConfig] = new ToCql[ReplicationStrategyConfig] {
-    
-    def apply(a: ReplicationStrategyConfig) = a match {
-      case a: Simple          =>
-        s"'SimpleStrategy','replication_factor':${ a.replicationFactor }"
-        
-      case a: NetworkTopology =>
-        val factors = a.replicationFactors
-          .map { dcFactor => s"'${ dcFactor.name }':${ dcFactor.replicationFactor }" }
-          .mkString(",")
-        s"'NetworkTopologyStrategy',$factors"
-    }
+  implicit val toCqlReplicationStrategyConfig: ToCql[ReplicationStrategyConfig] = {
+    case a: Simple =>
+      s"'SimpleStrategy','replication_factor':${ a.replicationFactor }"
+
+    case a: NetworkTopology =>
+      val factors = a.replicationFactors
+        .map { dcFactor => s"'${ dcFactor.name }':${ dcFactor.replicationFactor }" }
+        .mkString(",")
+      s"'NetworkTopologyStrategy',$factors"
   }
 
   @deprecated("use ConfigReader instead", "1.1.5")

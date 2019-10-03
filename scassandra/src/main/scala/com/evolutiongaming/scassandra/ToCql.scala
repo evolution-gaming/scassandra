@@ -1,25 +1,24 @@
 package com.evolutiongaming.scassandra
 
-trait ToCql[-A] { self =>
+import cats.Contravariant
+
+trait ToCql[-A] {
 
   def apply(a: A): String
-  
-
-  final def imap[B](f: B => A): ToCql[B] = new ToCql[B] {
-    def apply(a: B) = self(f(a))
-  }
 }
 
 object ToCql {
+
+  implicit val contravariantToCql: Contravariant[ToCql] = new Contravariant[ToCql] {
+    def contramap[A, B](fa: ToCql[A])(f: B => A) = fa.contramap(f)
+  }
 
   def apply[A](implicit toCql: ToCql[A]): ToCql[A] = toCql
 
   def apply[A: ToCql](a: A): String = ToCql[A].apply(a)
 
 
-  implicit val StrImp: ToCql[String] = new ToCql[String] {
-    def apply(a: String) = a
-  }
+  implicit val strToCql: ToCql[String] = (a: String) => a
 
 
   object Ops {
@@ -27,5 +26,11 @@ object ToCql {
     implicit class IdOps[A](val self: A) extends AnyVal {
       def toCql(implicit toCql: ToCql[A]): String = ToCql(self)
     }
+  }
+
+
+  implicit class ToCqlOps[A](val self: ToCql[A]) extends AnyVal {
+
+    final def contramap[B](f: B => A): ToCql[B] = (a: B) => self(f(a))
   }
 }
