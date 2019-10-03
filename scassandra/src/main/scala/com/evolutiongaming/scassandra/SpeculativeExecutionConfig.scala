@@ -27,9 +27,15 @@ object SpeculativeExecutionConfig {
 
 
   @deprecated("use ConfigReader instead", "1.1.5")
-  def apply(config: Config): SpeculativeExecutionConfig = apply(config, Default)
+  def apply(config: Config): SpeculativeExecutionConfig = fromConfig(config, Default)
 
+  @deprecated("use ConfigReader instead", "1.2.0")
   def apply(config: Config, default: => SpeculativeExecutionConfig): SpeculativeExecutionConfig = {
+    fromConfig(config, default)
+  }
+
+
+  def fromConfig(config: Config, default: => SpeculativeExecutionConfig): SpeculativeExecutionConfig = {
     ConfigSource.fromConfig(config).load[SpeculativeExecutionConfig] getOrElse default
   }
 }

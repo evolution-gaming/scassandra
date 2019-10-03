@@ -39,15 +39,20 @@ object PoolingConfig {
       for {
         cursor <- cursor.asObjectCursor
       } yield {
-        apply(cursor.value.toConfig)
+        fromConfig(cursor.value.toConfig, Default)
       }
     }
   }
 
 
-  def apply(config: Config): PoolingConfig = apply(config, Default)
+  @deprecated("use ConfigReader instead", "1.2.0")
+  def apply(config: Config): PoolingConfig = fromConfig(config, Default)
 
-  def apply(config: Config, default: => PoolingConfig): PoolingConfig = {
+  @deprecated("use ConfigReader instead", "1.2.0")
+  def apply(config: Config, default: => PoolingConfig): PoolingConfig = fromConfig(config, default)
+
+
+  def fromConfig(config: Config, default: => PoolingConfig): PoolingConfig = {
 
     val source = ConfigSource.fromConfig(config)
 

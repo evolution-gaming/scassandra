@@ -1,7 +1,9 @@
 package com.evolutiongaming.scassandra
 
+import cats.implicits._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{FunSuite, Matchers}
+import pureconfig.ConfigSource
 
 import scala.concurrent.duration._
 
@@ -9,7 +11,7 @@ class PoolingConfigSpec extends FunSuite with Matchers {
 
   test("apply from empty config") {
     val config = ConfigFactory.empty()
-    PoolingConfig(config) shouldEqual PoolingConfig.Default
+    ConfigSource.fromConfig(config).load[PoolingConfig] shouldEqual PoolingConfig.Default.asRight
   }
 
   test("apply from config") {
@@ -29,6 +31,6 @@ class PoolingConfigSpec extends FunSuite with Matchers {
       idleTimeout = 2.seconds,
       maxQueueSize = 3,
       heartbeatInterval = 4.hours)
-    PoolingConfig(config) shouldEqual expected
+    ConfigSource.fromConfig(config).load[PoolingConfig] shouldEqual expected.asRight
   }
 }

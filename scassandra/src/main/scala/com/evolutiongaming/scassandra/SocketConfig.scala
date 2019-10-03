@@ -44,9 +44,12 @@ object SocketConfig {
 
 
   @deprecated("use ConfigReader instead", "1.1.5")
-  def apply(config: Config): SocketConfig = apply(config, Default)
+  def apply(config: Config): SocketConfig = fromConfig(config, Default)
 
-  def apply(config: Config, default: => SocketConfig): SocketConfig = {
+  @deprecated("use ConfigReader instead", "1.2.0")
+  def apply(config: Config, default: => SocketConfig): SocketConfig = fromConfig(config, default)
+
+  def fromConfig(config: Config, default: => SocketConfig): SocketConfig = {
     ConfigSource.fromConfig(config).load[SocketConfig] getOrElse default
   }
 }

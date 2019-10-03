@@ -28,7 +28,11 @@ object ReconnectionConfig {
   @deprecated("use ConfigReader instead", "1.1.5")
   def apply(config: Config): ReconnectionConfig = apply(config, Default)
 
-  def apply(config: Config, default: => ReconnectionConfig): ReconnectionConfig = {
+  @deprecated("use ConfigReader instead", "1.2.0")
+  def apply(config: Config, default: => ReconnectionConfig): ReconnectionConfig = fromConfig(config, default)
+
+
+  def fromConfig(config: Config, default: => ReconnectionConfig): ReconnectionConfig = {
     ConfigSource.fromConfig(config).load[ReconnectionConfig] getOrElse default
   }
 }
