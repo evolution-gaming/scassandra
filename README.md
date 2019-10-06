@@ -28,5 +28,5 @@ name.unsafeRunSync()
 ```scala
 resolvers += Resolver.bintrayRepo("evolutiongaming", "maven")
 
-libraryDependencies += "com.evolutiongaming" %% "scassandra" % "0.0.1"
+libraryDependencies += "com.evolutiongaming" %% "scassandra" % "2.0.1"
 ```

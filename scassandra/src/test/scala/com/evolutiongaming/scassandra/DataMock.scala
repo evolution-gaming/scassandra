@@ -43,9 +43,9 @@ case class DataMock(
   def setUDTValue(i: Int, v: UDTValue) = copy(byIdx = byIdx.updated(i, v))
   def setTupleValue(i: Int, v: TupleValue) = copy(byIdx = byIdx.updated(i, v))
   def setToNull(i: Int) = copy(byIdx = byIdx - i)
-  def set[V](i: Int, v: V, targetClass: Class[V]) = notSupported()
-  def set[V](i: Int, v: V, targetType: TypeToken[V]) = notSupported()
-  def set[V](i: Int, v: V, codec: TypeCodec[V]) = notSupported()
+  def set[V](i: Int, v: V, targetClass: Class[V]) = copy(byIdx = byIdx.updated(i, v))
+  def set[V](i: Int, v: V, targetType: TypeToken[V]) = copy(byIdx = byIdx.updated(i, v))
+  def set[V](i: Int, v: V, codec: TypeCodec[V]) = copy(byIdx = byIdx.updated(i, v))
 
   def setBool(name: String, v: Boolean) = copy(byName = byName.updated(name, v))
   def setByte(name: String, v: Byte) = copy(byName = byName.updated(name, v))
@@ -76,9 +76,9 @@ case class DataMock(
   def setUDTValue(name: String, v: UDTValue) = copy(byName = byName.updated(name, v))
   def setTupleValue(name: String, v: TupleValue) = copy(byName = byName.updated(name, v))
   def setToNull(name: String) = copy(byName = byName - name)
-  def set[V](name: String, v: V, targetClass: Class[V]) = notSupported()
-  def set[V](name: String, v: V, targetType: TypeToken[V]) = notSupported()
-  def set[V](name: String, v: V, codec: TypeCodec[V]) = notSupported()
+  def set[V](name: String, v: V, targetClass: Class[V]) = copy(byName = byName.updated(name, v))
+  def set[V](name: String, v: V, targetType: TypeToken[V]) = copy(byName = byName.updated(name, v))
+  def set[V](name: String, v: V, codec: TypeCodec[V]) = copy(byName = byName.updated(name, v))
 
   def isNull(name: String) = !byName.contains(name)
   def getBool(name: String) = byName.getOrElse(name, null).asInstanceOf[Boolean]
@@ -109,7 +109,7 @@ case class DataMock(
   def getObject(name: String) = notSupported()
   def get[T](name: String, targetClass: Class[T]) = notSupported()
   def get[T](name: String, targetType: TypeToken[T]) = notSupported()
-  def get[T](name: String, codec: TypeCodec[T]) = notSupported()
+  def get[T](name: String, codec: TypeCodec[T]) = byName.getOrElse(name, null).asInstanceOf[T]
 
   def isNull(i: Int) = !byIdx.contains(i)
   def getBool(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[Boolean]
@@ -140,5 +140,5 @@ case class DataMock(
   def getObject(i: Int) = notSupported()
   def get[T](i: Int, targetClass: Class[T]) = notSupported()
   def get[T](i: Int, targetType: TypeToken[T]) = notSupported()
-  def get[T](i: Int, codec: TypeCodec[T]) = notSupported()
+  def get[T](i: Int, codec: TypeCodec[T]) = byIdx.getOrElse(i, null).asInstanceOf[T]
 }

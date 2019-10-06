@@ -3,6 +3,7 @@ package com.evolutiongaming.scassandra
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
+import com.datastax.driver.core.Duration
 import com.evolutiongaming.scassandra.syntax._
 import org.scalatest.{Matchers, WordSpec}
 
@@ -42,7 +43,8 @@ class EncodeDecodeByNameSpec extends WordSpec with Matchers {
         ("Double", of(0d)),
         ("Float", of(0f)),
         ("Instant", of(Instant.now().truncatedTo(ChronoUnit.MILLIS))),
-        ("Set", of(Set("str"))))
+        ("Set", of(Set("str"))),
+        ("Duration", of(Duration.newInstance(1, 1, 1))))
     } {
       s"encode & decode $name" in test()
     }

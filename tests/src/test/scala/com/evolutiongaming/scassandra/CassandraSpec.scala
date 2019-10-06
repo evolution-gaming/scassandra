@@ -3,11 +3,14 @@ package com.evolutiongaming.scassandra
 import cats.arrow.FunctionK
 import cats.effect.{IO, Resource}
 import cats.implicits._
+import com.datastax.driver.core.Duration
 import com.evolutiongaming.cassandra.StartCassandra
 import com.evolutiongaming.catshelper.CatsHelper._
 import com.evolutiongaming.scassandra.IOSuite._
 import com.evolutiongaming.scassandra.syntax._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+
+import scala.util.Try
 
 
 class CassandraSpec extends WordSpec with BeforeAndAfterAll with Matchers {
@@ -102,23 +105,43 @@ class CassandraSpec extends WordSpec with BeforeAndAfterAll with Matchers {
       }
 
       "create table" in {
-        val query = s"CREATE TABLE IF NOT EXISTS $keyspace.$table (key TEXT PRIMARY KEY, value TEXT, timestamp TIMESTAMP)"
+        val query = s"CREATE TABLE IF NOT EXISTS $keyspace.$table (key TEXT PRIMARY KEY, value TEXT, duration DURATION)"
         session.execute(query).toTry.get
       }
 
-      "select" in {
-        val query = s"SELECT value FROM $keyspace.$table WHERE key = ?"
+      val duration = Duration.newInstance(1, 1, 1)
+
+      "insert" in {
+        val query = s"INSERT INTO $keyspace.$table (key, value, duration) VALUES (?, ?, ?)"
         val result = for {
           prepared <- session.prepare(query)
-          bound = prepared
-            .bind()
+          bound     = prepared.bind()
             .encode("key", "key")
-          result <- session.execute(bound)
+            .encode("value", "value")
+            .encode("duration", duration)
+          result   <- session.execute(bound)
         } yield {
           Option(result.one())
         }
 
-        result.toTry.get shouldEqual None
+        result.toTry shouldEqual none.pure[Try]
+      }
+
+      "select" in {
+        val query = s"SELECT value, duration FROM $keyspace.$table WHERE key = ?"
+        val result = for {
+          prepared <- session.prepare(query)
+          bound     = prepared.bind().encode("key", "key")
+          result   <- session.execute(bound)
+        } yield for {
+          row <- Option(result.one())
+        } yield {
+          val value = row.decode[String]("value")
+          val duration = row.decode[Duration]("duration")
+          (value, duration)
+        }
+
+        result.toTry shouldEqual ("value", duration).some.pure[Try]
       }
     }
 

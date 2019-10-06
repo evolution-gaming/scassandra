@@ -5,7 +5,7 @@ import java.time.Instant
 import java.util.Date
 
 import cats.Contravariant
-import com.datastax.driver.core.SettableData
+import com.datastax.driver.core.{Duration, SettableData, TypeCodec}
 import com.evolutiongaming.util.ToJava
 
 trait EncodeByIdx[-A] {
@@ -96,6 +96,12 @@ object EncodeByIdx {
     def apply[B <: SettableData[B]](data: B, idx: Int, value: Array[Byte]) = {
       val bytes = ByteBuffer.wrap(value)
       data.setBytes(idx, bytes)
+    }
+  }
+
+  implicit val durationEncodeByIdx: EncodeByIdx[Duration] = new EncodeByIdx[Duration] {
+    def apply[B <: SettableData[B]](data: B, idx: Int, value: Duration) = {
+      data.set(idx, value, TypeCodec.duration())
     }
   }
 

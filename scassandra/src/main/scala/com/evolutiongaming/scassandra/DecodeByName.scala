@@ -3,7 +3,7 @@ package com.evolutiongaming.scassandra
 import java.time.Instant
 
 import cats.Functor
-import com.datastax.driver.core.GettableByNameData
+import com.datastax.driver.core.{Duration, GettableByNameData, TypeCodec}
 import com.evolutiongaming.util.ToScala
 
 trait DecodeByName[A] {
@@ -88,6 +88,12 @@ object DecodeByName {
     (data: GettableByNameData, name: String) => {
       val bytes = data.getBytes(name)
       bytes.array()
+    }
+  }
+
+  implicit val durationDecodeByName: DecodeByName[Duration] = {
+    (data: GettableByNameData, name: String) => {
+      data.get(name, TypeCodec.duration())
     }
   }
 
