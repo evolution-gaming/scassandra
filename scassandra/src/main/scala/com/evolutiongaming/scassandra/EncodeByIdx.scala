@@ -1,11 +1,11 @@
 package com.evolutiongaming.scassandra
 
 import java.nio.ByteBuffer
-import java.time.Instant
+import java.time.{Instant, LocalDate => LocalDateJ}
 import java.util.Date
 
 import cats.Contravariant
-import com.datastax.driver.core.{Duration, SettableData, TypeCodec}
+import com.datastax.driver.core.{Duration, LocalDate, SettableData, TypeCodec}
 import com.evolutiongaming.util.ToJava
 
 trait EncodeByIdx[-A] {
@@ -102,6 +102,18 @@ object EncodeByIdx {
   implicit val durationEncodeByIdx: EncodeByIdx[Duration] = new EncodeByIdx[Duration] {
     def apply[B <: SettableData[B]](data: B, idx: Int, value: Duration) = {
       data.set(idx, value, TypeCodec.duration())
+    }
+  }
+
+  implicit val localDateEncodeByIdx: EncodeByIdx[LocalDate] = new EncodeByIdx[LocalDate] {
+    def apply[B <: SettableData[B]](data: B, idx: Int, value: LocalDate) = {
+      data.setDate(idx, value)
+    }
+  }
+
+  implicit val localDateJEncodeByIdx: EncodeByIdx[LocalDateJ] = {
+    EncodeByIdx[LocalDate].contramap { a: LocalDateJ =>
+      LocalDate.fromDaysSinceEpoch(a.toEpochDay.toInt)
     }
   }
 

@@ -1,9 +1,9 @@
 package com.evolutiongaming.scassandra
 
-import java.time.Instant
+import java.time.{Instant, LocalDate => LocalDateJ}
 
 import cats.Functor
-import com.datastax.driver.core.{Duration, GettableByIndexData, TypeCodec}
+import com.datastax.driver.core.{Duration, GettableByIndexData, LocalDate, TypeCodec}
 import com.evolutiongaming.util.ToScala
 
 trait DecodeByIdx[A] {
@@ -89,6 +89,14 @@ object DecodeByIdx {
     (data: GettableByIndexData, idx: Int) => {
       data.get(idx, TypeCodec.duration())
     }
+  }
+
+  implicit val localDateDecodeByIdx: DecodeByIdx[LocalDate] = {
+    (data: GettableByIndexData, idx: Int) => data.getDate(idx)
+  }
+
+  implicit val localDateJDecodeByIdx: DecodeByIdx[LocalDateJ] = {
+    DecodeByIdx[LocalDate].map { a => LocalDateJ.ofEpochDay(a.getDaysSinceEpoch.toLong) }
   }
 
 

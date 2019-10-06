@@ -1,9 +1,9 @@
 package com.evolutiongaming.scassandra
 
-import java.time.Instant
+import java.time.{Instant, LocalDate => LocalDateJ}
 import java.time.temporal.ChronoUnit
 
-import com.datastax.driver.core.Duration
+import com.datastax.driver.core.{Duration, LocalDate}
 import com.evolutiongaming.scassandra.syntax._
 import org.scalatest.{Matchers, WordSpec}
 
@@ -44,7 +44,9 @@ class EncodeDecodeByNameSpec extends WordSpec with Matchers {
         ("Float", of(0f)),
         ("Instant", of(Instant.now().truncatedTo(ChronoUnit.MILLIS))),
         ("Set", of(Set("str"))),
-        ("Duration", of(Duration.newInstance(1, 1, 1))))
+        ("Duration", of(Duration.newInstance(1, 1, 1))),
+        ("LocalDate", of(LocalDate.fromYearMonthDay(2019, 10, 4))),
+        ("LocalDateJ", of(LocalDateJ.of(2019, 10, 4))))
     } {
       s"encode & decode $name" in test()
     }
