@@ -25,7 +25,8 @@ final case class CassandraConfig(
   loadBalancing: Option[LoadBalancingConfig] = None,
   speculativeExecution: Option[SpeculativeExecutionConfig] = None,
   compression: Compression = Compression.NONE,
-  logQueries: Boolean = false)
+  logQueries: Boolean = false,
+  jmxReporting: Boolean = false)
 
 
 object CassandraConfig {
@@ -81,6 +82,7 @@ object CassandraConfig {
       loadBalancing = loadBalancing,
       speculativeExecution = speculativeExecution,
       compression = get[Compression]("compression") getOrElse default.compression,
-      logQueries = get[Boolean]("log-queries") getOrElse default.logQueries)
+      logQueries = get[Boolean]("log-queries") getOrElse default.logQueries,
+      jmxReporting = get[Boolean]("jmx-reporting") getOrElse default.jmxReporting)
   }
 }
