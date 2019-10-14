@@ -37,6 +37,7 @@ object CreateClusterJ {
     config.authentication.foreach { x => builder.withCredentials(x.username, x.password) }
     config.loadBalancing.foreach { x => x.asJava.foreach { builder.withLoadBalancingPolicy } }
     config.speculativeExecution.foreach { x => builder.withSpeculativeExecutionPolicy(x.asJava) }
+    if (!config.jmxReporting) builder.withoutJMXReporting()
 
     val cluster = builder.build()
 
