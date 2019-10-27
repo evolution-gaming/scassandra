@@ -21,9 +21,21 @@ object ToCql {
   implicit val strToCql: ToCql[String] = (a: String) => a
 
 
+  @deprecated("use implicits instead", "2.0.5")
   object Ops {
 
+    @deprecated("use implicits.IdOpsToCql instead", "2.0.5")
     implicit class IdOps[A](val self: A) extends AnyVal {
+
+      def toCql(implicit toCql: ToCql[A]): String = implicits.IdOpsToCql(self).toCql
+    }
+  }
+
+
+  object implicits {
+
+    implicit class IdOpsToCql[A](val self: A) extends AnyVal {
+
       def toCql(implicit toCql: ToCql[A]): String = ToCql(self)
     }
   }
