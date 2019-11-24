@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
 
-  val `cassandra-driver`   = "com.datastax.cassandra"  % "cassandra-driver-core" % "3.7.2"
+  val `cassandra-driver`   = "com.datastax.cassandra"  % "cassandra-driver-core" % "3.8.0"
   val scalatest            = "org.scalatest"          %% "scalatest"             % "3.0.8"
   val `executor-tools`     = "com.evolutiongaming"    %% "executor-tools"        % "1.0.2"
   val `config-tools`       = "com.evolutiongaming"    %% "config-tools"          % "1.0.4"
@@ -17,7 +17,7 @@ object Dependencies {
   }
 
   object Slf4j {
-    private val version = "1.7.28"
+    private val version = "1.7.29"
     val api                = "org.slf4j" % "slf4j-api"        % version
     val `log4j-over-slf4j` = "org.slf4j" % "log4j-over-slf4j" % version
   }
