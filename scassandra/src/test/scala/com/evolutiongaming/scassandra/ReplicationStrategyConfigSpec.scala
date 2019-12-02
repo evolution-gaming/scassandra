@@ -6,10 +6,11 @@ import com.evolutiongaming.scassandra.ReplicationStrategyConfig._
 import com.evolutiongaming.scassandra.syntax._
 import com.evolutiongaming.nel.Nel
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{FunSuite, Matchers}
 import pureconfig.ConfigSource
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class ReplicationStrategyConfigSpec extends FunSuite with Matchers {
+class ReplicationStrategyConfigSpec extends AnyFunSuite with Matchers {
 
   test("apply from empty config") {
     val config = ConfigFactory.empty()

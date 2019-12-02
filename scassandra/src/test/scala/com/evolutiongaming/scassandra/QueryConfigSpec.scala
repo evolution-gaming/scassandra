@@ -3,12 +3,13 @@ package com.evolutiongaming.scassandra
 import cats.implicits._
 import com.datastax.driver.core.ConsistencyLevel
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{FunSuite, Matchers}
 import pureconfig.ConfigSource
 
 import scala.concurrent.duration._
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class QueryConfigSpec extends FunSuite with Matchers {
+class QueryConfigSpec extends AnyFunSuite with Matchers {
 
   test("apply from empty config") {
     val config = ConfigFactory.empty()

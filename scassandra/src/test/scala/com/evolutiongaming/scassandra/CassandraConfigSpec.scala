@@ -5,10 +5,11 @@ import com.datastax.driver.core.ProtocolOptions.Compression
 import com.datastax.driver.core.ProtocolVersion
 import com.evolutiongaming.nel.Nel
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{FunSuite, Matchers}
 import pureconfig.ConfigSource
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 
-class CassandraConfigSpec extends FunSuite with Matchers {
+class CassandraConfigSpec extends AnyFunSuite with Matchers {
 
   test("apply from empty config") {
     val config = ConfigFactory.empty()

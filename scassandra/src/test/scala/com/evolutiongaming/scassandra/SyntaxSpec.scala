@@ -1,9 +1,10 @@
 package com.evolutiongaming.scassandra
 
 import com.evolutiongaming.scassandra.syntax._
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class SyntaxSpec extends WordSpec with Matchers {
+class SyntaxSpec extends AnyWordSpec with Matchers {
 
   "Syntax" should {
 

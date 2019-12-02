@@ -4,9 +4,10 @@ import com.datastax.driver.core._
 import com.datastax.driver.core.exceptions.DriverException
 import com.datastax.driver.core.policies.RetryPolicy.RetryDecision
 import com.datastax.driver.core.querybuilder.QueryBuilder
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class NextHostRetryPolicySpec extends WordSpec with Matchers {
+class NextHostRetryPolicySpec extends AnyWordSpec with Matchers {
 
   "NextHostRetryPolicy" should {
 
