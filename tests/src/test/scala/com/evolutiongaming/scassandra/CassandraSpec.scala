@@ -8,12 +8,14 @@ import com.evolutiongaming.cassandra.StartCassandra
 import com.evolutiongaming.catshelper.CatsHelper._
 import com.evolutiongaming.scassandra.IOSuite._
 import com.evolutiongaming.scassandra.syntax._
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterAll
 
 import scala.util.Try
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 
-class CassandraSpec extends WordSpec with BeforeAndAfterAll with Matchers {
+class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
 
   private val config = CassandraConfig.Default
 
