@@ -34,7 +34,7 @@ object CreateClusterJ {
       .withPort(port)
 
     config.protocolVersion foreach { x => builder.withProtocolVersion(x) }
-    config.authentication.foreach { x => builder.withCredentials(x.username, x.password) }
+    config.authentication.foreach { x => builder.withCredentials(x.username, x.password.value) }
     config.loadBalancing.foreach { x => x.asJava.foreach { builder.withLoadBalancingPolicy } }
     config.speculativeExecution.foreach { x => builder.withSpeculativeExecutionPolicy(x.asJava) }
     if (!config.jmxReporting) builder.withoutJMXReporting()
