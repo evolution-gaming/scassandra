@@ -8,7 +8,7 @@ object Dependencies {
   val `config-tools`       = "com.evolutiongaming"    %% "config-tools"          % "1.0.4"
   val nel                  = "com.evolutiongaming"    %% "nel"                   % "1.3.4"
   val `cassandra-launcher` = "com.evolutiongaming"    %% "cassandra-launcher"    % "0.0.3"
-  val `cats-helper`        = "com.evolutiongaming"    %% "cats-helper"           % "1.7.1"
+  val `cats-helper`        = "com.evolutiongaming"    %% "cats-helper"           % "2.0.0"
 
   object Logback {
     private val version = "1.2.3"
@@ -17,19 +17,18 @@ object Dependencies {
   }
 
   object Slf4j {
-    private val version = "1.7.29"
+    private val version = "1.7.30"
     val api                = "org.slf4j" % "slf4j-api"        % version
     val `log4j-over-slf4j` = "org.slf4j" % "log4j-over-slf4j" % version
   }
 
   object Cats {
-    private val version = "2.0.0"
-    val core   = "org.typelevel" %% "cats-core"   % version
-    val effect = "org.typelevel" %% "cats-effect" % "2.0.0"
+    val core   = "org.typelevel" %% "cats-core"   % "2.1.1"
+    val effect = "org.typelevel" %% "cats-effect" % "2.1.2"
   }
 
   object Pureconfig {
-    private val version = "0.12.1"
+    private val version = "0.12.3"
     val pureconfig = "com.github.pureconfig" %% "pureconfig"      % version
     val cats       = "com.github.pureconfig" %% "pureconfig-cats" % version
   }
