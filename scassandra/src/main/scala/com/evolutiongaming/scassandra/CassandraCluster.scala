@@ -83,7 +83,7 @@ object CassandraCluster {
 
   implicit class CassandraClusterOps[F[_]](val self: CassandraCluster[F]) extends AnyVal {
 
-    def mapK[G[_]](f: F ~> G)(implicit F: Sync[F], G: Sync[G]): CassandraCluster[G] = new CassandraCluster[G] {
+    def mapK[G[_]](f: F ~> G)(implicit G: Sync[G]): CassandraCluster[G] = new CassandraCluster[G] {
 
       def connect = {
         for {

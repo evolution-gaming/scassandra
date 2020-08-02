@@ -2,7 +2,6 @@ package com.evolutiongaming.scassandra
 
 import cats.Parallel
 import cats.effect.{Concurrent, ContextShift, IO, Timer}
-import cats.implicits._
 import com.evolutiongaming.scassandra.util.FromGFuture
 import org.scalatest.Succeeded
 
@@ -21,7 +20,7 @@ object IOSuite {
   implicit val fromGFutureIO: FromGFuture[IO] = FromGFuture.lift[IO]
 
   def runIO[A](io: IO[A], timeout: FiniteDuration = Timeout): Future[Succeeded.type] = {
-    io.timeout(timeout).as(Succeeded).unsafeToFuture
+    io.timeout(timeout).as(Succeeded).unsafeToFuture()
   }
 
   implicit class IOOps[A](val self: IO[A]) extends AnyVal {
