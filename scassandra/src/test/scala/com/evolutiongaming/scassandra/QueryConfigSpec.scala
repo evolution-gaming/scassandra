@@ -1,6 +1,4 @@
 package com.evolutiongaming.scassandra
-
-import cats.implicits._
 import com.datastax.driver.core.ConsistencyLevel
 import com.typesafe.config.ConfigFactory
 import pureconfig.ConfigSource

@@ -2,7 +2,7 @@ package com.evolutiongaming.scassandra
 
 
 import cats.effect.{Resource, Sync}
-import cats.implicits._
+import cats.syntax.all._
 import cats.~>
 import com.datastax.driver.core.{Session => SessionJ, _}
 import com.evolutiongaming.scassandra.util.FromGFuture
