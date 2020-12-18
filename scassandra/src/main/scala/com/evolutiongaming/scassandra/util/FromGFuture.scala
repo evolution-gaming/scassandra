@@ -3,7 +3,7 @@ package com.evolutiongaming.scassandra.util
 import java.util.concurrent.Executor
 
 import cats.effect.{Async, Sync}
-import cats.implicits._
+import cats.syntax.all._
 import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFuture}
 
 trait FromGFuture[F[_]] {

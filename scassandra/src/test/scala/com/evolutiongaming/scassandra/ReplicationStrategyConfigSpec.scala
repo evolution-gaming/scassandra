@@ -1,6 +1,6 @@
 package com.evolutiongaming.scassandra
 
-import cats.implicits._
+import cats.syntax.all._
 import com.evolutiongaming.scassandra.ReplicationStrategyConfig.NetworkTopology.DcFactor
 import com.evolutiongaming.scassandra.ReplicationStrategyConfig._
 import com.evolutiongaming.scassandra.syntax._
