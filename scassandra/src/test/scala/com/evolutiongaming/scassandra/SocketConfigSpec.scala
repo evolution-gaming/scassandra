@@ -1,6 +1,6 @@
 package com.evolutiongaming.scassandra
 
-import cats.implicits._
+import cats.syntax.all._
 import com.typesafe.config.ConfigFactory
 import pureconfig.ConfigSource
 

@@ -1,6 +1,6 @@
 package com.evolutiongaming.scassandra.util
 
-import cats.implicits._
+import cats.syntax.all._
 import pureconfig.error.{CannotParse, ConfigReaderFailures}
 import pureconfig.{ConfigCursor, ConfigReader}
 
