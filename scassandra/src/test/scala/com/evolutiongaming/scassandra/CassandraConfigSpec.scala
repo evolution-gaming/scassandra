@@ -1,6 +1,6 @@
 package com.evolutiongaming.scassandra
 
-import cats.implicits._
+import cats.syntax.all._
 import com.datastax.driver.core.ProtocolOptions.Compression
 import com.datastax.driver.core.ProtocolVersion
 import com.evolutiongaming.nel.Nel

@@ -1,7 +1,7 @@
 package com.evolutiongaming.scassandra
 
 import cats.effect.Sync
-import cats.implicits._
+import cats.syntax.all._
 import cats.{FlatMap, ~>}
 import com.datastax.driver.core.{KeyspaceMetadata => KeyspaceMetadataJ, Metadata => MetadataJ, TableMetadata => TableMetadataJ}
 import com.evolutiongaming.util.ToScala
