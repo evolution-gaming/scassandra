@@ -3,7 +3,7 @@ package com.evolutiongaming.scassandra
 import cats.effect.Sync
 import cats.implicits._
 import cats.{FlatMap, ~>}
-import com.datastax.driver.core.{KeyspaceMetadata => KeyspaceMetadataJ, Metadata => MetadataJ, TableMetadata => TableMetadataJ}
+import com.datastax.driver.core.{UserType, KeyspaceMetadata => KeyspaceMetadataJ, Metadata => MetadataJ, TableMetadata => TableMetadataJ}
 import com.evolutiongaming.util.ToScala
 
 trait Metadata[F[_]] {
@@ -98,6 +98,8 @@ trait KeyspaceMetadata[F[_]] {
   def virtual: Boolean
 
   def replication: F[Map[String, String]]
+
+  def userTypes: F[List[UserType]]
 }
 
 object KeyspaceMetadata {
@@ -138,6 +140,10 @@ object KeyspaceMetadata {
       val replication = {
         Sync[F].delay { ToScala.from(keyspaceMetadata.getReplication).toMap }
       }
+
+      val userTypes = {
+        Sync[F].delay { ToScala.from(keyspaceMetadata.getUserTypes).toList }
+      }
     }
   }
 
@@ -161,6 +167,8 @@ object KeyspaceMetadata {
       def virtual = self.virtual
 
       def replication = f(self.replication)
+
+      def userTypes = f(self.userTypes)
     }
   }
 }

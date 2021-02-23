@@ -213,6 +213,10 @@ class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
             ("class", "org.apache.cassandra.locator.SimpleStrategy"),
             ("replication_factor", "1"))
         }
+
+        "userTypes" in {
+          keyspaceMetadata1.userTypes.toTry.get shouldEqual List.empty
+        }
       }
     }
 
