@@ -9,6 +9,7 @@ object Dependencies {
   val nel                  = "com.evolutiongaming"    %% "nel"                   % "1.3.4"
   val `cassandra-launcher` = "com.evolutiongaming"    %% "cassandra-launcher"    % "0.0.4"
   val `cats-helper`        = "com.evolutiongaming"    %% "cats-helper"           % "2.0.4"
+  val sstream              = "com.evolutiongaming"    %% "sstream"               % "0.2.1"
 
   object Logback {
     private val version = "1.2.3"
@@ -23,8 +24,8 @@ object Dependencies {
   }
 
   object Cats {
-    val core   = "org.typelevel" %% "cats-core"   % "2.1.1"
-    val effect = "org.typelevel" %% "cats-effect" % "2.1.4"
+    val core   = "org.typelevel" %% "cats-core"   % "2.4.2"
+    val effect = "org.typelevel" %% "cats-effect" % "2.3.3"
   }
 
   object Pureconfig {

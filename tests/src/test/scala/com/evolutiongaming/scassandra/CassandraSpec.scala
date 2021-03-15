@@ -3,12 +3,13 @@ package com.evolutiongaming.scassandra
 import cats.arrow.FunctionK
 import cats.effect.{IO, Resource}
 import cats.implicits._
-import com.datastax.driver.core.Duration
+import com.datastax.driver.core.{Duration, Row}
 import com.evolutiongaming.cassandra.StartCassandra
 import com.evolutiongaming.catshelper.CatsHelper._
 import com.evolutiongaming.scassandra.IOSuite._
 import com.evolutiongaming.scassandra.syntax._
 import org.scalatest.BeforeAndAfterAll
+import com.evolutiongaming.sstream.Stream._
 
 import scala.util.Try
 import org.scalatest.matchers.should.Matchers
@@ -130,6 +131,13 @@ class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
       }
 
       "select" in {
+
+        def decodeRow(row: Row) = {
+          val value = row.decode[String]("value")
+          val duration = row.decode[Duration]("duration")
+          (value, duration)
+        }
+
         val query = s"SELECT value, duration FROM $keyspace.$table WHERE key = ?"
         val result = for {
           prepared <- session.prepare(query)
@@ -137,13 +145,19 @@ class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
           result   <- session.execute(bound)
         } yield for {
           row <- Option(result.one())
-        } yield {
-          val value = row.decode[String]("value")
-          val duration = row.decode[Duration]("duration")
-          (value, duration)
-        }
+        } yield decodeRow(row)
 
         result.toTry shouldEqual ("value", duration).some.pure[Try]
+
+        val resultStream = for {
+          resultSet  <- session.execute(query, Map("key" -> "key"))
+          stream = resultSet.stream
+          row <- stream.first
+        } yield for {
+          row <- row
+        } yield decodeRow(row)
+
+        resultStream.toTry shouldEqual ("value", duration).some.pure[Try]
       }
     }
 

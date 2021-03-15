@@ -30,6 +30,7 @@ lazy val scassandra = (project in file("scassandra")
     Cats.effect,
     `config-tools`,
     `cats-helper`,
+    sstream,
     scalatest % Test,
     nel,
     `cassandra-driver`,
