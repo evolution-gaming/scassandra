@@ -9,7 +9,6 @@ import com.evolutiongaming.catshelper.CatsHelper._
 import com.evolutiongaming.scassandra.IOSuite._
 import com.evolutiongaming.scassandra.syntax._
 import org.scalatest.BeforeAndAfterAll
-import com.evolutiongaming.scassandra.ResultSet._
 import com.evolutiongaming.sstream.Stream._
 
 import scala.util.Try
