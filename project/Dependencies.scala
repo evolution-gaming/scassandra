@@ -25,7 +25,7 @@ object Dependencies {
 
   object Cats {
     val core   = "org.typelevel" %% "cats-core"   % "2.4.2"
-    val effect = "org.typelevel" %% "cats-effect" % "2.3.3"
+    val effect = "org.typelevel" %% "cats-effect" % "2.5.0"
   }
 
   object Pureconfig {
