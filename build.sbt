@@ -11,7 +11,8 @@ lazy val commonSettings = Seq(
   Compile / doc / scalacOptions ++= Seq("-groups", "-implicits", "-no-link-warnings"),
   publishTo := Some(Resolver.evolutionReleases),
   licenses := Seq(("MIT", url("https://opensource.org/licenses/MIT"))),
-  releaseCrossBuild := true)
+  releaseCrossBuild := true,
+  scalacOptsFailOnWarn := Some(false))
 
 lazy val root = (project in file(".")
   settings (name := "scassandra")
