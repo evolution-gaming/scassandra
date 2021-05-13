@@ -5,12 +5,14 @@ import com.datastax.driver.core.ProtocolVersion
 import com.evolutiongaming.config.ConfigHelper._
 import com.evolutiongaming.nel.Nel
 import com.evolutiongaming.scassandra.ConfigHelpers._
-import com.evolutiongaming.scassandra.util.{ConfigReaderFromEnum}
+import com.evolutiongaming.scassandra.util.ConfigReaderFromEnum
 import com.typesafe.config.Config
 import pureconfig.{ConfigCursor, ConfigReader, ConfigSource}
 
 /**
   * See [[https://docs.datastax.com/en/developer/java-driver/3.5/manual/#setting-up-the-driver]]
+  *
+  * If a cloud secure connect bundle is specified, the contact points and port settings will be ignored.
   */
 final case class CassandraConfig(
   name: String = "cluster",
@@ -26,7 +28,114 @@ final case class CassandraConfig(
   speculativeExecution: Option[SpeculativeExecutionConfig] = None,
   compression: Compression = Compression.NONE,
   logQueries: Boolean = false,
-  jmxReporting: Boolean = false)
+  jmxReporting: Boolean = false,
+  cloudSecureConnectBundleFilePath: Option[String] = None) {
+
+  //for binary compatibility
+  private[scassandra] def this(
+    name: String,
+    port: Int,
+    contactPoints: Nel[String],
+    protocolVersion: Option[ProtocolVersion],
+    pooling: PoolingConfig,
+    query: QueryConfig,
+    reconnection: ReconnectionConfig,
+    socket: SocketConfig,
+    authentication: Option[AuthenticationConfig],
+    loadBalancing: Option[LoadBalancingConfig],
+    speculativeExecution: Option[SpeculativeExecutionConfig],
+    compression: Compression,
+    logQueries: Boolean,
+    jmxReporting: Boolean,
+  ) = {
+    this(
+      name = name,
+      port = port,
+      contactPoints = contactPoints,
+      protocolVersion = protocolVersion,
+      pooling = pooling,
+      query = query,
+      reconnection = reconnection,
+      socket = socket,
+      authentication = authentication,
+      loadBalancing = loadBalancing,
+      speculativeExecution = speculativeExecution,
+      compression = compression,
+      logQueries = logQueries,
+      jmxReporting = jmxReporting,
+      cloudSecureConnectBundleFilePath = None,
+    )
+  }
+
+  //for binary compatibility
+  def copy(
+    name: String = this.name,
+    port: Int = this.port,
+    contactPoints: Nel[String] = this.contactPoints,
+    protocolVersion: Option[ProtocolVersion] = this.protocolVersion,
+    pooling: PoolingConfig = this.pooling,
+    query: QueryConfig = this.query,
+    reconnection: ReconnectionConfig = this.reconnection,
+    socket: SocketConfig = this.socket,
+    authentication: Option[AuthenticationConfig] = this.authentication,
+    loadBalancing: Option[LoadBalancingConfig] = this.loadBalancing,
+    speculativeExecution: Option[SpeculativeExecutionConfig] = this.speculativeExecution,
+    compression: Compression = this.compression,
+    logQueries: Boolean = this.logQueries,
+    jmxReporting: Boolean = this.jmxReporting,
+    cloudSecureConnectBundleFilePath: Option[String] = this.cloudSecureConnectBundleFilePath,
+  ): CassandraConfig = new CassandraConfig(
+    name = name,
+    port = port,
+    contactPoints = contactPoints,
+    protocolVersion = protocolVersion,
+    pooling = pooling,
+    query = query,
+    reconnection = reconnection,
+    socket = socket,
+    authentication = authentication,
+    loadBalancing = loadBalancing,
+    speculativeExecution = speculativeExecution,
+    compression = compression,
+    logQueries = logQueries,
+    jmxReporting = jmxReporting,
+    cloudSecureConnectBundleFilePath = cloudSecureConnectBundleFilePath,
+  )
+
+  //for binary compatibility
+  private[scassandra] def copy(
+    name: String,
+    port: Int,
+    contactPoints: Nel[String],
+    protocolVersion: Option[ProtocolVersion],
+    pooling: PoolingConfig,
+    query: QueryConfig,
+    reconnection: ReconnectionConfig,
+    socket: SocketConfig,
+    authentication: Option[AuthenticationConfig],
+    loadBalancing: Option[LoadBalancingConfig],
+    speculativeExecution: Option[SpeculativeExecutionConfig],
+    compression: Compression,
+    logQueries: Boolean,
+    jmxReporting: Boolean,
+  ): CassandraConfig = new CassandraConfig(
+    name = name,
+    port = port,
+    contactPoints = contactPoints,
+    protocolVersion = protocolVersion,
+    pooling = pooling,
+    query = query,
+    reconnection = reconnection,
+    socket = socket,
+    authentication = authentication,
+    loadBalancing = loadBalancing,
+    speculativeExecution = speculativeExecution,
+    compression = compression,
+    logQueries = logQueries,
+    jmxReporting = jmxReporting,
+    cloudSecureConnectBundleFilePath = this.cloudSecureConnectBundleFilePath,
+  )
+}
 
 
 object CassandraConfig {
@@ -54,7 +163,41 @@ object CassandraConfig {
   @deprecated("use ConfigReader instead", "1.1.5")
   def apply(config: Config, default: => CassandraConfig): CassandraConfig = fromConfig(config, default)
 
-  
+  //for binary compatibility
+  private[scassandra] def apply(
+    name: String,
+    port: Int,
+    contactPoints: Nel[String],
+    protocolVersion: Option[ProtocolVersion],
+    pooling: PoolingConfig,
+    query: QueryConfig,
+    reconnection: ReconnectionConfig,
+    socket: SocketConfig,
+    authentication: Option[AuthenticationConfig],
+    loadBalancing: Option[LoadBalancingConfig],
+    speculativeExecution: Option[SpeculativeExecutionConfig],
+    compression: Compression,
+    logQueries: Boolean,
+    jmxReporting: Boolean,
+  ): CassandraConfig = CassandraConfig(
+    name = name,
+    port = port,
+    contactPoints = contactPoints,
+    cloudSecureConnectBundleFilePath = None,
+    protocolVersion = protocolVersion,
+    pooling = pooling,
+    query = query,
+    reconnection = reconnection,
+    socket = socket,
+    authentication = authentication,
+    loadBalancing = loadBalancing,
+    speculativeExecution = speculativeExecution,
+    compression = compression,
+    logQueries = logQueries,
+    jmxReporting = jmxReporting,
+  )
+
+
   def fromConfig(config: Config, default: => CassandraConfig): CassandraConfig = {
 
     val source = ConfigSource.fromConfig(config)
@@ -73,6 +216,13 @@ object CassandraConfig {
       name = get[String]("name") getOrElse default.name,
       port = get[Int]("port") getOrElse default.port,
       contactPoints = config.getOpt[Nel[String]]("contact-points") getOrElse default.contactPoints,
+      cloudSecureConnectBundleFilePath = config.getOpt[String](
+        "cloud-secure-connect-bundle-file-path",
+        /*
+        filtering out empty strings in case an unconditional env var is used in config and we want to be able
+        to turn off the bundle loading with an empty string value
+         */
+      ).filter(_.nonEmpty),
       protocolVersion = get[ProtocolVersion]("protocol-version").toOption orElse default.protocolVersion,
       pooling = pooling,
       query = query,

@@ -5,9 +5,9 @@ import com.datastax.driver.core.ProtocolOptions.Compression
 import com.datastax.driver.core.ProtocolVersion
 import com.evolutiongaming.nel.Nel
 import com.typesafe.config.ConfigFactory
-import pureconfig.ConfigSource
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
+import pureconfig.ConfigSource
 
 class CassandraConfigSpec extends AnyFunSuite with Matchers {
 
@@ -38,6 +38,14 @@ class CassandraConfigSpec extends AnyFunSuite with Matchers {
   test("apply from config with contactPoints as string") {
     val config = ConfigFactory.parseURL(getClass.getResource("cluster_contact-points.conf"))
     val expected = CassandraConfig(contactPoints = Nel("127.0.0.1", "127.0.0.2"))
+    ConfigSource.fromConfig(config).load[CassandraConfig] shouldEqual expected.asRight
+  }
+
+  test("apply from config with cloud secure connect bundle file path") {
+    val config = ConfigFactory.parseURL(getClass.getResource(
+      "cluster_cloud-secure-connect-bundle-file-path.conf",
+    ))
+    val expected = CassandraConfig(cloudSecureConnectBundleFilePath = "/my/path".some)
     ConfigSource.fromConfig(config).load[CassandraConfig] shouldEqual expected.asRight
   }
 }
