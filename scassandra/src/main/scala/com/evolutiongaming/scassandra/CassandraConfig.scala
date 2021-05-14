@@ -29,7 +29,7 @@ final case class CassandraConfig(
   compression: Compression = Compression.NONE,
   logQueries: Boolean = false,
   jmxReporting: Boolean = false,
-  cloudSecureConnectBundleFilePath: Option[String] = None) {
+  cloudSecureConnectBundle: Option[CloudSecureConnectBundleConfig] = None) {
 
   //for binary compatibility
   private[scassandra] def this(
@@ -63,7 +63,7 @@ final case class CassandraConfig(
       compression = compression,
       logQueries = logQueries,
       jmxReporting = jmxReporting,
-      cloudSecureConnectBundleFilePath = None,
+      cloudSecureConnectBundle = None,
     )
   }
 
@@ -83,7 +83,7 @@ final case class CassandraConfig(
     compression: Compression = this.compression,
     logQueries: Boolean = this.logQueries,
     jmxReporting: Boolean = this.jmxReporting,
-    cloudSecureConnectBundleFilePath: Option[String] = this.cloudSecureConnectBundleFilePath,
+    cloudSecureConnectBundle: Option[CloudSecureConnectBundleConfig] = this.cloudSecureConnectBundle,
   ): CassandraConfig = new CassandraConfig(
     name = name,
     port = port,
@@ -99,7 +99,7 @@ final case class CassandraConfig(
     compression = compression,
     logQueries = logQueries,
     jmxReporting = jmxReporting,
-    cloudSecureConnectBundleFilePath = cloudSecureConnectBundleFilePath,
+    cloudSecureConnectBundle = cloudSecureConnectBundle,
   )
 
   //for binary compatibility
@@ -133,7 +133,7 @@ final case class CassandraConfig(
     compression = compression,
     logQueries = logQueries,
     jmxReporting = jmxReporting,
-    cloudSecureConnectBundleFilePath = this.cloudSecureConnectBundleFilePath,
+    cloudSecureConnectBundle = this.cloudSecureConnectBundle,
   )
 }
 
@@ -183,7 +183,7 @@ object CassandraConfig {
     name = name,
     port = port,
     contactPoints = contactPoints,
-    cloudSecureConnectBundleFilePath = None,
+    cloudSecureConnectBundle = None,
     protocolVersion = protocolVersion,
     pooling = pooling,
     query = query,
@@ -211,18 +211,15 @@ object CassandraConfig {
     val authentication = get[AuthenticationConfig]("authentication").toOption orElse default.authentication
     val loadBalancing = get[LoadBalancingConfig]("load-balancing").toOption orElse default.loadBalancing
     val speculativeExecution = get[SpeculativeExecutionConfig]("speculative-execution").toOption orElse default.speculativeExecution
+    val cloudSecureConnectBundle = get[CloudSecureConnectBundleConfig](
+      "cloud-secure-connect-bundle",
+    ).toOption orElse default.cloudSecureConnectBundle
 
     CassandraConfig(
       name = get[String]("name") getOrElse default.name,
       port = get[Int]("port") getOrElse default.port,
       contactPoints = config.getOpt[Nel[String]]("contact-points") getOrElse default.contactPoints,
-      cloudSecureConnectBundleFilePath = config.getOpt[String](
-        "cloud-secure-connect-bundle-file-path",
-        /*
-        filtering out empty strings in case an unconditional env var is used in config and we want to be able
-        to turn off the bundle loading with an empty string value
-         */
-      ).filter(_.nonEmpty),
+      cloudSecureConnectBundle = cloudSecureConnectBundle,
       protocolVersion = get[ProtocolVersion]("protocol-version").toOption orElse default.protocolVersion,
       pooling = pooling,
       query = query,

@@ -4,7 +4,7 @@ import com.datastax.driver.core.{QueryLogger, Cluster => ClusterJ}
 import com.evolutiongaming.util.ToJava
 
 import java.io.File
-import java.net.InetSocketAddress
+import java.net.{InetSocketAddress, URL}
 
 object CreateClusterJ {
 
@@ -26,9 +26,14 @@ object CreateClusterJ {
 
     val builder = ClusterJ.builder()
 
-    config.cloudSecureConnectBundleFilePath.fold(
-      builder.addContactPointsWithPorts(ToJava.from(contactPoints.toList))
-    )(bundleFilePath => builder.withCloudSecureConnectBundle(new File(bundleFilePath)))
+    config.cloudSecureConnectBundle match {
+      case Some(CloudSecureConnectBundleConfig.File(path)) =>
+        builder.withCloudSecureConnectBundle(new File(path))
+      case Some(CloudSecureConnectBundleConfig.Url(url))   =>
+        builder.withCloudSecureConnectBundle(new URL(url))
+      case None                                            =>
+        builder.addContactPointsWithPorts(ToJava.from(contactPoints.toList))
+    }
 
     builder
       .withClusterName(clusterName)

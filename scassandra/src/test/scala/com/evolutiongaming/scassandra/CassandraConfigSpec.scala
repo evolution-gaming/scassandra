@@ -43,9 +43,39 @@ class CassandraConfigSpec extends AnyFunSuite with Matchers {
 
   test("apply from config with cloud secure connect bundle file path") {
     val config = ConfigFactory.parseURL(getClass.getResource(
-      "cluster_cloud-secure-connect-bundle-file-path.conf",
+      "cluster_cloud-secure-connect-bundle-file.conf",
     ))
-    val expected = CassandraConfig(cloudSecureConnectBundleFilePath = "/my/path".some)
+    val expected = CassandraConfig(
+      cloudSecureConnectBundle = CloudSecureConnectBundleConfig.File("/my/path").some,
+    )
+    ConfigSource.fromConfig(config).load[CassandraConfig] shouldEqual expected.asRight
+  }
+
+  test("apply from config with cloud secure connect bundle url") {
+    val config = ConfigFactory.parseURL(getClass.getResource(
+      "cluster_cloud-secure-connect-bundle-url.conf",
+    ))
+    val expected = CassandraConfig(
+      cloudSecureConnectBundle = CloudSecureConnectBundleConfig.Url("http://my.ws").some,
+    )
+    ConfigSource.fromConfig(config).load[CassandraConfig] shouldEqual expected.asRight
+  }
+
+  test("apply from config with cloud secure connect bundle with empty values") {
+    val config = ConfigFactory.parseURL(getClass.getResource(
+      "cluster_cloud-secure-connect-bundle-empty-values.conf",
+    ))
+    val expected = CassandraConfig()
+    ConfigSource.fromConfig(config).load[CassandraConfig] shouldEqual expected.asRight
+  }
+
+  test("apply from config with cloud secure connect bundle with partially empty values") {
+    val config = ConfigFactory.parseURL(getClass.getResource(
+      "cluster_cloud-secure-connect-bundle-partial-empty.conf",
+    ))
+    val expected = CassandraConfig(
+      cloudSecureConnectBundle = CloudSecureConnectBundleConfig.File("/my/path").some,
+    )
     ConfigSource.fromConfig(config).load[CassandraConfig] shouldEqual expected.asRight
   }
 }
