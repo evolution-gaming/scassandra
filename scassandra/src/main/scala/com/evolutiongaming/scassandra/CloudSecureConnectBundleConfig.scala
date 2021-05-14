@@ -39,5 +39,5 @@ object CloudSecureConnectBundleConfig {
   /**
     * Cloud secure connect bundle file will be loaded from an URL
     */
-  final case class Url(url: String) extends CloudSecureConnectBundleConfig
+  final case class Url(value: String) extends CloudSecureConnectBundleConfig
 }
