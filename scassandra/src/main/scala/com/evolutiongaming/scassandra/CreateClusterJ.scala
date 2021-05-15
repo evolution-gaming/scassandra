@@ -1,9 +1,10 @@
 package com.evolutiongaming.scassandra
 
-import java.net.InetSocketAddress
-
 import com.datastax.driver.core.{QueryLogger, Cluster => ClusterJ}
 import com.evolutiongaming.util.ToJava
+
+import java.io.File
+import java.net.{InetSocketAddress, URL}
 
 object CreateClusterJ {
 
@@ -23,8 +24,18 @@ object CreateClusterJ {
 
     val clusterName = s"${ config.name }-$clusterId"
 
-    val builder = ClusterJ.builder
-      .addContactPointsWithPorts(ToJava.from(contactPoints.toList))
+    val builder = ClusterJ.builder()
+
+    config.cloudSecureConnectBundle match {
+      case Some(CloudSecureConnectBundleConfig.File(path)) =>
+        builder.withCloudSecureConnectBundle(new File(path))
+      case Some(CloudSecureConnectBundleConfig.Url(url))   =>
+        builder.withCloudSecureConnectBundle(new URL(url))
+      case None                                            =>
+        builder.addContactPointsWithPorts(ToJava.from(contactPoints.toList))
+    }
+
+    builder
       .withClusterName(clusterName)
       .withPoolingOptions(config.pooling.asJava)
       .withReconnectionPolicy(config.reconnection.asJava)
