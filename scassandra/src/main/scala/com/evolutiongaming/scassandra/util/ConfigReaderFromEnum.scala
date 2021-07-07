@@ -15,7 +15,7 @@ object ConfigReaderFromEnum {
         values
           .find { _.name equalsIgnoreCase str }
           .fold {
-            val failure = CannotParse(s"Cannot parse ${ tag.runtimeClass } from $str", cursor.location)
+            val failure = CannotParse(s"Cannot parse ${ tag.runtimeClass } from $str", cursor.origin)
             ConfigReaderFailures(failure).asLeft[A]
           } { _.asRight }
       }
