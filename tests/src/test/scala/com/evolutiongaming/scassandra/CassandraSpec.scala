@@ -25,7 +25,7 @@ class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
   private lazy val (cluster, clusterRelease) = {
     val cassandraClusterOf = CassandraClusterOf.of[IO]
     val cassandraCluster = for {
-      cassandraClusterOf <- Resource.liftF(cassandraClusterOf)
+      cassandraClusterOf <- Resource.eval(cassandraClusterOf)
       cassandraCluster   <- cassandraClusterOf(config)
     } yield {
       cassandraCluster.mapK(FunctionK.id)
