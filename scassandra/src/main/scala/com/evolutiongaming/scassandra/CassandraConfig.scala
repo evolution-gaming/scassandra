@@ -29,7 +29,9 @@ final case class CassandraConfig(
   compression: Compression = Compression.NONE,
   logQueries: Boolean = false,
   jmxReporting: Boolean = false,
-  cloudSecureConnectBundle: Option[CloudSecureConnectBundleConfig] = None) {
+  cloudSecureConnectBundle: Option[CloudSecureConnectBundleConfig] = None,
+  metrics: Boolean = false
+) {
 
   //for binary compatibility
   private[scassandra] def this(
@@ -64,77 +66,8 @@ final case class CassandraConfig(
       logQueries = logQueries,
       jmxReporting = jmxReporting,
       cloudSecureConnectBundle = None,
-    )
+      metrics = false)
   }
-
-  //for binary compatibility
-  def copy(
-    name: String = this.name,
-    port: Int = this.port,
-    contactPoints: Nel[String] = this.contactPoints,
-    protocolVersion: Option[ProtocolVersion] = this.protocolVersion,
-    pooling: PoolingConfig = this.pooling,
-    query: QueryConfig = this.query,
-    reconnection: ReconnectionConfig = this.reconnection,
-    socket: SocketConfig = this.socket,
-    authentication: Option[AuthenticationConfig] = this.authentication,
-    loadBalancing: Option[LoadBalancingConfig] = this.loadBalancing,
-    speculativeExecution: Option[SpeculativeExecutionConfig] = this.speculativeExecution,
-    compression: Compression = this.compression,
-    logQueries: Boolean = this.logQueries,
-    jmxReporting: Boolean = this.jmxReporting,
-    cloudSecureConnectBundle: Option[CloudSecureConnectBundleConfig] = this.cloudSecureConnectBundle,
-  ): CassandraConfig = new CassandraConfig(
-    name = name,
-    port = port,
-    contactPoints = contactPoints,
-    protocolVersion = protocolVersion,
-    pooling = pooling,
-    query = query,
-    reconnection = reconnection,
-    socket = socket,
-    authentication = authentication,
-    loadBalancing = loadBalancing,
-    speculativeExecution = speculativeExecution,
-    compression = compression,
-    logQueries = logQueries,
-    jmxReporting = jmxReporting,
-    cloudSecureConnectBundle = cloudSecureConnectBundle,
-  )
-
-  //for binary compatibility
-  private[scassandra] def copy(
-    name: String,
-    port: Int,
-    contactPoints: Nel[String],
-    protocolVersion: Option[ProtocolVersion],
-    pooling: PoolingConfig,
-    query: QueryConfig,
-    reconnection: ReconnectionConfig,
-    socket: SocketConfig,
-    authentication: Option[AuthenticationConfig],
-    loadBalancing: Option[LoadBalancingConfig],
-    speculativeExecution: Option[SpeculativeExecutionConfig],
-    compression: Compression,
-    logQueries: Boolean,
-    jmxReporting: Boolean,
-  ): CassandraConfig = new CassandraConfig(
-    name = name,
-    port = port,
-    contactPoints = contactPoints,
-    protocolVersion = protocolVersion,
-    pooling = pooling,
-    query = query,
-    reconnection = reconnection,
-    socket = socket,
-    authentication = authentication,
-    loadBalancing = loadBalancing,
-    speculativeExecution = speculativeExecution,
-    compression = compression,
-    logQueries = logQueries,
-    jmxReporting = jmxReporting,
-    cloudSecureConnectBundle = this.cloudSecureConnectBundle,
-  )
 }
 
 
@@ -230,6 +163,7 @@ object CassandraConfig {
       speculativeExecution = speculativeExecution,
       compression = get[Compression]("compression") getOrElse default.compression,
       logQueries = get[Boolean]("log-queries") getOrElse default.logQueries,
-      jmxReporting = get[Boolean]("jmx-reporting") getOrElse default.jmxReporting)
+      jmxReporting = get[Boolean]("jmx-reporting") getOrElse default.jmxReporting,
+      metrics = get[Boolean]("metrics") getOrElse default.metrics)
   }
 }

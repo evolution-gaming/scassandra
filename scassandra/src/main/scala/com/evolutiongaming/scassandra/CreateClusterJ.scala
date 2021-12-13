@@ -49,6 +49,7 @@ object CreateClusterJ {
     config.loadBalancing.foreach { x => x.asJava.foreach { builder.withLoadBalancingPolicy } }
     config.speculativeExecution.foreach { x => builder.withSpeculativeExecutionPolicy(x.asJava) }
     if (!config.jmxReporting) builder.withoutJMXReporting()
+    if (!config.metrics) builder.withoutMetrics()
 
     val cluster = builder.build()
 
