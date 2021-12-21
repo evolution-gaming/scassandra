@@ -1,9 +1,9 @@
 package com.evolutiongaming.scassandra
 
-import cats.effect.concurrent.Ref
 import cats.effect.{Resource, Sync}
 import cats.implicits._
 import com.evolutiongaming.scassandra.util.FromGFuture
+import cats.effect.Ref
 
 trait CassandraClusterOf[F[_]] {
 
