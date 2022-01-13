@@ -23,7 +23,7 @@ object FromGFuture {
       def apply[A](future: => ListenableFuture[A]) = {
         for {
           future <- Sync[F].delay { future }
-          result <- Async[F].async[A] { callback =>
+          result <- Async[F].async_[A] { callback =>
             val futureCallback = new FutureCallback[A] {
               def onSuccess(a: A) = callback(a.asRight)
               def onFailure(e: Throwable) = callback(e.asLeft)

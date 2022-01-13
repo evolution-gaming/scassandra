@@ -1,6 +1,6 @@
 package com.evolutiongaming.scassandra
 
-import cats.effect.{Resource, Sync}
+import cats.effect.{MonadCancel, Resource, Sync}
 import cats.implicits._
 import cats.~>
 import com.datastax.driver.core.{Cluster => ClusterJ}
@@ -83,7 +83,7 @@ object CassandraCluster {
 
   implicit class CassandraClusterOps[F[_]](val self: CassandraCluster[F]) extends AnyVal {
 
-    def mapK[G[_]](f: F ~> G)(implicit G: Sync[G]): CassandraCluster[G] = new CassandraCluster[G] {
+    def mapK[G[_]](f: F ~> G)(implicit F: MonadCancel[F, _], G: MonadCancel[G, _]): CassandraCluster[G] = new CassandraCluster[G] {
 
       def connect = {
         for {
