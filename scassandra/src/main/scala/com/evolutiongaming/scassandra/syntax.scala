@@ -1,7 +1,7 @@
 package com.evolutiongaming.scassandra
 
 import cats.effect.implicits._
-import cats.effect.{Concurrent, Sync}
+import cats.effect.{Async, Sync}
 import cats.syntax.all._
 import com.datastax.driver.core._
 import com.evolutiongaming.scassandra.util.FromGFuture
@@ -14,7 +14,7 @@ object syntax {
 
   implicit class ResultSetOps(val self: ResultSet) extends AnyVal {
 
-    def stream[F[_] : Concurrent : FromGFuture]: Stream[F, Row] = {
+    def stream[F[_]: Async: FromGFuture]: Stream[F, Row] = {
       val iterator = self.iterator()
       val fetch = FromGFuture[F].apply { self.fetchMoreResults() }.void
       val fetched = Sync[F].delay { self.isFullyFetched }

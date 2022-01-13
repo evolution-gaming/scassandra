@@ -1,6 +1,6 @@
 package com.evolutiongaming.scassandra
 
-import cats.effect.{Resource, Sync}
+import cats.effect.{Ref, Resource, Sync}
 import cats.implicits._
 import com.evolutiongaming.scassandra.util.FromGFuture
 import cats.effect.Ref
