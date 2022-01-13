@@ -1,11 +1,13 @@
 package com.evolutiongaming.scassandra
 
 import cats.arrow.FunctionK
+import cats.effect.unsafe.implicits
 import cats.effect.{IO, Resource}
 import cats.implicits._
 import com.datastax.driver.core.{Duration, Row}
 import com.evolutiongaming.cassandra.StartCassandra
 import com.evolutiongaming.catshelper.CatsHelper._
+import com.evolutiongaming.catshelper.ToTry
 import com.evolutiongaming.scassandra.IOSuite._
 import com.evolutiongaming.scassandra.syntax._
 import org.scalatest.BeforeAndAfterAll
@@ -22,10 +24,12 @@ class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
 
   private lazy val shutdownCassandra = StartCassandra()
 
+  implicit val toTry: ToTry[IO] = ToTry.ioToTry(implicits.global)
+
   private lazy val (cluster, clusterRelease) = {
     val cassandraClusterOf = CassandraClusterOf.of[IO]
     val cassandraCluster = for {
-      cassandraClusterOf <- Resource.liftF(cassandraClusterOf)
+      cassandraClusterOf <- Resource.eval(cassandraClusterOf)
       cassandraCluster   <- cassandraClusterOf(config)
     } yield {
       cassandraCluster.mapK(FunctionK.id)
@@ -151,7 +155,7 @@ class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
 
         val resultStream = for {
           resultSet  <- session.execute(query, Map("key" -> "key"))
-          stream = resultSet.stream
+          stream = resultSet.stream[IO]
           row <- stream.first
         } yield for {
           row <- row
