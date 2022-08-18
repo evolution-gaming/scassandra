@@ -45,7 +45,7 @@ object FromGFuture {
     }
   }
 
-  implicit def lift[F[_]: Async]: FromGFuture[F] = {
+  implicit def liftFromAsync[F[_]: Async]: FromGFuture[F] = {
 
     new FromGFuture[F] {
 
