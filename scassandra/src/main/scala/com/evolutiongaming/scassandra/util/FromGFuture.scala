@@ -1,10 +1,13 @@
 package com.evolutiongaming.scassandra.util
 
-import java.util.concurrent.Executor
-
 import cats.effect.{Async, Sync}
 import cats.implicits._
-import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFuture}
+import com.evolutiongaming.concurrent.ExecutionContextExecutorServiceFactory
+import com.google.common.util.concurrent.{
+  FutureCallback,
+  Futures,
+  ListenableFuture
+}
 
 trait FromGFuture[F[_]] {
 
@@ -15,13 +18,14 @@ object FromGFuture {
 
   def apply[F[_]](implicit F: FromGFuture[F]): FromGFuture[F] = F
 
-
-  implicit def lift[F[_] : Async](implicit executor: Executor): FromGFuture[F] = {
+  implicit def lift[F[_]: Async]: FromGFuture[F] = {
 
     new FromGFuture[F] {
 
       def apply[A](future: => ListenableFuture[A]) = {
         for {
+          ec <- Async[F].executionContext
+          executor <- ExecutionContextExecutorServiceFactory(ec).pure[F]
           future <- Sync[F].delay { future }
           result <- Async[F].async_[A] { callback =>
             val futureCallback = new FutureCallback[A] {
