@@ -21,7 +21,7 @@ object ReplicationStrategyConfig {
       for {
         cursor <- cursor.asObjectCursor
       } yield {
-        fromConfig(cursor.value.toConfig)
+        fromConfig(cursor.objValue.toConfig)
       }
     }
   }
@@ -88,7 +88,7 @@ object ReplicationStrategyConfig {
         for {
           cursor <- cursor.asObjectCursor
         } yield {
-          fromConfig(cursor.value.toConfig)
+          fromConfig(cursor.objValue.toConfig)
         }
       }
     }
