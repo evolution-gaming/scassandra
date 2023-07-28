@@ -84,7 +84,7 @@ object CassandraConfig {
       for {
         cursor <- cursor.asObjectCursor
       } yield {
-        fromConfig(cursor.value.toConfig, Default)
+        fromConfig(cursor.objValue.toConfig, Default)
       }
     }
   }
