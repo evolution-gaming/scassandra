@@ -10,16 +10,16 @@ jobs:
     strategy:
       matrix:
         scala:
-          - 2.13.7
-          - 2.12.15
+          - 2.13.8
+          - 2.12.17
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - uses: coursier/cache-action@v5
+      - uses: coursier/cache-action@v6
 
       - name: scala
-        uses: olafurpg/setup-scala@v10
+        uses: olafurpg/setup-scala@v11
         with:
           java-version: openjdk@1.11
 
@@ -28,9 +28,10 @@ jobs:
 
       - name: test coverage
         if: success()
+        run: sbt ++${{ matrix.scala }} coverageAggregate coveralls
         env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-        run: sbt ++${{ matrix.scala }} coverageReport coverageAggregate coveralls
+          COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COVERALLS_FLAG_NAME: Scala ${{ matrix.scala }}
 
       - name: slack
         uses: homoluctus/slatify@master
