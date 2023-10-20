@@ -3,7 +3,24 @@ package com.evolutiongaming.scassandra
 import cats.Functor
 import com.datastax.driver.core.GettableByNameData
 
-
+/** Reconstructs `A` from a row received from Cassandra.
+  *
+  * Takes one or more fields from a row and converts them to `A`.
+  *
+  * In other words it could be treated as set of [[DecodeByName]]
+  * and/or [[DecodeByIdx]] instances, where the names or the indices
+  * of a required fields are already build-in.
+  *
+  * Example:
+  * {{{
+  * implicit val userId: DecodeRow[UserId] = DecodeRow("userId")
+  *
+  * session.execute("SELECT userId, amount FROM wallet").flatMap { resultSet =>
+  *   val row = resultSet.one()
+  *   val userId = row.decode[UserId]
+  * }
+  * }}}
+  */
 trait DecodeRow[A] {
 
   def apply(data: GettableByNameData): A
