@@ -13,6 +13,14 @@ import scala.reflect.ClassTag
   * implicit val configReaderProtocolVersion: ConfigReader[ProtocolVersion] =
   *   ConfigReaderFromEnum(ProtocolVersion.values())
   * }}}
+  *
+  * The main difference between this class and build-in reader in pureconfig is
+  * that this one ignores enum case when comparing the values, avoding the
+  * runtime problems when somebody configured `v4` instead of `V4` for example.
+  *
+  * Note, that this class does not detect if there are duplicate enum values,
+  * i.e. if both `v4` and `V4` is a part of this enum, and will just return a
+  * first one encountered.
   */
 object ConfigReaderFromEnum {
 
