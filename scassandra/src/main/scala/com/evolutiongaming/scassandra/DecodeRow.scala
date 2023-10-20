@@ -23,6 +23,11 @@ import com.datastax.driver.core.GettableByNameData
   */
 trait DecodeRow[A] {
 
+  /** Performs the decoding itself.
+    *
+    * Note, that the method might throw an exception if the required fields are
+    * not found in the row passed as `data` argument.
+    */
   def apply(data: GettableByNameData): A
 }
 
