@@ -6,8 +6,17 @@ import cats.Functor
 import com.datastax.driver.core.{Duration, GettableByNameData, LocalDate, TypeCodec}
 import com.evolutiongaming.util.ToScala
 
+/** Reconstruct `A` data type from a named column stored in [[GettableByNameData]]. */
 trait DecodeByName[A] {
 
+  /** Performs the decoding itself.
+    *
+    * Note, that the method might throw an exception if the required column is
+    * not found in a row passed as `data` argument.
+    *
+    * @param data Data row returned by Cassandra.
+    * @param name Name of a column in a row to get a value from.
+    */
   def apply(data: GettableByNameData, name: String): A
 }
 
