@@ -11,8 +11,19 @@ import com.google.common.util.concurrent.{
 
 import java.util.concurrent.Executor
 
+/** Converts any `ListenableFuture[A]` from Google Guava into `F[A]` */
 trait FromGFuture[F[_]] {
 
+  /** Suspends execution of `future` in `F[_]`.
+    *
+    * I.e. there is no need to call `Sync[F].delay` on the argument first and
+    * returned `F[A]` value could be reused as many times as needed.
+    *
+    * Example:
+    * {{{
+    * FromGFuture[F].apply { javaClient.executeAsync("SELECT name FROM users") }
+    * }}}
+    */
   def apply[A](future: => ListenableFuture[A]): F[A]
 }
 
