@@ -9,7 +9,7 @@ object Dependencies {
   val nel                  = "com.evolutiongaming"    %% "nel"                   % "1.3.4"
   val `cassandra-launcher` = "com.evolutiongaming"    %% "cassandra-launcher"    % "0.0.4"
   val `cats-helper`        = "com.evolutiongaming"    %% "cats-helper"           % "3.2.0"
-  val sstream              = "com.evolutiongaming"    %% "sstream"               % "1.0.1"
+  val sstream              = "com.evolutiongaming"    %% "sstream"               % "1.0.2"
 
   object Logback {
     private val version = "1.4.3"
