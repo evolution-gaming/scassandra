@@ -32,11 +32,11 @@ case class DataMock(
   def setUUID(i: Int, v: UUID) = copy(byIdx = byIdx.updated(i, v))
   def setInet(i: Int, v: InetAddress) = copy(byIdx = byIdx.updated(i, v))
   def setList[E](i: Int, v: ListJ[E]) = copy(byIdx = byIdx.updated(i, v))
-  def setList[E](i: Int, v: ListJ[E], elementsClass: Class[E]) = notSupported()
-  def setList[E](i: Int, v: ListJ[E], elementsType: TypeToken[E]) = notSupported()
+  def setList[E](i: Int, v: ListJ[E], elementsClass: Class[E]): DataMock = notSupported()
+  def setList[E](i: Int, v: ListJ[E], elementsType: TypeToken[E]): DataMock = notSupported()
   def setMap[K, V](i: Int, v: MapJ[K, V]) = copy(byIdx = byIdx.updated(i, v))
-  def setMap[K, V](i: Int, v: MapJ[K, V], keysClass: Class[K], valuesClass: Class[V]) = notSupported()
-  def setMap[K, V](i: Int, v: MapJ[K, V], keysType: TypeToken[K], valuesType: TypeToken[V]) = notSupported()
+  def setMap[K, V](i: Int, v: MapJ[K, V], keysClass: Class[K], valuesClass: Class[V]): DataMock = notSupported()
+  def setMap[K, V](i: Int, v: MapJ[K, V], keysType: TypeToken[K], valuesType: TypeToken[V]): DataMock = notSupported()
   def setSet[E](i: Int, v: SetJ[E]) = copy(byIdx = byIdx.updated(i, v))
   def setSet[E](i: Int, v: SetJ[E], elementsClass: Class[E]) = copy(byIdx = byIdx.updated(i, v))
   def setSet[E](i: Int, v: SetJ[E], elementsType: TypeToken[E]) = copy(byIdx = byIdx.updated(i, v))
@@ -98,18 +98,18 @@ case class DataMock(
   def getDecimal(name: String) = byName.getOrElse(name, null).asInstanceOf[BigDecimalJ]
   def getUUID(name: String) = byName.getOrElse(name, null).asInstanceOf[UUID]
   def getInet(name: String) = byName.getOrElse(name, null).asInstanceOf[InetAddress]
-  def getList[T](name: String, elementsClass: Class[T]) = notSupported()
-  def getList[T](name: String, elementsType: TypeToken[T]) = notSupported()
+  def getList[T](name: String, elementsClass: Class[T]): ListJ[T] = notSupported()
+  def getList[T](name: String, elementsType: TypeToken[T]): ListJ[T] = notSupported()
   def getSet[T](name: String, elementsClass: Class[T]) = byName.getOrElse(name, null).asInstanceOf[SetJ[T]]
-  def getSet[T](name: String, elementsType: TypeToken[T]) = notSupported()
-  def getMap[K, V](name: String, keysClass: Class[K], valuesClass: Class[V]) = notSupported()
-  def getMap[K, V](name: String, keysType: TypeToken[K], valuesType: TypeToken[V]) = notSupported()
-  def getUDTValue(name: String) = notSupported()
-  def getTupleValue(name: String) = notSupported()
-  def getObject(name: String) = notSupported()
-  def get[T](name: String, targetClass: Class[T]) = notSupported()
-  def get[T](name: String, targetType: TypeToken[T]) = notSupported()
-  def get[T](name: String, codec: TypeCodec[T]) = byName.getOrElse(name, null).asInstanceOf[T]
+  def getSet[T](name: String, elementsType: TypeToken[T]): SetJ[T] = notSupported()
+  def getMap[K, V](name: String, keysClass: Class[K], valuesClass: Class[V]): MapJ[K, V] = notSupported()
+  def getMap[K, V](name: String, keysType: TypeToken[K], valuesType: TypeToken[V]): MapJ[K, V] = notSupported()
+  def getUDTValue(name: String): UDTValue = notSupported()
+  def getTupleValue(name: String): TupleValue = notSupported()
+  def getObject(name: String): Object = notSupported()
+  def get[T](name: String, targetClass: Class[T]): T = notSupported()
+  def get[T](name: String, targetType: TypeToken[T]): T = notSupported()
+  def get[T](name: String, codec: TypeCodec[T]): T = byName.getOrElse(name, null).asInstanceOf[T]
 
   def isNull(i: Int) = !byIdx.contains(i)
   def getBool(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[Boolean]
@@ -129,16 +129,16 @@ case class DataMock(
   def getDecimal(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[BigDecimalJ]
   def getUUID(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[UUID]
   def getInet(i: Int) = byIdx.getOrElse(i, null).asInstanceOf[InetAddress]
-  def getList[T](i: Int, elementsClass: Class[T]) = notSupported()
-  def getList[T](i: Int, elementsType: TypeToken[T]) = notSupported()
+  def getList[T](i: Int, elementsClass: Class[T]): ListJ[T] = notSupported()
+  def getList[T](i: Int, elementsType: TypeToken[T]): ListJ[T] = notSupported()
   def getSet[T](i: Int, elementsClass: Class[T]) = byIdx.getOrElse(i, null).asInstanceOf[SetJ[T]]
   def getSet[T](i: Int, elementsType: TypeToken[T]) = byIdx.getOrElse(i, null).asInstanceOf[SetJ[T]]
-  def getMap[K, V](i: Int, keysClass: Class[K], valuesClass: Class[V]) = notSupported()
-  def getMap[K, V](i: Int, keysType: TypeToken[K], valuesType: TypeToken[V]) = notSupported()
-  def getUDTValue(i: Int) = notSupported()
-  def getTupleValue(i: Int) = notSupported()
-  def getObject(i: Int) = notSupported()
-  def get[T](i: Int, targetClass: Class[T]) = notSupported()
-  def get[T](i: Int, targetType: TypeToken[T]) = notSupported()
-  def get[T](i: Int, codec: TypeCodec[T]) = byIdx.getOrElse(i, null).asInstanceOf[T]
+  def getMap[K, V](i: Int, keysClass: Class[K], valuesClass: Class[V]): MapJ[K, V] = notSupported()
+  def getMap[K, V](i: Int, keysType: TypeToken[K], valuesType: TypeToken[V]): MapJ[K, V] = notSupported()
+  def getUDTValue(i: Int): UDTValue = notSupported()
+  def getTupleValue(i: Int): TupleValue = notSupported()
+  def getObject(i: Int): Object = notSupported()
+  def get[T](i: Int, targetClass: Class[T]): T = notSupported()
+  def get[T](i: Int, targetType: TypeToken[T]): T = notSupported()
+  def get[T](i: Int, codec: TypeCodec[T]): T = byIdx.getOrElse(i, null).asInstanceOf[T]
 }

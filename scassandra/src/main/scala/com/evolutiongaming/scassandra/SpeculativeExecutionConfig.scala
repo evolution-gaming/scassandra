@@ -2,8 +2,7 @@ package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.policies.{ConstantSpeculativeExecutionPolicy, SpeculativeExecutionPolicy}
 import com.typesafe.config.Config
-import pureconfig.generic.semiauto.deriveReader
-import pureconfig.{ConfigReader, ConfigSource}
+import pureconfig.ConfigSource
 
 import scala.concurrent.duration._
 
@@ -19,12 +18,9 @@ final case class SpeculativeExecutionConfig(
   }
 }
 
-object SpeculativeExecutionConfig {
+object SpeculativeExecutionConfig extends SpeculativeConfigImplicits {
 
   val Default: SpeculativeExecutionConfig = SpeculativeExecutionConfig()
-
-  implicit val configReaderSpeculativeExecutionConfig: ConfigReader[SpeculativeExecutionConfig] = deriveReader
-
 
   @deprecated("use ConfigReader instead", "1.1.5")
   def apply(config: Config): SpeculativeExecutionConfig = fromConfig(config, Default)
@@ -33,7 +29,6 @@ object SpeculativeExecutionConfig {
   def apply(config: Config, default: => SpeculativeExecutionConfig): SpeculativeExecutionConfig = {
     fromConfig(config, default)
   }
-
 
   def fromConfig(config: Config, default: => SpeculativeExecutionConfig): SpeculativeExecutionConfig = {
     ConfigSource.fromConfig(config).load[SpeculativeExecutionConfig] getOrElse default

@@ -1,10 +1,8 @@
 package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.{ConsistencyLevel, QueryOptions}
-import com.evolutiongaming.scassandra.util.ConfigReaderFromEnum
 import com.typesafe.config.Config
-import pureconfig.generic.semiauto.deriveReader
-import pureconfig.{ConfigReader, ConfigSource}
+import pureconfig.ConfigSource
 
 import scala.concurrent.duration._
 
@@ -44,13 +42,9 @@ final case class QueryConfig(
   }
 }
 
-object QueryConfig {
+object QueryConfig extends QueryConfigImplicits {
 
   val Default: QueryConfig = QueryConfig()
-
-  implicit val configReaderConsistencyLevel: ConfigReader[ConsistencyLevel] = ConfigReaderFromEnum(ConsistencyLevel.values())
-
-  implicit val configReaderQueryConfig: ConfigReader[QueryConfig] = deriveReader
 
   @deprecated("use ConfigReader instead", "1.1.5")
   def apply(config: Config): QueryConfig = apply(config, Default)

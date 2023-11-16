@@ -30,7 +30,7 @@ object ConfigReaderFromEnum {
     * @param tag [[ClassTag]] needed to report a class name on failure.
     */
   def apply[A <: Enum[A]](values: Array[A])(implicit tag: ClassTag[A]): ConfigReader[A] = {
-    cursor: ConfigCursor => {
+    (cursor: ConfigCursor) => {
 
       def fromString(str: String) = {
         values

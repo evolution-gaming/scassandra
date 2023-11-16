@@ -4,7 +4,6 @@ import com.evolutiongaming.config.ConfigHelper._
 import com.evolutiongaming.nel.Nel
 import com.evolutiongaming.scassandra.ConfigHelpers._
 import com.typesafe.config.{Config, ConfigException}
-import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigCursor, ConfigReader, ConfigSource}
 
 /**
@@ -12,12 +11,12 @@ import pureconfig.{ConfigCursor, ConfigReader, ConfigSource}
   */
 sealed trait ReplicationStrategyConfig
 
-object ReplicationStrategyConfig {
+object ReplicationStrategyConfig extends ReplicationStrategyConfigImplicits {
 
   val Default: ReplicationStrategyConfig = Simple.Default
 
   implicit val configReaderReplicationStrategyConfig: ConfigReader[ReplicationStrategyConfig] = {
-    cursor: ConfigCursor => {
+    (cursor: ConfigCursor) => {
       for {
         cursor <- cursor.asObjectCursor
       } yield {
@@ -61,8 +60,6 @@ object ReplicationStrategyConfig {
 
     val Default: Simple = Simple()
 
-    implicit val configReaderSimple: ConfigReader[Simple] = deriveReader
-
     @deprecated("use ConfigReader instead", "1.1.5")
     def apply(config: Config): Simple = apply(config, Default)
 
@@ -84,7 +81,7 @@ object ReplicationStrategyConfig {
     val Default: NetworkTopology = NetworkTopology()
 
     implicit val configReaderNetworkTopology: ConfigReader[NetworkTopology] = {
-      cursor: ConfigCursor => {
+      (cursor: ConfigCursor) => {
         for {
           cursor <- cursor.asObjectCursor
         } yield {

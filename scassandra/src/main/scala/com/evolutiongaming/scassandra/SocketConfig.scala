@@ -2,8 +2,7 @@ package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.SocketOptions
 import com.typesafe.config.Config
-import pureconfig.{ConfigReader, ConfigSource}
-import pureconfig.generic.semiauto.deriveReader
+import pureconfig.ConfigSource
 
 import scala.concurrent.duration._
 
@@ -36,12 +35,9 @@ final case class SocketConfig(
   }
 }
 
-object SocketConfig {
+object SocketConfig extends SocketConfigImplicits {
 
   val Default: SocketConfig = SocketConfig()
-
-  implicit val configReaderSocketConfig: ConfigReader[SocketConfig] = deriveReader
-
 
   @deprecated("use ConfigReader instead", "1.1.5")
   def apply(config: Config): SocketConfig = fromConfig(config, Default)

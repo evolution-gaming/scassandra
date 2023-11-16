@@ -8,8 +8,6 @@ import com.evolutiongaming.scassandra.util.FromGFuture
 import com.evolutiongaming.sstream.FoldWhile._
 import com.evolutiongaming.sstream.Stream
 
-import scala.language.implicitConversions
-
 object syntax {
 
   implicit class ResultSetOps(val self: ResultSet) extends AnyVal {
@@ -100,7 +98,7 @@ object syntax {
   }
 
 
-  implicit def toCqlOps[A](a: A) = new ToCql.Ops.IdOps(a)
+  implicit def toCqlOps[A](a: A): ToCql.Ops.IdOps[A] = new ToCql.Ops.IdOps(a)
 
 
   implicit class ScassandraStatementOps(val self: Statement) extends AnyVal {

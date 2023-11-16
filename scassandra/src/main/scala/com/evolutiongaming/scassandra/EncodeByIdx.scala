@@ -112,7 +112,7 @@ object EncodeByIdx {
   }
 
   implicit val localDateJEncodeByIdx: EncodeByIdx[LocalDateJ] = {
-    EncodeByIdx[LocalDate].contramap { a: LocalDateJ =>
+    EncodeByIdx[LocalDate].contramap { (a: LocalDateJ) =>
       LocalDate.fromDaysSinceEpoch(a.toEpochDay.toInt)
     }
   }
