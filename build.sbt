@@ -53,11 +53,12 @@ lazy val scassandra = (project in file("scassandra"))
     )
   )
   .settings(
-    libraryDependencies ++= crossSettings(
-      scalaVersion.value,
-      if3 = List(Pureconfig.core),
-      if2 = List(Pureconfig.pureconfig),
-    )
+    libraryDependencies ++= List(Pureconfig.pureconfig)
+    // libraryDependencies ++= crossSettings(
+    //   scalaVersion.value,
+    //   if3 = List(Pureconfig.core),
+    //   if2 = List(Pureconfig.pureconfig),
+    // )
   )
 
 lazy val tests = (project in file("tests"))
