@@ -53,7 +53,6 @@ lazy val scassandra = (project in file("scassandra"))
     )
   )
   .settings(
-    libraryDependencies ++= List(Pureconfig.pureconfig),
     libraryDependencies ++= crossSettings(
       scalaVersion.value,
       if3 = List(Pureconfig.core),
