@@ -1,8 +1,8 @@
 package com.evolutiongaming.scassandra
 
 import pureconfig.ConfigReader
-import pureconfig.generic.semiauto.deriveReader
 
 trait AuthenticationConfigImplicits {
-  implicit val configReaderAuthenticationConfig: ConfigReader[AuthenticationConfig] = deriveReader
+  implicit val configReaderAuthenticationConfig: ConfigReader[AuthenticationConfig] = 
+    ConfigReader.forProduct2[AuthenticationConfig, String, Masked[String]]("username", "password")(AuthenticationConfig.apply)
 }
