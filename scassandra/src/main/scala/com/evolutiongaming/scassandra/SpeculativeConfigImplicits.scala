@@ -1,17 +1,20 @@
 package com.evolutiongaming.scassandra
 
-import pureconfig.ConfigReader
 import scala.concurrent.duration.FiniteDuration
+import com.evolutiongaming.scassandra.util.PureconfigSyntax._
+import pureconfig.ConfigReader
 
 trait SpeculativeConfigImplicits {
-  implicit val configReaderSpeculativeExecutionConfig: ConfigReader[SpeculativeExecutionConfig] = 
-    ConfigReader.forProduct2[SpeculativeExecutionConfig, Option[FiniteDuration], Option[Int]]("delay", "max-executions") { 
-      (delay, maxExecutions) => 
-        val defaultConfig = SpeculativeExecutionConfig()
+  implicit val configReaderSpeculativeExecutionConfig: ConfigReader[SpeculativeExecutionConfig] =  ConfigReader.fromCursor[SpeculativeExecutionConfig] { cursor =>
+    val defaultConfig = SpeculativeExecutionConfig()
 
-        SpeculativeExecutionConfig(
-          delay.getOrElse(defaultConfig.delay), 
-          maxExecutions.getOrElse(defaultConfig.maxExecutions)
-        )
-    }
+    for {
+      objCur <- cursor.asObjectCursor
+      delay <- objCur.getAtOpt[FiniteDuration]("delay").map(_.getOrElse(defaultConfig.delay))
+      maxExecutions <- objCur.getAtOpt[Int]("max-executions").map(_.getOrElse(defaultConfig.maxExecutions))
+    } yield SpeculativeExecutionConfig(
+      delay = delay,
+      maxExecutions = maxExecutions
+    )
+  }
 }

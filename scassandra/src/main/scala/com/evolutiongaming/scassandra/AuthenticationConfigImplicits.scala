@@ -1,8 +1,18 @@
 package com.evolutiongaming.scassandra
 
+import com.evolutiongaming.scassandra.util.PureconfigSyntax._
 import pureconfig.ConfigReader
 
 trait AuthenticationConfigImplicits {
   implicit val configReaderAuthenticationConfig: ConfigReader[AuthenticationConfig] = 
-    ConfigReader.forProduct2[AuthenticationConfig, String, Masked[String]]("username", "password")(AuthenticationConfig.apply)
+    ConfigReader.fromCursor[AuthenticationConfig] { cursor =>     
+      for {
+        objCur <- cursor.asObjectCursor
+        username <- objCur.getAt[String]("username")
+        password <- objCur.getAt[String]("password")
+      } yield AuthenticationConfig(
+        username = username,
+        password = password
+      )    
+    }
 }

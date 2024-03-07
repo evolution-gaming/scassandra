@@ -1,13 +1,18 @@
 package com.evolutiongaming.scassandra
 
-import pureconfig.ConfigReader
 import com.evolutiongaming.scassandra.ReplicationStrategyConfig.*
+import com.evolutiongaming.scassandra.util.PureconfigSyntax._
+import pureconfig.ConfigReader
 
 trait ReplicationStrategyConfigImplicits {
-  implicit val configReaderSimple: ConfigReader[Simple] = 
-    ConfigReader.forProduct1[Simple, Option[Int]]("replication-factor") { replicationFactor => 
-      val defaultConfig = Simple()
+  implicit val configReaderSimple: ConfigReader[Simple] = ConfigReader.fromCursor[Simple] { cursor => 
+    val defaultConfig = Simple()
 
-      Simple(replicationFactor.getOrElse(defaultConfig.replicationFactor))
-    }
+    for {
+      objCur <- cursor.asObjectCursor
+      replicationFactor <- objCur.getAtOpt[Int]("replication-factor").map(_.getOrElse(defaultConfig.replicationFactor))
+    } yield Simple(
+      replicationFactor = replicationFactor
+    )
+  }
 }
