@@ -21,16 +21,15 @@ import org.scalatest.wordspec.AnyWordSpec
 
 
 class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
+  private lazy val cassandraContainer = CassandraContainer(
+    dockerImageNameOverride = DockerImageName.parse("cassandra:3.11.7"),
+  )
 
   private lazy val config = 
     CassandraConfig.Default.copy(
       contactPoints = Nel(cassandraContainer.containerIpAddress),
       port = cassandraContainer.mappedPort(9042),
     )
-
-  private lazy val cassandraContainer = CassandraContainer(
-    dockerImageNameOverride = DockerImageName.parse("cassandra:3.11.7"),
-  )
 
   // due to test structure we need to start the container before the test suite
   cassandraContainer.start()
