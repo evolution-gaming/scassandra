@@ -24,6 +24,12 @@ class ReplicationStrategyConfigSpec extends AnyFunSuite with Matchers {
     ConfigSource.fromConfig(config.getConfig("simple")).load[ReplicationStrategyConfig] shouldEqual expected.asRight
   }
 
+  test("apply from empty simple config") {
+    val config = ConfigFactory.empty()
+    val expected = Simple()
+    ConfigSource.fromConfig(config).load[Simple] shouldEqual expected.asRight
+  }
+
   test("apply from network topology config") {
     val config = ConfigFactory.parseURL(getClass.getResource("replication-strategy.conf"))
     val expected = NetworkTopology(Nel(DcFactor("dc1", 2), DcFactor("dc2", 3)))
