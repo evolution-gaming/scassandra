@@ -11,7 +11,7 @@ import pureconfig.{ConfigCursor, ConfigReader, ConfigSource}
   */
 sealed trait ReplicationStrategyConfig
 
-object ReplicationStrategyConfig extends ReplicationStrategyConfigImplicits {
+object ReplicationStrategyConfig {
 
   val Default: ReplicationStrategyConfig = Simple.Default
 
@@ -56,7 +56,7 @@ object ReplicationStrategyConfig extends ReplicationStrategyConfigImplicits {
 
   final case class Simple(replicationFactor: Int = 1) extends ReplicationStrategyConfig
 
-  object Simple {
+  object Simple extends ReplicationStrategyConfigSimpleImplicits {
 
     val Default: Simple = Simple()
 

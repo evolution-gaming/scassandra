@@ -4,7 +4,7 @@ import com.evolutiongaming.scassandra.ReplicationStrategyConfig._
 import com.evolutiongaming.scassandra.util.PureconfigSyntax._
 import pureconfig.ConfigReader
 
-trait ReplicationStrategyConfigImplicits {
+trait ReplicationStrategyConfigSimpleImplicits {
   implicit val configReaderSimple: ConfigReader[Simple] = ConfigReader.fromCursor[Simple] { cursor => 
     val defaultConfig = Simple()
 
