@@ -80,7 +80,7 @@ object CassandraConfig {
   implicit val configReaderProtocolVersion: ConfigReader[ProtocolVersion] = ConfigReaderFromEnum(ProtocolVersion.values())
 
   implicit val configReaderCassandraConfig: ConfigReader[CassandraConfig] = {
-    cursor: ConfigCursor => {
+    (cursor: ConfigCursor) => {
       for {
         cursor <- cursor.asObjectCursor
       } yield {

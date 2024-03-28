@@ -35,7 +35,7 @@ object PoolingConfig {
   val Default: PoolingConfig = PoolingConfig()
 
   implicit val configReaderPoolingConfig: ConfigReader[PoolingConfig] = {
-    cursor: ConfigCursor => {
+    (cursor: ConfigCursor) => {
       for {
         cursor <- cursor.asObjectCursor
       } yield {

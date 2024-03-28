@@ -2,8 +2,7 @@ package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.policies.{DCAwareRoundRobinPolicy, LoadBalancingPolicy, TokenAwarePolicy}
 import com.typesafe.config.Config
-import pureconfig.{ConfigReader, ConfigSource}
-import pureconfig.generic.semiauto.deriveReader
+import pureconfig.ConfigSource
 
 /**
   * See [[https://docs.datastax.com/en/developer/java-driver/3.5/manual/load_balancing/]]
@@ -25,12 +24,9 @@ final case class LoadBalancingConfig(
   }
 }
 
-object LoadBalancingConfig {
+object LoadBalancingConfig extends LoadBalancingConfigImplicits {
 
   val Default: LoadBalancingConfig = LoadBalancingConfig()
-
-  implicit val configReaderLoadBalancingConfig: ConfigReader[LoadBalancingConfig] = deriveReader
-
 
   @deprecated("use ConfigReader instead", "1.1.5")
   def apply(config: Config): LoadBalancingConfig = apply(config, Default)

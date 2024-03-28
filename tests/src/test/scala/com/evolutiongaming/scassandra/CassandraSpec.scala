@@ -5,13 +5,15 @@ import cats.effect.unsafe.implicits
 import cats.effect.{IO, Resource}
 import cats.implicits._
 import com.datastax.driver.core.{Duration, Row}
-import com.evolutiongaming.cassandra.StartCassandra
+import com.dimafeng.testcontainers.CassandraContainer
+import org.testcontainers.utility.DockerImageName
 import com.evolutiongaming.catshelper.CatsHelper._
 import com.evolutiongaming.catshelper.ToTry
 import com.evolutiongaming.scassandra.IOSuite._
 import com.evolutiongaming.scassandra.syntax._
 import org.scalatest.BeforeAndAfterAll
 import com.evolutiongaming.sstream.Stream._
+import com.evolutiongaming.nel.Nel
 
 import scala.util.Try
 import org.scalatest.matchers.should.Matchers
@@ -19,10 +21,18 @@ import org.scalatest.wordspec.AnyWordSpec
 
 
 class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
+  private lazy val cassandraContainer = CassandraContainer(
+    dockerImageNameOverride = DockerImageName.parse("cassandra:3.11.7"),
+  )
 
-  private val config = CassandraConfig.Default
+  private lazy val config = 
+    CassandraConfig.Default.copy(
+      contactPoints = Nel(cassandraContainer.containerIpAddress),
+      port = cassandraContainer.mappedPort(9042),
+    )
 
-  private lazy val shutdownCassandra = StartCassandra()
+  // due to test structure we need to start the container before the test suite
+  cassandraContainer.start()
 
   implicit val toTry: ToTry[IO] = ToTry.ioToTry(implicits.global)
 
@@ -40,14 +50,8 @@ class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
 
   private lazy val (session, sessionRelease) = cluster.connect.allocated.toTry.get
 
-  override def beforeAll() = {
-    super.beforeAll()
-    shutdownCassandra
-    ()
-  }
-
   override def afterAll() = {
-    shutdownCassandra()
+    cassandraContainer.stop()
     super.afterAll()
   }
 

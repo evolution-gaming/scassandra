@@ -2,8 +2,7 @@ package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.policies.{ExponentialReconnectionPolicy, ReconnectionPolicy}
 import com.typesafe.config.Config
-import pureconfig.{ConfigReader, ConfigSource}
-import pureconfig.generic.semiauto.deriveReader
+import pureconfig.ConfigSource
 
 import scala.concurrent.duration._
 
@@ -19,11 +18,9 @@ final case class ReconnectionConfig(
   }
 }
 
-object ReconnectionConfig {
+object ReconnectionConfig extends ReconnectionConfigImplicits {
 
   val Default: ReconnectionConfig = ReconnectionConfig()
-
-  implicit val configReaderReconnectionConfig: ConfigReader[ReconnectionConfig] = deriveReader
 
   @deprecated("use ConfigReader instead", "1.1.5")
   def apply(config: Config): ReconnectionConfig = apply(config, Default)
