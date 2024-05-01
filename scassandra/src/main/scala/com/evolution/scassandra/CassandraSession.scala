@@ -139,7 +139,7 @@ object CassandraSession {
   }
 
 
-  def of[F[_] : Async : FromGFuture](session: F[SessionJ]): Resource[F, CassandraSession[F]] = {
+  def of[F[_]: Async](session: F[SessionJ]): Resource[F, CassandraSession[F]] = {
     val result = for {
       session <- session
     } yield {
