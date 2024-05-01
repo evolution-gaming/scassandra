@@ -3,13 +3,14 @@ package com.evolutiongaming.scassandra
 import cats.effect.Async
 import cats.effect.syntax.spawn._
 import cats.syntax.all._
+import cats.~>
 import com.evolutiongaming.scassandra.util.FromGFuture
 import com.evolutiongaming.sstream.Stream
 import com.evolutiongaming.sstream.FoldWhile.FoldWhileOps
 import com.datastax.driver.core.{RegularStatement, ResultSet, Row, SimpleStatement, Statement}
 
 /** 
- *  A `CassandraSession` that supports streaming results from Cassandra using `sstream.Stream` 
+ *  A `CassandraSession` that supports streaming results from Cassandra using `sstream.Stream`.
  */
 trait StreamingCassandraSession[F[_]] extends CassandraSession[F] {
   def executeStream(statement: Statement): Stream[F, Row]
@@ -18,6 +19,12 @@ trait StreamingCassandraSession[F[_]] extends CassandraSession[F] {
 }
 
 object StreamingCassandraSession {
+  /** 
+   *  Wrap a `CassandraSession` in a `StreamingCassandraSession`.
+   *  Creates a thin wrapper around the `CassandraSession` that induces no overhead
+   *  except for the memory footprint of the wrapper itself and doesn't allocate any additional 
+   *  resources.
+   */
   def of[F[_]: Async](session: CassandraSession[F]): StreamingCassandraSession[F] = {
     new StreamingCassandraSession[F] {
       def loggedKeyspace = session.loggedKeyspace
@@ -82,6 +89,32 @@ object StreamingCassandraSession {
           }
         }
       }
+    }
+  }
+
+  implicit class StreamingSessionOps[F[_]](val self: StreamingCassandraSession[F]) extends AnyVal {
+
+    def mapK[G[_]](f: F ~> G, g: G ~> F): StreamingCassandraSession[G] = new StreamingCassandraSession[G] {
+
+      def loggedKeyspace = f(self.loggedKeyspace)
+
+      def init = f(self.init)
+
+      def execute(query: String) = f(self.execute(query))
+
+      def execute(query: String, values: Any*) = f(self.execute(query, values: _*))
+
+      def execute(query: String, values: Map[String, AnyRef]) = f(self.execute(query, values))
+
+      def execute(statement: Statement) = f(self.execute(statement))
+
+      def executeStream(statement: Statement) = self.executeStream(statement).mapK(f, g)
+
+      def prepare(query: String) = f(self.prepare(query))
+
+      def prepare(statement: RegularStatement) = f(self.prepare(statement))
+
+      def state = self.state.mapK(f)
     }
   }
 }
