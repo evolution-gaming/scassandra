@@ -8,8 +8,6 @@ import com.evolutiongaming.scassandra.util.FromGFuture
 import com.evolutiongaming.sstream.FoldWhile.FoldWhileOps
 import com.evolutiongaming.sstream.Stream
 
-import java.util
-
 object StreamingCassandraSession {
   implicit final class StreamingCassandraSessionOps[F[_]](val self: CassandraSession[F]) extends AnyVal {
     def executeStream(statement: Statement)(implicit F: Async[F]): Stream[F, Row] = {
@@ -23,7 +21,7 @@ object StreamingCassandraSession {
   }
 
   private def toStream[F[_]: Async](resultSet: ResultSet): Stream[F, Row] = {
-    val iterator: util.Iterator[Row] = resultSet.iterator()
+    val iterator: java.util.Iterator[Row] = resultSet.iterator()
     val fetch: F[Unit] = FromGFuture[F].apply(resultSet.fetchMoreResults()).void
     val fetched: F[Boolean] = Async[F].delay(resultSet.isFullyFetched)
     val next: F[List[Row]] = Async[F].delay(List.fill(resultSet.getAvailableWithoutFetching)(iterator.next()))
