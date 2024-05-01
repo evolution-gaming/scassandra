@@ -1,23 +1,25 @@
-package com.evolutiongaming.scassandra
+package com.evolution.scassandra
 
-
-import cats.effect.{Resource, Sync}
+import cats.effect.{Resource, Async}
+import cats.effect.syntax.spawn._
 import cats.implicits._
 import cats.~>
 import com.datastax.driver.core.{Session => SessionJ, _}
 import com.evolutiongaming.scassandra.util.FromGFuture
+import com.evolutiongaming.sstream.Stream
+import com.evolutiongaming.sstream.FoldWhile.FoldWhileOps
 import com.evolutiongaming.util.{ToScala, ToJava}
 
 /**
   * A wrapper around the `com.datastax.driver.core.Session` interface that provides a more
   * functional interface for interacting with Cassandra.
   *
-  * @note this is the original implementation operating on raw `ResultSet` objects.
-  * The newer implementation is [[com.evolution.scassandra.CassandraSession]] which provides
-  * streaming support via the `executeStream` method.
-  *
+  * This is a newer implementation of [[com.evolutiongaming.scassandra.CassandraSession]] 
+  * with the only major difference being the addition of the `executeStream` method that returns a 
+  * `Stream` rather than a raw `ResultSet`.
+  * 
   * @see [[com.datastax.driver.core.Session]] the underlying Java driver session interface
-  * @see [[com.evolution.scassandra.CassandraSession]] the newer implementation with streaming support
+  * @see [[com.evolutiongaming.scassandra.CassandraSession]] the original implementation
   */
 trait CassandraSession[F[_]] {
 
@@ -33,6 +35,10 @@ trait CassandraSession[F[_]] {
 
   def execute(statement: Statement): F[ResultSet]
 
+  def executeStream(statement: Statement): Stream[F, Row]
+
+  final def executeStream(statement: String): Stream[F, Row] = executeStream(new SimpleStatement(statement))
+
   def prepare(query: String): F[PreparedStatement]
 
   def prepare(statement: RegularStatement): F[PreparedStatement]
@@ -45,13 +51,13 @@ object CassandraSession {
   def apply[F[_]](implicit F: CassandraSession[F]): CassandraSession[F] = F
 
 
-  def apply[F[_] : Sync : FromGFuture](session: SessionJ): CassandraSession[F] = {
+  def apply[F[_] : Async](session: SessionJ): CassandraSession[F] = {
 
     new CassandraSession[F] {
 
       val loggedKeyspace = {
         for {
-          loggedKeyspace <- Sync[F].delay { session.getLoggedKeyspace }
+          loggedKeyspace <- Async[F].delay { session.getLoggedKeyspace }
         } yield {
           Option(loggedKeyspace)
         }
@@ -76,6 +82,13 @@ object CassandraSession {
         FromGFuture[F].apply { session.executeAsync(statement) }
       }
 
+      def executeStream(statement: Statement): Stream[F,Row] = {
+        for {
+          resultSet <- Stream.lift(execute(statement))
+          row       <- toStream(resultSet)
+        } yield row
+      }
+
       def prepare(query: String) = {
         FromGFuture[F].apply { session.prepareAsync(query) }
       }
@@ -85,11 +98,48 @@ object CassandraSession {
       }
 
       val state = State[F](session.getState)
+
+      private def toStream(resultSet: ResultSet): Stream[F, Row] = {
+        val iterator = resultSet.iterator()
+        val fetch = FromGFuture[F].apply(resultSet.fetchMoreResults()).void 
+        val fetched = Async[F].delay(resultSet.isFullyFetched)
+        val next = Async[F].delay(List.fill(resultSet.getAvailableWithoutFetching)(iterator.next()))
+        new Stream[F, Row] {
+          def foldWhileM[L, R](l: L)(f: (L, Row) => F[Either[L, R]]) = {
+            l.tailRecM[F, Either[L, R]] { l =>
+              def apply(rows: List[Row]) = {
+                for {
+                  result <- rows.foldWhileM(l)(f)
+                } yield {
+                  result.asRight[L]
+                }
+              }
+
+              def fetchAndApply(rows: List[Row]) = {
+                for {
+                  fetching <- fetch.start
+                  result   <- rows.foldWhileM(l)(f)
+                  result   <- result match {
+                    case l: Left[L, R]  => fetching.joinWithNever as l.rightCast[Either[L, R]]
+                    case r: Right[L, R] => r.leftCast[L].asRight[L].pure[F]
+                  }
+                } yield result
+              }
+
+              for {
+                fetched <- fetched
+                rows    <- next
+                result  <- if (fetched) apply(rows) else fetchAndApply(rows)
+              } yield result
+            }
+          }
+        }
+      }
     }
   }
 
 
-  def of[F[_] : Sync : FromGFuture](session: F[SessionJ]): Resource[F, CassandraSession[F]] = {
+  def of[F[_] : Async : FromGFuture](session: F[SessionJ]): Resource[F, CassandraSession[F]] = {
     val result = for {
       session <- session
     } yield {
@@ -100,9 +150,6 @@ object CassandraSession {
   }
 
 
-  /**
-    * See [[com.evolutiongaming.scassandra.CassandraSession.State]]
-    */
   trait State[F[_]] {
 
     def connectedHosts: F[Iterable[Host]]
@@ -116,27 +163,27 @@ object CassandraSession {
 
   object State {
 
-    def apply[F[_] : Sync](state: SessionJ.State): State[F] = {
+    def apply[F[_] : Async](state: SessionJ.State): State[F] = {
       new State[F] {
 
         val connectedHosts = {
           for {
-            a <- Sync[F].delay { state.getConnectedHosts }
+            a <- Async[F].delay { state.getConnectedHosts }
           } yield {
             ToScala.from(a)
           }
         }
 
         def openConnections(host: Host) = {
-          Sync[F].delay { state.getOpenConnections(host) }
+          Async[F].delay { state.getOpenConnections(host) }
         }
 
         def trashedConnections(host: Host) = {
-          Sync[F].delay { state.getTrashedConnections(host) }
+          Async[F].delay { state.getTrashedConnections(host) }
         }
 
         def inFlightQueries(host: Host) = {
-          Sync[F].delay { state.getInFlightQueries(host) }
+          Async[F].delay { state.getInFlightQueries(host) }
         }
       }
     }
@@ -160,7 +207,7 @@ object CassandraSession {
 
   implicit class SessionOps[F[_]](val self: CassandraSession[F]) extends AnyVal {
 
-    def mapK[G[_]](f: F ~> G): CassandraSession[G] = new CassandraSession[G] {
+    def mapK[G[_]](f: F ~> G, g: G ~> F): CassandraSession[G] = new CassandraSession[G] {
 
       def loggedKeyspace = f(self.loggedKeyspace)
 
@@ -173,6 +220,8 @@ object CassandraSession {
       def execute(query: String, values: Map[String, AnyRef]) = f(self.execute(query, values))
 
       def execute(statement: Statement) = f(self.execute(statement))
+
+      def executeStream(statement: Statement): Stream[G, Row] = self.executeStream(statement).mapK(f, g)
 
       def prepare(query: String) = f(self.prepare(query))
 
