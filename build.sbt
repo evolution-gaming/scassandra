@@ -9,10 +9,10 @@ def crossSettings[T](scalaVersion: String, if3: List[T], if2: List[T]) =
 
 lazy val commonSettings = Seq(
   organization := "com.evolutiongaming",
-  homepage := Some(new URL("http://github.com/evolution-gaming/scassandra")),
+  homepage := Some(url("http://github.com/evolution-gaming/scassandra")),
   startYear := Some(2018),
   organizationName := "Evolution",
-  organizationHomepage := Some(url("http://evolution.com")),
+  organizationHomepage := Some(url("https://evolution.com")),
   scalaVersion := crossScalaVersions.value.head,
   crossScalaVersions := Seq("2.13.13", "3.3.3", "2.12.19"),
   Compile / doc / scalacOptions ++= Seq("-groups", "-implicits", "-no-link-warnings"),
@@ -26,9 +26,15 @@ lazy val commonSettings = Seq(
     if2 = List("-Xsource:3"),
   ))
 
+val alias: Seq[sbt.Def.Setting[?]] =
+  //  addCommandAlias("check", "all versionPolicyCheck Compile/doc") ++
+  addCommandAlias("check", "show version") ++
+    addCommandAlias("build", "+all compile test")
+
 lazy val root = (project in file("."))
   .settings(name := "scassandra")
   .settings(commonSettings)
+  .settings(alias)
   .settings(
     publish / skip := true,
     skip / publishArtifact := true
