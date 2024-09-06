@@ -114,37 +114,18 @@ object syntax {
     }
   }
 
-  implicit class ScassandraCodexPutSyntax[D <: GettableData & SettableData[D]](
-      val data: D
-  ) extends AnyVal {
+  implicit class ScassandraUpdateSyntax[D <: GettableData & SettableData[D]](val data: D) extends AnyVal {
 
-    def put[A](value: A)(implicit codec: CodecRow[A]): D = {
-      codec.encode(data, value)
+    def update[A](value: A)(implicit update: UpdateRow[A]): D = {
+      update(data, value)
     }
 
-    def put[A](name: String, value: A)(implicit codec: CodecByName[A]): D = {
-      codec.encode(data, name, value)
+    def update[A](name: String, value: A)(implicit update: UpdateByName[A]): D = {
+      update(data, name, value)
     }
 
-    def putAt[A](idx: Int, value: A)(implicit codec: CodecByIdx[A]): D = {
-      codec.encode(data, idx, value)
-    }
-
-  }
-
-  implicit class ScassandraCodexTakeSyntax[D <: GettableData](val data: D)
-      extends AnyVal {
-
-    def take[A](implicit codec: CodecRow[A]): A = {
-      codec.decode(data)
-    }
-
-    def take[A](name: String)(implicit codec: CodecByName[A]): A = {
-      codec.decode(data, name)
-    }
-
-    def takeAt[A](idx: Int)(implicit codec: CodecByIdx[A]): A = {
-      codec.decode(data, idx)
+    def updateAt[A](idx: Int, value: A)(implicit update: UpdateByIdx[A]): D = {
+      update(data, idx, value)
     }
 
   }

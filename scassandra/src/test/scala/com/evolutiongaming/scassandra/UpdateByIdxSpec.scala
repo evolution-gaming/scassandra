@@ -8,26 +8,28 @@ import com.evolutiongaming.scassandra.syntax._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class CodecByIdxSpec extends AnyWordSpec with Matchers {
+class UpdateByIdxSpec extends AnyWordSpec with Matchers {
 
   def of[A](expected: A)(implicit
-      c: CodecByIdx[A],
-      co: CodecByIdx[Option[A]]
+      q: UpdateByIdx[A],
+      e: UpdateByIdx[Option[A]],
+      r: DecodeByIdx[A],
+      t: DecodeByIdx[Option[A]]
   ) = { () =>
     {
       val data = DataMock()
 
       data
-        .putAt[A](0, expected)
-        .takeAt[A](0) shouldEqual expected
+        .updateAt[A](0, expected)
+        .decodeAt[A](0) shouldEqual expected
 
       data
-        .putAt[Option[A]](1, Some(expected))
-        .takeAt[Option[A]](1) shouldEqual Some(expected)
+        .updateAt[Option[A]](1, Some(expected))
+        .decodeAt[Option[A]](1) shouldEqual Some(expected)
 
       data
-        .putAt[Option[A]](2, None)
-        .takeAt[Option[A]](2) shouldEqual None
+        .updateAt[Option[A]](2, None)
+        .decodeAt[Option[A]](2) shouldEqual None
     }
   }
 
