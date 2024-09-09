@@ -29,5 +29,17 @@ class SyntaxSpec extends AnyWordSpec with Matchers {
       val data1 = data.encodeAt(0, "str")
       data1.byIdx.get(0) shouldEqual Some("str")
     }
+
+    "update by name" in {
+      val data = DataMock()
+      val data1 = data.update("name", "str")
+      data1.byName.get("name") shouldEqual Some("str")
+    }
+
+    "update by idx" in {
+      val data = DataMock()
+      val data1 = data.updateAt(0, "str")
+      data1.byIdx.get(0) shouldEqual Some("str")
+    }
   }
 }
