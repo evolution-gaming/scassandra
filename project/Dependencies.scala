@@ -4,7 +4,7 @@ object Dependencies {
 
   val `cassandra-driver`         = "com.datastax.cassandra"  % "cassandra-driver-core"           % "3.11.3"
   val scalatest                  = "org.scalatest"          %% "scalatest"                       % "3.2.19"
-  val `executor-tools`           = "com.evolutiongaming"    %% "executor-tools"                  % "1.0.4"
+  val `executor-tools`           = "com.evolutiongaming"    %% "executor-tools"                  % "1.0.5"
   val `config-tools`             = "com.evolutiongaming"    %% "config-tools"                    % "1.0.5"
   val nel                        = "com.evolutiongaming"    %% "nel"                             % "1.3.5"
   val `testcontainers-cassandra` = "com.dimafeng"           %% "testcontainers-scala-cassandra"  % "0.40.17"
