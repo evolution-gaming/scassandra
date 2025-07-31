@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
 
-  val `cassandra-driver`         = "com.datastax.cassandra"  % "cassandra-driver-core"           % "3.11.3"
+  val `cassandra-driver`         = "org.apache.cassandra"   % "java-driver-core"                 % "4.19.0"
   val scalatest                  = "org.scalatest"          %% "scalatest"                       % "3.2.19"
   val `executor-tools`           = "com.evolutiongaming"    %% "executor-tools"                  % "1.0.4"
   val `config-tools`             = "com.evolutiongaming"    %% "config-tools"                    % "1.0.5"

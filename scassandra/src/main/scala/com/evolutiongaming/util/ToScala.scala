@@ -1,7 +1,7 @@
 package com.evolutiongaming.util
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.jdk.CollectionConverters.*
 
 object ToScala {
 
