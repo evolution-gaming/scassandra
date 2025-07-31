@@ -1,10 +1,10 @@
 package com.evolutiongaming.scassandra
 
 import cats.effect.Sync
-import cats.implicits._
+import cats.implicits.*
 import cats.{FlatMap, ~>}
-import com.datastax.driver.core.{UserType, KeyspaceMetadata => KeyspaceMetadataJ, Metadata => MetadataJ, TableMetadata => TableMetadataJ}
-import com.evolutiongaming.util.ToScala
+import com.datastax.driver.core.{UserType, KeyspaceMetadata as KeyspaceMetadataJ, Metadata as MetadataJ, TableMetadata as TableMetadataJ}
+import util.ToScala
 
 trait Metadata[F[_]] {
 

@@ -1,10 +1,10 @@
 package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.ProtocolOptions.Compression
-import com.datastax.driver.core.ProtocolVersion
-import com.evolutiongaming.config.ConfigHelper._
+import com.datastax.oss.driver.api.core.ProtocolVersion
+import com.evolutiongaming.config.ConfigHelper.*
 import com.evolutiongaming.nel.Nel
-import com.evolutiongaming.scassandra.ConfigHelpers._
+import com.evolutiongaming.scassandra.ConfigHelpers.*
 import com.evolutiongaming.scassandra.util.ConfigReaderFromEnum
 import com.typesafe.config.Config
 import pureconfig.{ConfigCursor, ConfigReader, ConfigSource}
