@@ -1,6 +1,7 @@
 package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.policies.{DCAwareRoundRobinPolicy, LoadBalancingPolicy, TokenAwarePolicy}
+import com.datastax.oss.driver.api.core.loadbalancing.LoadBalancingPolicy
 import com.typesafe.config.Config
 import pureconfig.ConfigSource
 
@@ -9,7 +10,8 @@ import pureconfig.ConfigSource
   */
 final case class LoadBalancingConfig(
   localDc: String = "localDc",
-  allowRemoteDcsForLocalConsistencyLevel: Boolean = false) {
+  allowRemoteDcsForLocalConsistencyLevel: Boolean = false,
+) {
 
   def asJava: Option[LoadBalancingPolicy] = {
     if (localDc.nonEmpty) {
