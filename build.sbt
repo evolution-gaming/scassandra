@@ -56,6 +56,7 @@ lazy val scassandra = (project in file("scassandra"))
       scalatest % Test,
       nel,
       `cassandra-driver`,
+      jffi,
       `executor-tools`,
       Pureconfig.cats
     )
