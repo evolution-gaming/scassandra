@@ -28,11 +28,11 @@ object Dependencies {
 
   object Cats {
     val core   = "org.typelevel" %% "cats-core"   % "2.13.0"
-    val effect = "org.typelevel" %% "cats-effect" % "3.4.8"
+    val effect = "org.typelevel" %% "cats-effect" % "3.6.3"
   }
 
   object Pureconfig {
-    private val version = "0.17.6"
+    private val version = "0.17.9"
 
     val core       = "com.github.pureconfig" %% "pureconfig-core" % version
     val pureconfig = "com.github.pureconfig" %% "pureconfig"      % version
