@@ -21,7 +21,6 @@ lazy val commonSettings = Seq(
   Compile / doc / scalacOptions ++= Seq("-groups", "-implicits", "-no-link-warnings"),
   publishTo := Some(Resolver.evolutionReleases),
   licenses := Seq(("MIT", url("https://opensource.org/licenses/MIT"))),
-  releaseCrossBuild := true,
   scalacOptsFailOnWarn := Some(false),
   scalacOptions ++= crossSettings(
     scalaVersion.value,
@@ -32,7 +31,7 @@ lazy val commonSettings = Seq(
 val alias: Seq[sbt.Def.Setting[?]] =
   //  addCommandAlias("check", "all versionPolicyCheck Compile/doc") ++
   addCommandAlias("check", "show version") ++
-    addCommandAlias("build", "+all compile test")
+    addCommandAlias("build", "all compile test")
 
 lazy val root = (project in file("."))
   .settings(name := "scassandra")
