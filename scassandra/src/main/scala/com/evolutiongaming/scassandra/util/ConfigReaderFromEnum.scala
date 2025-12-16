@@ -1,9 +1,10 @@
 package com.evolutiongaming.scassandra.util
 
-import cats.implicits._
+import cats.implicits.*
 import pureconfig.error.{CannotParse, ConfigReaderFailures}
 import pureconfig.{ConfigCursor, ConfigReader}
 
+import java.util.Locale
 import scala.reflect.ClassTag
 
 /** Provides [[ConfigReader]] for Java enums.
@@ -46,5 +47,18 @@ object ConfigReaderFromEnum {
         r <- fromString(s)
       } yield r
     }
+  }
+
+  def forList[A](variants: Vector[A], name: A => String)(implicit tag: ClassTag[A]): ConfigReader[A] = {
+    val map: Map[String, A] = variants.map { i => name(i).toLowerCase(Locale.ROOT) -> i }.toMap
+    (cursor: ConfigCursor) =>
+      for {
+        string <- cursor.asString
+        result <- map.get(string.toLowerCase(Locale.ROOT)).toRight {
+          val failure = CannotParse(s"Cannot parse ${tag.runtimeClass} from $string", cursor.origin)
+          ConfigReaderFailures(failure)
+        }
+      } yield result
+
   }
 }

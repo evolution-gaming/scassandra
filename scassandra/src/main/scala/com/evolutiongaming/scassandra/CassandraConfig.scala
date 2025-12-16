@@ -1,10 +1,10 @@
 package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.ProtocolOptions.Compression
-import com.datastax.driver.core.ProtocolVersion
-import com.evolutiongaming.config.ConfigHelper._
+import com.datastax.oss.driver.api.core.ProtocolVersion
+import com.evolutiongaming.config.ConfigHelper.*
 import com.evolutiongaming.nel.Nel
-import com.evolutiongaming.scassandra.ConfigHelpers._
+import com.evolutiongaming.scassandra.ConfigHelpers.*
 import com.evolutiongaming.scassandra.util.ConfigReaderFromEnum
 import com.typesafe.config.Config
 import pureconfig.{ConfigCursor, ConfigReader, ConfigSource}
@@ -77,7 +77,15 @@ object CassandraConfig {
 
   implicit val configReaderCompression: ConfigReader[Compression] = ConfigReaderFromEnum(Compression.values())
 
-  implicit val configReaderProtocolVersion: ConfigReader[ProtocolVersion] = ConfigReaderFromEnum(ProtocolVersion.values())
+  implicit val configReaderProtocolVersion: ConfigReader[ProtocolVersion] = ConfigReaderFromEnum.forList(
+    Vector(
+      ProtocolVersion.V3,
+      ProtocolVersion.V4,
+      ProtocolVersion.V5,
+      ProtocolVersion.DSE_V1,
+      ProtocolVersion.DSE_V2,
+    ), _.name()
+  )
 
   implicit val configReaderCassandraConfig: ConfigReader[CassandraConfig] = {
     (cursor: ConfigCursor) => {

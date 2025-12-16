@@ -1,7 +1,7 @@
 package com.evolutiongaming.scassandra
 
 import cats.Functor
-import com.datastax.driver.core.GettableByNameData
+import com.datastax.oss.driver.api.core.data.GettableByName
 
 /** Reconstructs `A` from a row received from Cassandra.
   *
@@ -28,36 +28,29 @@ trait DecodeRow[A] {
     * Note, that the method might throw an exception if the required fields are
     * not found in the row passed as `data` argument.
     */
-  def apply(data: GettableByNameData): A
+  def apply(data: GettableByName): A
 }
 
 object DecodeRow {
-
   implicit val functorDecodeRow: Functor[DecodeRow] = new Functor[DecodeRow] {
-    def map[A, B](fa: DecodeRow[A])(f: A => B) = fa.map(f)
+    def map[A, B](fa: DecodeRow[A])(f: A => B): DecodeRow[B] = fa.map(f)
   }
-
 
   def apply[A](implicit decode: DecodeRow[A]): DecodeRow[A] = decode
 
   def apply[A](name: String)(implicit decode: DecodeByName[A]): DecodeRow[A] = new DecodeRow[A] {
-    def apply(data: GettableByNameData) = decode(data, name)
+    def apply(data: GettableByName): A = decode(data, name)
   }
 
-
   object Ops {
-
-    implicit class GettableByNameDataOps(val self: GettableByNameData) extends AnyVal {
-
+    implicit class GettableByNameDataOps(private val self: GettableByName) extends AnyVal {
       def decode[A](implicit decode: DecodeRow[A]): A = decode(self)
     }
   }
 
-
-  implicit class DecodeRowOps[A](val self: DecodeRow[A]) extends AnyVal {
-
+  implicit class DecodeRowOps[A](private val self: DecodeRow[A]) extends AnyVal {
     def map[B](f: A => B): DecodeRow[B] = new DecodeRow[B] {
-      def apply(data: GettableByNameData) = f(self(data))
+      def apply(data: GettableByName): B = f(self(data))
     }
   }
 }

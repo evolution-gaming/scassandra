@@ -1,10 +1,14 @@
 package com.evolutiongaming.scassandra
 
-import com.datastax.driver.core.policies.{ConstantSpeculativeExecutionPolicy, SpeculativeExecutionPolicy}
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption
+import com.datastax.oss.driver.api.core.specex.SpeculativeExecutionPolicy
+import com.datastax.oss.driver.internal.core.specex.ConstantSpeculativeExecutionPolicy
+import com.evolutiongaming.scassandra.util.FakeConfig
 import com.typesafe.config.Config
 import pureconfig.ConfigSource
 
-import scala.concurrent.duration._
+import java.time.Duration as JDuration
+import scala.concurrent.duration.*
 
 /**
   * See [[https://docs.datastax.com/en/developer/java-driver/3.5/manual/speculative_execution/]]
@@ -14,7 +18,11 @@ final case class SpeculativeExecutionConfig(
   maxExecutions: Int = 2) {
 
   def asJava: SpeculativeExecutionPolicy = {
-    new ConstantSpeculativeExecutionPolicy(delay.toMillis, maxExecutions)
+    val config = FakeConfig.createFakeContext(
+      DefaultDriverOption.SPECULATIVE_EXECUTION_MAX.getPath -> maxExecutions,
+      DefaultDriverOption.SPECULATIVE_EXECUTION_DELAY.getPath -> JDuration.ofMillis(delay.toMillis),
+    )
+    new ConstantSpeculativeExecutionPolicy(config, "")
   }
 }
 

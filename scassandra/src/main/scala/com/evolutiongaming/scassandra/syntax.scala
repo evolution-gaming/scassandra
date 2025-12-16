@@ -1,68 +1,25 @@
 package com.evolutiongaming.scassandra
 
-import cats.effect.implicits._
+import cats.effect.implicits.*
 import cats.effect.{Async, Sync}
-import cats.syntax.all._
-import com.datastax.driver.core._
+import cats.syntax.all.*
+import com.datastax.driver.core.*
+import com.datastax.oss.driver.api.core.cql.{AsyncResultSet, Bindable, Row, Statement}
+import com.datastax.oss.driver.api.core.data.{GettableByIndex, GettableByName}
 import com.evolutiongaming.scassandra.util.FromGFuture
-import com.evolutiongaming.sstream.FoldWhile._
+import com.evolutiongaming.sstream.FoldWhile.*
 import com.evolutiongaming.sstream.Stream
 
 object syntax {
-
-  implicit class ResultSetOps(val self: ResultSet) extends AnyVal {
-
-    def stream[F[_]: Async: FromGFuture]: Stream[F, Row] = {
-      val iterator = self.iterator()
-      val fetch = FromGFuture[F].apply { self.fetchMoreResults() }.void
-      val fetched = Sync[F].delay { self.isFullyFetched }
-      val next = Sync[F].delay {
-        List.fill(self.getAvailableWithoutFetching)(iterator.next())
-      }
-
-      new Stream[F, Row] {
-
-        def foldWhileM[L, R](l: L)(f: (L, Row) => F[Either[L, R]]) = {
-
-          l.tailRecM[F, Either[L, R]] { l =>
-            def apply(rows: List[Row]) = {
-              for {
-                result <- rows.foldWhileM(l)(f)
-              } yield {
-                result.asRight[L]
-              }
-            }
-
-            def fetchAndApply(rows: List[Row]) = {
-              for {
-                fetching <- fetch.start
-                result <- rows.foldWhileM(l)(f)
-                result <- result match {
-                  case l: Left[L, R] =>
-                    fetching.join as l.rightCast[Either[L, R]]
-                  case r: Right[L, R] => r.leftCast[L].asRight[L].pure[F]
-                }
-              } yield result
-            }
-
-            for {
-              fetched <- fetched
-              rows <- next
-              result <- if (fetched) apply(rows) else fetchAndApply(rows)
-            } yield result
-          }
-        }
-      }
-    }
+  implicit class ResultSetOps(private val self: AsyncResultSet) extends AnyVal {
+    def stream[F[_]: Async]: Stream[F, Row] =
+      StreamingCassandraSession.toStream[F](self)
   }
 
-  implicit class ScassandraSettableDataOps[A <: SettableData[A]](val self: A)
-      extends AnyVal {
+  implicit class ScassandraSettableDataOps[A <: Bindable[A]](private val self: A) extends AnyVal {
 
-    def encode[B](name: String, value: B)(implicit
-        encode: EncodeByName[B]
-    ): A = {
-      encode(self, name, value)
+    def encode[B](name: String, value: B)(implicit encode: EncodeByName[B]): A = {
+      encode.bindToData(self, name, value)
     }
 
     def encode[B](value: B)(implicit encode: EncodeRow[B]): A = {
@@ -76,7 +33,7 @@ object syntax {
     def encodeSome[B](name: String, value: Option[B])(implicit
         encode: EncodeByName[B]
     ): A = {
-      value.fold(self)(encode(self, name, _))
+      value.fold(self)(encode.bindToData(self, name, _))
     }
 
     def encodeSome[B](value: Option[B])(implicit encode: EncodeRow[B]): A = {
@@ -84,9 +41,7 @@ object syntax {
     }
   }
 
-  implicit class ScassandraGettableByNameDataOps(val self: GettableByNameData)
-      extends AnyVal {
-
+  implicit class ScassandraGettableByNameDataOps(private val self: GettableByName) extends AnyVal {
     def decode[A](name: String)(implicit decode: DecodeByName[A]): A = {
       decode(self, name)
     }
@@ -96,26 +51,20 @@ object syntax {
     }
   }
 
-  implicit class ScassandraGettableByIdxDataOps(val self: GettableByIndexData)
-      extends AnyVal {
-
+  implicit class ScassandraGettableByIdxDataOps(private val self: GettableByIndex) extends AnyVal {
     def decodeAt[A](idx: Int)(implicit decode: DecodeByIdx[A]): A = {
       decode(self, idx)
     }
   }
 
-  implicit def toCqlOps[A](a: A): ToCql.Ops.IdOps[A] = new ToCql.Ops.IdOps(a)
+  implicit def toCqlOps[A](a: A): ToCql.implicits.IdOpsToCql[A] = new ToCql.implicits.IdOpsToCql(a)
 
-  implicit class ScassandraStatementOps(val self: Statement) extends AnyVal {
-
-    def trace(enable: Boolean): Statement = {
-      if (enable) self.enableTracing()
-      else self.disableTracing()
-    }
+  implicit class ScassandraStatementOps[T <: Statement[T]](private val self: Statement[T]) extends AnyVal {
+    def trace(enable: Boolean): Statement[T] =
+      self.setTracing(enable)
   }
 
-  implicit class ScassandraUpdateSyntax[D <: GettableData & SettableData[D]](val data: D) extends AnyVal {
-
+  implicit class ScassandraUpdateSyntax[D <: Bindable[D]](private val data: D) extends AnyVal {
     def update[A](value: A)(implicit update: UpdateRow[A]): D = {
       update(data, value)
     }
@@ -127,6 +76,5 @@ object syntax {
     def updateAt[A](idx: Int, value: A)(implicit update: UpdateByIdx[A]): D = {
       update(data, idx, value)
     }
-
   }
 }

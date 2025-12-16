@@ -1,18 +1,18 @@
 package com.evolutiongaming.scassandra
 
-import com.datastax.driver.core.{QueryLogger, Cluster => ClusterJ}
+import com.datastax.oss.driver.api.core.CqlSession
+import com.datastax.oss.driver.api.core.session.{QueryLogger, Cluster as ClusterJ}
+import com.evolutiongaming.nel.Nel
 import com.evolutiongaming.util.ToJava
 
-import java.io.File
-import java.net.{InetSocketAddress, URL}
+import java.net.{InetSocketAddress, URI, URL}
+import java.nio.file.Path
 
 object CreateClusterJ {
-
-  def apply(config: CassandraConfig, clusterId: Int): ClusterJ = {
-
+  def apply(config: CassandraConfig, clusterId: Int): CqlSession = {
     val port = config.port
 
-    val contactPoints = config.contactPoints.map { contactPoint =>
+    val contactPoints: Nel[InetSocketAddress] = config.contactPoints.map { contactPoint =>
       contactPoint.split(":").map(_.trim) match {
         case Array(host, port) => new InetSocketAddress(host, port.toInt)
         case Array(host)       => new InetSocketAddress(host, port)
@@ -22,21 +22,19 @@ object CreateClusterJ {
       }
     }
 
-    val clusterName = s"${ config.name }-$clusterId"
-
-    val builder = ClusterJ.builder()
+    val builder = CqlSession.builder()
 
     config.cloudSecureConnectBundle match {
       case Some(CloudSecureConnectBundleConfig.File(path)) =>
-        builder.withCloudSecureConnectBundle(new File(path))
+        builder.withCloudSecureConnectBundle(Path.of(new URI(path)))
       case Some(CloudSecureConnectBundleConfig.Url(url))   =>
-        builder.withCloudSecureConnectBundle(new URL(url))
+        builder.withCloudSecureConnectBundle(new URI(url).toURL)
       case None                                            =>
-        builder.addContactPointsWithPorts(ToJava.from(contactPoints.toList))
+        builder.addContactPoints(ToJava.from(contactPoints.toList))
     }
 
     builder
-      .withClusterName(clusterName)
+//      .withClusterName(clusterName)
       .withPoolingOptions(config.pooling.asJava)
       .withReconnectionPolicy(config.reconnection.asJava)
       .withQueryOptions(config.query.asJava)

@@ -1,10 +1,11 @@
 package com.evolutiongaming.scassandra
 
-import com.datastax.driver.core.{ConsistencyLevel, QueryOptions}
+import com.datastax.oss.driver.api.core.ConsistencyLevel
+import com.datastax.oss.protocol.internal.request.query.QueryOptions
 import com.typesafe.config.Config
 import pureconfig.ConfigSource
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 /**
   * See [[https://docs.datastax.com/en/drivers/java/3.5/com/datastax/driver/core/QueryOptions.html]]
