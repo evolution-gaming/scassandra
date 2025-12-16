@@ -1,14 +1,26 @@
 package com.evolutiongaming.scassandra
 
-import com.datastax.driver.core.ConsistencyLevel
+import com.datastax.oss.driver.api.core.ConsistencyLevel
 import com.evolutiongaming.scassandra.util.ConfigReaderFromEnum
-import com.evolutiongaming.scassandra.util.PureconfigSyntax._
+import com.evolutiongaming.scassandra.util.PureconfigSyntax.*
 import pureconfig.ConfigReader
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 trait QueryConfigImplicits {
-  implicit val configReaderConsistencyLevel: ConfigReader[ConsistencyLevel] = ConfigReaderFromEnum(ConsistencyLevel.values())
+  implicit val configReaderConsistencyLevel: ConfigReader[ConsistencyLevel] = ConfigReaderFromEnum.forList(Vector(
+    ConsistencyLevel.ANY,
+    ConsistencyLevel.ONE,
+    ConsistencyLevel.TWO,
+    ConsistencyLevel.THREE,
+    ConsistencyLevel.QUORUM,
+    ConsistencyLevel.ALL,
+    ConsistencyLevel.LOCAL_ONE,
+    ConsistencyLevel.LOCAL_QUORUM,
+    ConsistencyLevel.EACH_QUORUM,
+    ConsistencyLevel.SERIAL,
+    ConsistencyLevel.LOCAL_SERIAL,
+  ), _.name)
 
   implicit val configReaderQueryConfig: ConfigReader[QueryConfig] = ConfigReader.fromCursor[QueryConfig] { cursor =>
     val defaultConfig = QueryConfig()

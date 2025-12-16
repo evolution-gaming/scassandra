@@ -1,8 +1,10 @@
 package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.policies.{ExponentialReconnectionPolicy, ReconnectionPolicy}
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption
 import com.datastax.oss.driver.api.core.connection.ReconnectionPolicy
 import com.datastax.oss.driver.internal.core.connection.ExponentialReconnectionPolicy
+import com.evolutiongaming.scassandra.util.FakeConfig
 import com.typesafe.config.Config
 import pureconfig.ConfigSource
 
@@ -17,7 +19,11 @@ final case class ReconnectionConfig(
 ) {
 
   def asJava: ReconnectionPolicy = {
-    new ExponentialReconnectionPolicy(minDelay.toMillis, maxDelay.toMillis)
+    val config = FakeConfig.createFakeContext(
+      DefaultDriverOption.RECONNECTION_BASE_DELAY.getPath -> java.time.Duration.ofMillis(minDelay.toMillis),
+      DefaultDriverOption.RECONNECTION_MAX_DELAY.getPath -> java.time.Duration.ofMillis(maxDelay.toMillis),
+    )
+    new ExponentialReconnectionPolicy(config)
   }
 }
 
