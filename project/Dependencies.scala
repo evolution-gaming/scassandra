@@ -10,7 +10,7 @@ object Dependencies {
   val `executor-tools`           = "com.evolutiongaming"    %% "executor-tools"                  % "1.0.5"
   val `config-tools`             = "com.evolutiongaming"    %% "config-tools"                    % "1.0.5"
   val nel                        = "com.evolutiongaming"    %% "nel"                             % "1.3.5"
-  val `testcontainers-cassandra` = "com.dimafeng"           %% "testcontainers-scala-cassandra"  % "0.43.6"
+  val `testcontainers-cassandra` = "com.dimafeng"           %% "testcontainers-scala-cassandra"  % "0.44.1"
   val `cats-helper`              = "com.evolutiongaming"    %% "cats-helper"                     % "3.9.0"
   val sstream                    = "com.evolutiongaming"    %% "sstream"                         % "1.1.0"
 
