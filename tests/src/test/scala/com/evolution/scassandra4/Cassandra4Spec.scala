@@ -4,6 +4,7 @@ import cats.data.NonEmptyList
 import cats.effect.unsafe.implicits.global
 import cats.effect.{IO, Resource}
 import cats.syntax.all._
+import com.datastax.oss.driver.api.core.DefaultConsistencyLevel
 import com.dimafeng.testcontainers.CassandraContainer
 import com.evolution.scassandra4.StreamingCassandraSession._
 import com.evolution.scassandra4.syntax._
@@ -32,20 +33,23 @@ class Cassandra4Spec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
     super.afterAll()
   }
 
+  private def sessionOf(config: CassandraConfig): Resource[IO, CassandraSession[IO]] = {
+    for {
+      clusterOf <- Resource.eval(CassandraClusterOf.of[IO])
+      cluster   <- clusterOf(config)
+      session   <- cluster.connect
+    } yield session
+  }
+
+  private lazy val config = CassandraConfig.Default.copy(
+    contactPoints = NonEmptyList.of(s"${ container.containerIpAddress }:${ container.mappedPort(9042) }"),
+  )
+
   "scassandra4" should {
 
     "insert with prepared statements and stream with paging" in {
 
-      val config = CassandraConfig.Default.copy(
-        contactPoints = NonEmptyList.of(s"${ container.containerIpAddress }:${ container.mappedPort(9042) }"),
-        query = QueryConfig(fetchSize = 2),
-      )
-
-      val session = for {
-        clusterOf <- Resource.eval(CassandraClusterOf.of[IO])
-        cluster   <- clusterOf(config)
-        session   <- cluster.connect
-      } yield session
+      val session = sessionOf(config.copy(query = QueryConfig(fetchSize = 2)))
 
       val result = session.use { session =>
         for {
@@ -72,6 +76,16 @@ class Cassandra4Spec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
         }
       }
 
+      result.unsafeRunSync()
+    }
+
+    "perform the health check statement" in {
+      val result = sessionOf(config).use { session =>
+        for {
+          statement <- CassandraHealthCheck.Statement.of[IO](session, DefaultConsistencyLevel.LOCAL_ONE)
+          _         <- statement
+        } yield ()
+      }
       result.unsafeRunSync()
     }
   }

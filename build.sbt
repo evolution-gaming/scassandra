@@ -81,6 +81,7 @@ lazy val scassandra4 = (project in file("scassandra4"))
       Cats.core,
       Cats.effect,
       `cassandra-driver-4`,
+      `cats-helper`,
       sstream,
       scalatest % Test
     ),

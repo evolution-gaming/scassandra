@@ -35,3 +35,17 @@ addSbtPlugin("com.evolution" % "sbt-artifactory-plugin" % "0.0.2")
 
 libraryDependencies += "com.evolutiongaming" %% "scassandra" % "3.2.1"
 ```
+
+## Java driver 4 (`scassandra4`)
+
+The `scassandra4` module is the Cassandra Java driver 4 based successor of this
+library. It mirrors the `scassandra` API, keeps the same HOCON config schema,
+and coexists with `scassandra` (and driver 3) on the same classpath, enabling
+incremental migration:
+
+```scala
+libraryDependencies += "com.evolution" %% "scassandra4" % "<version>"
+```
+
+See [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) for how to migrate, and
+[MIGRATION_PLAN.md](MIGRATION_PLAN.md) for the design behind it.
