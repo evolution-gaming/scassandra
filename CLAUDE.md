@@ -27,8 +27,9 @@ Cross-building: Scala 2.13.16 (default) and 3.3.7. Use `sbt "++3.3.7 test"` for 
 
 ## Module structure
 
-- `scassandra/` — the published library.
-- `tests/` — integration tests against a real Cassandra via testcontainers (`CassandraSpec`); not published, runs forked and non-parallel.
+- `scassandra/` — the published driver 3 library (`com.evolutiongaming:scassandra`); maintenance only.
+- `scassandra4/` — the driver 4 based library (`com.evolution:scassandra4`, package `com.evolution.scassandra4`), being built per `MIGRATION_PLAN.md`; no bincompat guarantees yet (`Compatibility.None`).
+- `tests/` — integration tests against a real Cassandra via testcontainers (`CassandraSpec`, `CoexistenceSpec`); not published, runs forked and non-parallel. `CoexistenceSpec` proves driver 3 and driver 4 coexist on one classpath.
 
 ## Architecture
 
@@ -47,6 +48,8 @@ The core chain mirrors the Java driver's object model, wrapped in `F[_]`:
 - an `asJava`-style conversion applied to the driver builder.
 
 Config specs load HOCON fixtures from `scassandra/src/test/resources/com/evolutiongaming/scassandra/`. When a cloud secure connect bundle is configured, contact points and port are ignored.
+
+The `scassandra4` module keeps this exact HOCON schema (its fixtures are verbatim copies) but translates it to driver 4's config in `CreateDriverConfigLoader` — the option mapping and the settings with no driver 4 counterpart are documented in that file's scaladoc.
 
 ### Encode/decode typeclasses
 
