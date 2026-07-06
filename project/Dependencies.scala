@@ -3,6 +3,7 @@ import sbt._
 object Dependencies {
 
   val `cassandra-driver`         = "com.datastax.cassandra"  % "cassandra-driver-core"           % "3.11.5"
+  val `cassandra-driver-4`       = "org.apache.cassandra"    % "java-driver-core"                % "4.19.0"
   // upgrade to version, which doesn't use JDK's `Unsafe` (https://github.com/jnr/jffi/issues/165#issuecomment-3444932263)
   val jffi                       = "com.github.jnr"          % "jffi"                            % "1.3.14"
 

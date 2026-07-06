@@ -41,7 +41,7 @@ lazy val root = (project in file("."))
     publish / skip := true,
     skip / publishArtifact := true
   )
-  .aggregate(scassandra, tests)
+  .aggregate(scassandra, scassandra4, tests)
 
 lazy val scassandra = (project in file("scassandra"))
   .settings(name := "scassandra")
@@ -69,6 +69,22 @@ lazy val scassandra = (project in file("scassandra"))
     )
   )
 
+// Cassandra Java driver 4 based client, see MIGRATION_PLAN.md
+lazy val scassandra4 = (project in file("scassandra4"))
+  .settings(name := "scassandra4")
+  .settings(commonSettings)
+  .settings(
+    organization := "com.evolution",
+    // brand-new artifact, no compatibility guarantees until the API settles
+    versionPolicyIntention := Compatibility.None,
+    libraryDependencies ++= Seq(
+      Cats.core,
+      Cats.effect,
+      `cassandra-driver-4`,
+      scalatest % Test
+    )
+  )
+
 lazy val tests = (project in file("tests"))
   .settings(name := "tests")
   .settings(commonSettings)
@@ -80,7 +96,10 @@ lazy val tests = (project in file("tests"))
       Test / parallelExecution := false
     )
   )
-  .dependsOn(scassandra % "test->test;compile->compile")
+  .dependsOn(
+    scassandra % "test->test;compile->compile",
+    scassandra4 % "test->test;compile->compile"
+  )
   .settings(
     libraryDependencies ++= Seq(
       `testcontainers-cassandra` % Test,
