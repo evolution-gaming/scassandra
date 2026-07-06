@@ -11,6 +11,8 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.testcontainers.utility.DockerImageName
 
+import scala.concurrent.duration._
+
 import com.evolutiongaming.{scassandra => v3}
 import com.evolution.{scassandra4 => v4}
 
@@ -54,8 +56,12 @@ class CoexistenceSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
       }
 
       val v4Session: Resource[IO, v4.CassandraSession[IO]] = {
+        // non-default values to exercise the driver 3 era schema → driver 4 translation
         val config = v4.CassandraConfig.Default.copy(
           contactPoints = NonEmptyList.of(s"$host:$port"),
+          query = v4.QueryConfig(fetchSize = 100),
+          socket = v4.SocketConfig(connectTimeout = 10.seconds, readTimeout = 20.seconds),
+          speculativeExecution = Some(v4.SpeculativeExecutionConfig()),
         )
         for {
           clusterOf <- Resource.eval(v4.CassandraClusterOf.of[IO])

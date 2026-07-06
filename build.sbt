@@ -82,6 +82,11 @@ lazy val scassandra4 = (project in file("scassandra4"))
       Cats.effect,
       `cassandra-driver-4`,
       scalatest % Test
+    ),
+    libraryDependencies ++= crossSettings(
+      scalaVersion.value,
+      if3 = List(Pureconfig.core),
+      if2 = List(Pureconfig.pureconfig),
     )
   )
 
