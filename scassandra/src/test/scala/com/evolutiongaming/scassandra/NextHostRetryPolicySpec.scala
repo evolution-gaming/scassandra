@@ -18,7 +18,8 @@ class NextHostRetryPolicySpec extends AnyWordSpec with Matchers {
       (retry, expected) <- List(
         (0, RetryDecision.Type.RETRY),
         (1, RetryDecision.Type.RETHROW),
-        (2, RetryDecision.Type.RETHROW))
+        (2, RetryDecision.Type.RETHROW),
+      )
     } {
 
       s"onWriteTimeout, retry: $retry, expected: $expected" in {

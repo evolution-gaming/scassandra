@@ -14,14 +14,14 @@ import scala.util.control.NoStackTrace
 class CassandraHealthCheckSpec extends AsyncFunSuite {
 
   test("CassandraHealthCheck#of(statement)") {
-    
+
     val expectedError = new RuntimeException with NoStackTrace
 
     val healthCheck = CassandraHealthCheck.of[IO](
       initial = 0.seconds,
       interval = 1.second,
       statement = Resource.eval(expectedError.raiseError[IO, Unit].pure[IO]),
-      log = Log.empty[IO]
+      log = Log.empty[IO],
     )
 
     val actualError = healthCheck.use(_.error.untilDefinedM)

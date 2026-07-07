@@ -8,5 +8,6 @@ final case class Masked[A](value: A) {
 }
 
 object Masked {
-  implicit def configReaderMasked[A: ConfigReader]: ConfigReader[Masked[A]] = ConfigReader[A].map { Masked(_) }
+  implicit def configReaderMasked[A: ConfigReader]: ConfigReader[Masked[A]] =
+    ConfigReader[A].map { Masked(_) }
 }

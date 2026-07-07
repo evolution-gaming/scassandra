@@ -2,11 +2,11 @@ package com.evolutiongaming.scassandra
 
 import cats.implicits._
 import com.typesafe.config.ConfigFactory
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 import pureconfig.ConfigSource
 
 import scala.concurrent.duration._
-import org.scalatest.funsuite.AnyFunSuite
-import org.scalatest.matchers.should.Matchers
 
 class ReconnectionConfigSpec extends AnyFunSuite with Matchers {
 
@@ -19,7 +19,8 @@ class ReconnectionConfigSpec extends AnyFunSuite with Matchers {
     val config = ConfigFactory.parseURL(getClass.getResource("reconnection.conf"))
     val expected = ReconnectionConfig(
       minDelay = 1.millis,
-      maxDelay = 2.seconds)
+      maxDelay = 2.seconds,
+    )
     ConfigSource.fromConfig(config).load[ReconnectionConfig] shouldEqual expected.asRight
   }
 }

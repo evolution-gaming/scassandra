@@ -10,14 +10,22 @@ import com.evolutiongaming.sstream.Stream
 
 object StreamingCassandraSession {
   implicit final class StreamingCassandraSessionOps[F[_]](val self: CassandraSession[F]) extends AnyVal {
-    def executeStream(statement: Statement)(implicit F: Async[F]): Stream[F, Row] = {
+    def executeStream(
+      statement: Statement,
+    )(implicit
+      F: Async[F],
+    ): Stream[F, Row] = {
       for {
         resultSet <- Stream.lift(self.execute(statement))
-        row       <- toStream(resultSet)
+        row <- toStream(resultSet)
       } yield row
     }
 
-    def executeStream(statement: String)(implicit F: Async[F]): Stream[F, Row] = executeStream(new SimpleStatement(statement))
+    def executeStream(
+      statement: String,
+    )(implicit
+      F: Async[F],
+    ): Stream[F, Row] = executeStream(new SimpleStatement(statement))
   }
 
   private def toStream[F[_]: Async](resultSet: ResultSet): Stream[F, Row] = {
@@ -36,9 +44,9 @@ object StreamingCassandraSession {
           def fetchAndApply(rows: List[Row]): F[Either[L, Either[L, R]]] = {
             for {
               fetching <- fetch.start
-              result   <- rows.foldWhileM(l)(f)
-              result   <- result match {
-                case l: Left[L, R]  => fetching.joinWithNever.as(l.rightCast[Either[L, R]])
+              result <- rows.foldWhileM(l)(f)
+              result <- result match {
+                case l: Left[L, R] => fetching.joinWithNever.as(l.rightCast[Either[L, R]])
                 case r: Right[L, R] => r.leftCast[L].asRight[L].pure[F]
               }
             } yield result
@@ -46,8 +54,8 @@ object StreamingCassandraSession {
 
           for {
             fetched <- fetched
-            rows    <- next
-            result  <- if (fetched) apply(rows) else fetchAndApply(rows)
+            rows <- next
+            result <- if (fetched) apply(rows) else fetchAndApply(rows)
           } yield result
         }
       }

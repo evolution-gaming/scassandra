@@ -1,14 +1,14 @@
 package com.evolutiongaming.scassandra
 
 import cats.implicits._
+import com.evolutiongaming.nel.Nel
 import com.evolutiongaming.scassandra.ReplicationStrategyConfig.NetworkTopology.DcFactor
 import com.evolutiongaming.scassandra.ReplicationStrategyConfig._
 import com.evolutiongaming.scassandra.syntax._
-import com.evolutiongaming.nel.Nel
 import com.typesafe.config.ConfigFactory
-import pureconfig.ConfigSource
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
+import pureconfig.ConfigSource
 
 class ReplicationStrategyConfigSpec extends AnyFunSuite with Matchers {
 
@@ -21,7 +21,8 @@ class ReplicationStrategyConfigSpec extends AnyFunSuite with Matchers {
   test("apply from simple config") {
     val config = ConfigFactory.parseURL(getClass.getResource("replication-strategy.conf"))
     val expected = Simple(2)
-    ConfigSource.fromConfig(config.getConfig("simple")).load[ReplicationStrategyConfig] shouldEqual expected.asRight
+    ConfigSource.fromConfig(config.getConfig("simple"))
+      .load[ReplicationStrategyConfig] shouldEqual expected.asRight
   }
 
   test("apply from empty simple config") {
@@ -33,7 +34,8 @@ class ReplicationStrategyConfigSpec extends AnyFunSuite with Matchers {
   test("apply from network topology config") {
     val config = ConfigFactory.parseURL(getClass.getResource("replication-strategy.conf"))
     val expected = NetworkTopology(Nel(DcFactor("dc1", 2), DcFactor("dc2", 3)))
-    ConfigSource.fromConfig(config.getConfig("network-topology")).load[ReplicationStrategyConfig] shouldEqual expected.asRight
+    ConfigSource.fromConfig(config.getConfig("network-topology"))
+      .load[ReplicationStrategyConfig] shouldEqual expected.asRight
   }
 
   test("Simple.toCql") {

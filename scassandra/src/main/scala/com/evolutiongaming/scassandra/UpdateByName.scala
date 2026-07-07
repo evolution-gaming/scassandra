@@ -5,9 +5,9 @@ import com.datastax.driver.core.{GettableByNameData, SettableData}
 trait UpdateByName[-A] {
 
   def apply[D <: GettableByNameData & SettableData[D]](
-      data: D,
-      name: String,
-      value: A
+    data: D,
+    name: String,
+    value: A,
   ): D
 
 }
@@ -19,9 +19,9 @@ object UpdateByName {
   implicit def fromEncodeByName[A: EncodeByName]: UpdateByName[A] =
     new UpdateByName[A] {
       def apply[D <: GettableByNameData & SettableData[D]](
-          data: D,
-          name: String,
-          value: A
+        data: D,
+        name: String,
+        value: A,
       ): D = EncodeByName[A].apply(data, name, value)
     }
 
@@ -29,9 +29,9 @@ object UpdateByName {
 
     def contramap[B](f: B => A): UpdateByName[B] = new UpdateByName[B] {
       def apply[D <: GettableByNameData & SettableData[D]](
-          data: D,
-          name: String,
-          value: B
+        data: D,
+        name: String,
+        value: B,
       ): D = self(data, name, f(value))
     }
 

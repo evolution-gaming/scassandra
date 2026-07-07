@@ -7,8 +7,8 @@ import pureconfig.ConfigSource
 import scala.concurrent.duration._
 
 /**
-  * See [[https://docs.datastax.com/en/developer/java-driver/3.5/manual/socket_options/]]
-  */
+ * See [[https://docs.datastax.com/en/developer/java-driver/3.5/manual/socket_options/]]
+ */
 final case class SocketConfig(
   connectTimeout: FiniteDuration = 5.seconds,
   readTimeout: FiniteDuration = 12.seconds,
@@ -17,7 +17,8 @@ final case class SocketConfig(
   soLinger: Option[Int] = None,
   tcpNoDelay: Option[Boolean] = Some(true),
   receiveBufferSize: Option[Int] = None,
-  sendBufferSize: Option[Int] = None) {
+  sendBufferSize: Option[Int] = None,
+) {
 
   def asJava: SocketOptions = {
     val socketOptions = new SocketOptions()

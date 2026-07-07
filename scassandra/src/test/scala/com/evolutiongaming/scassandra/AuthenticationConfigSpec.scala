@@ -2,9 +2,9 @@ package com.evolutiongaming.scassandra
 
 import cats.implicits._
 import com.typesafe.config.ConfigFactory
-import pureconfig.ConfigSource
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
+import pureconfig.ConfigSource
 
 class AuthenticationConfigSpec extends AnyFunSuite with Matchers {
 
@@ -12,7 +12,8 @@ class AuthenticationConfigSpec extends AnyFunSuite with Matchers {
     val config = ConfigFactory.parseURL(getClass.getResource("authentication.conf"))
     val expected = AuthenticationConfig(
       username = "username",
-      password = "password")
+      password = "password",
+    )
     ConfigSource.fromConfig(config).load[AuthenticationConfig] shouldEqual expected.asRight
   }
 }

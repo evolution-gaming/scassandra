@@ -3,11 +3,11 @@ package com.evolutiongaming.scassandra
 import cats.implicits._
 import com.datastax.driver.core.ConsistencyLevel
 import com.typesafe.config.ConfigFactory
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 import pureconfig.ConfigSource
 
 import scala.concurrent.duration._
-import org.scalatest.funsuite.AnyFunSuite
-import org.scalatest.matchers.should.Matchers
 
 class QueryConfigSpec extends AnyFunSuite with Matchers {
 
@@ -30,7 +30,8 @@ class QueryConfigSpec extends AnyFunSuite with Matchers {
       refreshSchemaInterval = 7.hours,
       metadata = false,
       rePrepareOnUp = false,
-      prepareOnAllHosts = false)
+      prepareOnAllHosts = false,
+    )
     val config = ConfigFactory.parseURL(getClass.getResource("query.conf"))
     ConfigSource.fromConfig(config).load[QueryConfig] shouldEqual expected.asRight
   }

@@ -2,11 +2,11 @@ package com.evolutiongaming.scassandra
 
 import cats.implicits._
 import com.typesafe.config.ConfigFactory
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 import pureconfig.ConfigSource
 
 import scala.concurrent.duration._
-import org.scalatest.funsuite.AnyFunSuite
-import org.scalatest.matchers.should.Matchers
 
 class PoolingConfigSpec extends AnyFunSuite with Matchers {
 
@@ -22,16 +22,19 @@ class PoolingConfigSpec extends AnyFunSuite with Matchers {
         newConnectionThreshold = 1,
         maxRequestsPerConnection = 2,
         connectionsPerHostMin = 3,
-        connectionsPerHostMax = 4),
+        connectionsPerHostMax = 4,
+      ),
       remote = PoolingConfig.HostConfig(
         newConnectionThreshold = 5,
         maxRequestsPerConnection = 6,
         connectionsPerHostMin = 7,
-        connectionsPerHostMax = 8),
+        connectionsPerHostMax = 8,
+      ),
       poolTimeout = 1.millis,
       idleTimeout = 2.seconds,
       maxQueueSize = 3,
-      heartbeatInterval = 4.hours)
+      heartbeatInterval = 4.hours,
+    )
     ConfigSource.fromConfig(config).load[PoolingConfig] shouldEqual expected.asRight
   }
 }

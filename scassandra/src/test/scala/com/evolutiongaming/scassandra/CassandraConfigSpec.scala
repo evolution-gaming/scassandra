@@ -31,7 +31,8 @@ class CassandraConfigSpec extends AnyFunSuite with Matchers {
       loadBalancing = Some(LoadBalancingConfig.Default),
       speculativeExecution = Some(SpeculativeExecutionConfig.Default),
       compression = Compression.LZ4,
-      logQueries = true)
+      logQueries = true,
+    )
     ConfigSource.fromConfig(config).load[CassandraConfig] shouldEqual expected.asRight
   }
 

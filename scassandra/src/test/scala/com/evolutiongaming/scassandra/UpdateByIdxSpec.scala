@@ -1,20 +1,22 @@
 package com.evolutiongaming.scassandra
 
-import java.time.{Instant, LocalDate => LocalDateJ}
-import java.time.temporal.ChronoUnit
-
 import com.datastax.driver.core.{Duration, LocalDate}
 import com.evolutiongaming.scassandra.syntax._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.time.temporal.ChronoUnit
+import java.time.{Instant, LocalDate => LocalDateJ}
+
 class UpdateByIdxSpec extends AnyWordSpec with Matchers {
 
-  def of[A](expected: A)(implicit
-      q: UpdateByIdx[A],
-      e: UpdateByIdx[Option[A]],
-      r: DecodeByIdx[A],
-      t: DecodeByIdx[Option[A]]
+  def of[A](
+    expected: A,
+  )(implicit
+    q: UpdateByIdx[A],
+    e: UpdateByIdx[Option[A]],
+    r: DecodeByIdx[A],
+    t: DecodeByIdx[Option[A]],
   ) = { () =>
     {
       val data = DataMock()
@@ -47,7 +49,7 @@ class UpdateByIdxSpec extends AnyWordSpec with Matchers {
         ("Set", of(Set("str"))),
         ("Duration", of(Duration.newInstance(1, 1, 1))),
         ("LocalDate", of(LocalDate.fromYearMonthDay(2019, 10, 4))),
-        ("LocalDateJ", of(LocalDateJ.of(2019, 10, 4)))
+        ("LocalDateJ", of(LocalDateJ.of(2019, 10, 4))),
       )
     } {
       s"encode & decode $name" in test()

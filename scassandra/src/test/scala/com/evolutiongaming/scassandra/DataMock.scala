@@ -1,16 +1,17 @@
 package com.evolutiongaming.scassandra
 
-import java.math.{BigInteger, BigDecimal => BigDecimalJ}
-import java.net.InetAddress
-import java.nio.ByteBuffer
-import java.util.{Date, UUID, List => ListJ, Map => MapJ, Set => SetJ}
-
 import com.datastax.driver.core._
 import com.google.common.reflect.TypeToken
 
+import java.math.{BigDecimal => BigDecimalJ, BigInteger}
+import java.net.InetAddress
+import java.nio.ByteBuffer
+import java.util.{Date, List => ListJ, Map => MapJ, Set => SetJ, UUID}
+
 case class DataMock(
   byName: Map[String, Any] = Map.empty,
-  byIdx: Map[Int, Any] = Map.empty) extends SettableData[DataMock] with GettableData {
+  byIdx: Map[Int, Any] = Map.empty,
+) extends SettableData[DataMock] with GettableData {
 
   private def notSupported() = sys.error("not support")
 
@@ -35,8 +36,18 @@ case class DataMock(
   def setList[E](i: Int, v: ListJ[E], elementsClass: Class[E]): DataMock = notSupported()
   def setList[E](i: Int, v: ListJ[E], elementsType: TypeToken[E]): DataMock = notSupported()
   def setMap[K, V](i: Int, v: MapJ[K, V]) = copy(byIdx = byIdx.updated(i, v))
-  def setMap[K, V](i: Int, v: MapJ[K, V], keysClass: Class[K], valuesClass: Class[V]): DataMock = notSupported()
-  def setMap[K, V](i: Int, v: MapJ[K, V], keysType: TypeToken[K], valuesType: TypeToken[V]): DataMock = notSupported()
+  def setMap[K, V](
+    i: Int,
+    v: MapJ[K, V],
+    keysClass: Class[K],
+    valuesClass: Class[V],
+  ): DataMock = notSupported()
+  def setMap[K, V](
+    i: Int,
+    v: MapJ[K, V],
+    keysType: TypeToken[K],
+    valuesType: TypeToken[V],
+  ): DataMock = notSupported()
   def setSet[E](i: Int, v: SetJ[E]) = copy(byIdx = byIdx.updated(i, v))
   def setSet[E](i: Int, v: SetJ[E], elementsClass: Class[E]) = copy(byIdx = byIdx.updated(i, v))
   def setSet[E](i: Int, v: SetJ[E], elementsType: TypeToken[E]) = copy(byIdx = byIdx.updated(i, v))
@@ -66,10 +77,21 @@ case class DataMock(
   def setInet(name: String, v: InetAddress) = copy(byName = byName.updated(name, v))
   def setList[E](name: String, v: ListJ[E]) = copy(byName = byName.updated(name, v))
   def setList[E](name: String, v: ListJ[E], elementsClass: Class[E]) = copy(byName = byName.updated(name, v))
-  def setList[E](name: String, v: ListJ[E], elementsType: TypeToken[E]) = copy(byName = byName.updated(name, v))
+  def setList[E](name: String, v: ListJ[E], elementsType: TypeToken[E]) =
+    copy(byName = byName.updated(name, v))
   def setMap[K, V](name: String, v: MapJ[K, V]) = copy(byName = byName.updated(name, v))
-  def setMap[K, V](name: String, v: MapJ[K, V], keysClass: Class[K], valuesClass: Class[V]) = copy(byName = byName.updated(name, v))
-  def setMap[K, V](name: String, v: MapJ[K, V], keysType: TypeToken[K], valuesType: TypeToken[V]) = copy(byName = byName.updated(name, v))
+  def setMap[K, V](
+    name: String,
+    v: MapJ[K, V],
+    keysClass: Class[K],
+    valuesClass: Class[V],
+  ) = copy(byName = byName.updated(name, v))
+  def setMap[K, V](
+    name: String,
+    v: MapJ[K, V],
+    keysType: TypeToken[K],
+    valuesType: TypeToken[V],
+  ) = copy(byName = byName.updated(name, v))
   def setSet[E](name: String, v: SetJ[E]) = copy(byName = byName.updated(name, v))
   def setSet[E](name: String, v: SetJ[E], elementsClass: Class[E]) = copy(byName = byName.updated(name, v))
   def setSet[E](name: String, v: SetJ[E], elementsType: TypeToken[E]) = copy(byName = byName.updated(name, v))
@@ -103,7 +125,8 @@ case class DataMock(
   def getSet[T](name: String, elementsClass: Class[T]) = byName.getOrElse(name, null).asInstanceOf[SetJ[T]]
   def getSet[T](name: String, elementsType: TypeToken[T]): SetJ[T] = notSupported()
   def getMap[K, V](name: String, keysClass: Class[K], valuesClass: Class[V]): MapJ[K, V] = notSupported()
-  def getMap[K, V](name: String, keysType: TypeToken[K], valuesType: TypeToken[V]): MapJ[K, V] = notSupported()
+  def getMap[K, V](name: String, keysType: TypeToken[K], valuesType: TypeToken[V]): MapJ[K, V] =
+    notSupported()
   def getUDTValue(name: String): UDTValue = notSupported()
   def getTupleValue(name: String): TupleValue = notSupported()
   def getObject(name: String): Object = notSupported()

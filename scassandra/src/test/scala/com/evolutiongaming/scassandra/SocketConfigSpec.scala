@@ -2,11 +2,11 @@ package com.evolutiongaming.scassandra
 
 import cats.implicits._
 import com.typesafe.config.ConfigFactory
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
 import pureconfig.ConfigSource
 
 import scala.concurrent.duration._
-import org.scalatest.funsuite.AnyFunSuite
-import org.scalatest.matchers.should.Matchers
 
 class SocketConfigSpec extends AnyFunSuite with Matchers {
 
@@ -25,7 +25,8 @@ class SocketConfigSpec extends AnyFunSuite with Matchers {
       soLinger = Some(3),
       tcpNoDelay = Some(false),
       receiveBufferSize = Some(4),
-      sendBufferSize = Some(5))
+      sendBufferSize = Some(5),
+    )
     ConfigSource.fromConfig(config).load[SocketConfig] shouldEqual expected.asRight
   }
 }

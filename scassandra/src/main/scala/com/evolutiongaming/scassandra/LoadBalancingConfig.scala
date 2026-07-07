@@ -5,11 +5,12 @@ import com.typesafe.config.Config
 import pureconfig.ConfigSource
 
 /**
-  * See [[https://docs.datastax.com/en/developer/java-driver/3.5/manual/load_balancing/]]
-  */
+ * See [[https://docs.datastax.com/en/developer/java-driver/3.5/manual/load_balancing/]]
+ */
 final case class LoadBalancingConfig(
   localDc: String = "localDc",
-  allowRemoteDcsForLocalConsistencyLevel: Boolean = false) {
+  allowRemoteDcsForLocalConsistencyLevel: Boolean = false,
+) {
 
   def asJava: Option[LoadBalancingPolicy] = {
     if (localDc.nonEmpty) {
@@ -32,7 +33,8 @@ object LoadBalancingConfig extends LoadBalancingConfigImplicits {
   def apply(config: Config): LoadBalancingConfig = apply(config, Default)
 
   @deprecated("use ConfigReader instead", "1.1.5")
-  def apply(config: Config, default: => LoadBalancingConfig): LoadBalancingConfig = fromConfig(config, default)
+  def apply(config: Config, default: => LoadBalancingConfig): LoadBalancingConfig =
+    fromConfig(config, default)
 
   def fromConfig(config: Config, default: => LoadBalancingConfig): LoadBalancingConfig = {
     ConfigSource.fromConfig(config).load[LoadBalancingConfig] getOrElse default
