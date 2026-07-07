@@ -57,49 +57,81 @@ object syntax {
   }
 
   implicit class ScassandraSettableDataOps[A <: SettableData[A]](val self: A)
-      extends AnyVal {
+  extends AnyVal {
 
-    def encode[B](name: String, value: B)(implicit
-        encode: EncodeByName[B]
+    def encode[B](
+      name: String,
+      value: B,
+    )(implicit
+      encode: EncodeByName[B],
     ): A = {
       encode(self, name, value)
     }
 
-    def encode[B](value: B)(implicit encode: EncodeRow[B]): A = {
+    def encode[B](
+      value: B,
+    )(implicit
+      encode: EncodeRow[B],
+    ): A = {
       encode(self, value)
     }
 
-    def encodeAt[B](idx: Int, value: B)(implicit encode: EncodeByIdx[B]): A = {
+    def encodeAt[B](
+      idx: Int,
+      value: B,
+    )(implicit
+      encode: EncodeByIdx[B],
+    ): A = {
       encode(self, idx, value)
     }
 
-    def encodeSome[B](name: String, value: Option[B])(implicit
-        encode: EncodeByName[B]
+    def encodeSome[B](
+      name: String,
+      value: Option[B],
+    )(implicit
+      encode: EncodeByName[B],
     ): A = {
       value.fold(self)(encode(self, name, _))
     }
 
-    def encodeSome[B](value: Option[B])(implicit encode: EncodeRow[B]): A = {
+    def encodeSome[B](
+      value: Option[B],
+    )(implicit
+      encode: EncodeRow[B],
+    ): A = {
       value.fold(self)(encode(self, _))
     }
   }
 
-  implicit class ScassandraGettableByNameDataOps(val self: GettableByNameData)
-      extends AnyVal {
+  implicit class ScassandraGettableByNameDataOps(
+    val self: GettableByNameData,
+  ) extends AnyVal {
 
-    def decode[A](name: String)(implicit decode: DecodeByName[A]): A = {
+    def decode[A](
+      name: String,
+    )(implicit
+      decode: DecodeByName[A],
+    ): A = {
       decode(self, name)
     }
 
-    def decode[A](implicit decode: DecodeRow[A]): A = {
+    def decode[A](
+      implicit
+      decode: DecodeRow[A],
+    ): A = {
       decode(self)
     }
   }
 
-  implicit class ScassandraGettableByIdxDataOps(val self: GettableByIndexData)
-      extends AnyVal {
+  implicit class ScassandraGettableByIdxDataOps(
+    val self: GettableByIndexData,
+  ) extends AnyVal {
 
-    def decodeAt[A](idx: Int)(implicit decode: DecodeByIdx[A]): A = {
+    def decodeAt[A](
+      idx: Int,
+    )(implicit
+      decode: DecodeByIdx[A],
+    ): A = {
       decode(self, idx)
     }
   }
@@ -116,15 +148,29 @@ object syntax {
 
   implicit class ScassandraUpdateSyntax[D <: GettableData & SettableData[D]](val data: D) extends AnyVal {
 
-    def update[A](value: A)(implicit update: UpdateRow[A]): D = {
+    def update[A](
+      value: A,
+    )(implicit
+      update: UpdateRow[A],
+    ): D = {
       update(data, value)
     }
 
-    def update[A](name: String, value: A)(implicit update: UpdateByName[A]): D = {
+    def update[A](
+      name: String,
+      value: A,
+    )(implicit
+      update: UpdateByName[A],
+    ): D = {
       update(data, name, value)
     }
 
-    def updateAt[A](idx: Int, value: A)(implicit update: UpdateByIdx[A]): D = {
+    def updateAt[A](
+      idx: Int,
+      value: A,
+    )(implicit
+      update: UpdateByIdx[A],
+    ): D = {
       update(data, idx, value)
     }
 

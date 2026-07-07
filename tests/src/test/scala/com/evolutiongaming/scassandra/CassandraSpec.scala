@@ -6,26 +6,25 @@ import cats.effect.{IO, Resource}
 import cats.implicits._
 import com.datastax.driver.core.{Duration, Row}
 import com.dimafeng.testcontainers.CassandraContainer
-import org.testcontainers.utility.DockerImageName
 import com.evolutiongaming.catshelper.CatsHelper._
 import com.evolutiongaming.catshelper.ToTry
+import com.evolutiongaming.nel.Nel
 import com.evolutiongaming.scassandra.IOSuite._
 import com.evolutiongaming.scassandra.syntax._
-import org.scalatest.BeforeAndAfterAll
 import com.evolutiongaming.sstream.Stream._
-import com.evolutiongaming.nel.Nel
-
-import scala.util.Try
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.testcontainers.utility.DockerImageName
 
+import scala.util.Try
 
 class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
   private lazy val cassandraContainer = CassandraContainer(
     image = DockerImageName.parse("cassandra:3.11.7"),
   )
 
-  private lazy val config = 
+  private lazy val config =
     CassandraConfig.Default.copy(
       contactPoints = Nel(cassandraContainer.containerIpAddress),
       port = cassandraContainer.mappedPort(9042),
@@ -40,7 +39,7 @@ class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
     val cassandraClusterOf = CassandraClusterOf.of[IO]
     val cassandraCluster = for {
       cassandraClusterOf <- Resource.eval(cassandraClusterOf)
-      cassandraCluster   <- cassandraClusterOf(config)
+      cassandraCluster <- cassandraClusterOf(config)
     } yield {
       cassandraCluster.mapK(FunctionK.id)
     }
@@ -109,14 +108,14 @@ class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
         }
       }
 
-
       "create keyspace" in {
         val query = CreateKeyspaceIfNotExists(keyspace, ReplicationStrategyConfig.Default)
         session.execute(query).toTry.get
       }
 
       "create table" in {
-        val query = s"CREATE TABLE IF NOT EXISTS $keyspace.$table (key TEXT PRIMARY KEY, value TEXT, duration DURATION)"
+        val query =
+          s"CREATE TABLE IF NOT EXISTS $keyspace.$table (key TEXT PRIMARY KEY, value TEXT, duration DURATION)"
         session.execute(query).toTry.get
       }
 
@@ -126,11 +125,11 @@ class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
         val query = s"INSERT INTO $keyspace.$table (key, value, duration) VALUES (?, ?, ?)"
         val result = for {
           prepared <- session.prepare(query)
-          bound     = prepared.bind()
+          bound = prepared.bind()
             .encode("key", "key")
             .encode("value", "value")
             .encode("duration", duration)
-          result   <- session.execute(bound)
+          result <- session.execute(bound)
         } yield {
           Option(result.one())
         }
@@ -149,26 +148,29 @@ class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
         val query = s"SELECT value, duration FROM $keyspace.$table WHERE key = ?"
         val result = for {
           prepared <- session.prepare(query)
-          bound     = prepared.bind().encode("key", "key")
-          result   <- session.execute(bound)
-        } yield for {
-          row <- Option(result.one())
-        } yield decodeRow(row)
+          bound = prepared.bind().encode("key", "key")
+          result <- session.execute(bound)
+        } yield {
+          for {
+            row <- Option(result.one())
+          } yield decodeRow(row)
+        }
 
         result.toTry shouldEqual ("value", duration).some.pure[Try]
 
         val resultStream = for {
-          resultSet  <- session.execute(query, Map("key" -> "key"))
+          resultSet <- session.execute(query, Map("key" -> "key"))
           stream = resultSet.stream[IO]
           row <- stream.first
-        } yield for {
-          row <- row
-        } yield decodeRow(row)
+        } yield {
+          for {
+            row <- row
+          } yield decodeRow(row)
+        }
 
         resultStream.toTry shouldEqual ("value", duration).some.pure[Try]
       }
     }
-
 
     lazy val metadata = cluster.metadata.toTry.get
 
@@ -195,7 +197,8 @@ class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
           "system",
           "system_distributed",
           "system_schema",
-          "system_auth")
+          "system_auth",
+        )
       }
 
       "KeyspaceMetadata" should {
@@ -207,11 +210,14 @@ class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
         }
 
         "schema" in {
-          keyspaceMetadata1.schema.toTry.get should startWith("CREATE KEYSPACE tmp_keyspace WITH REPLICATION = { 'class' : 'org.apache.cassandra.locator.SimpleStrategy', 'replication_factor': '1' } AND DURABLE_WRITES = true;")
+          keyspaceMetadata1.schema.toTry.get should startWith(
+            "CREATE KEYSPACE tmp_keyspace WITH REPLICATION = { 'class' : 'org.apache.cassandra.locator.SimpleStrategy', 'replication_factor': '1' } AND DURABLE_WRITES = true;",
+          )
         }
 
         "asCql" in {
-          keyspaceMetadata1.asCql.toTry.get shouldEqual "CREATE KEYSPACE tmp_keyspace WITH REPLICATION = { 'class' : 'org.apache.cassandra.locator.SimpleStrategy', 'replication_factor': '1' } AND DURABLE_WRITES = true;"
+          keyspaceMetadata1.asCql.toTry.get shouldEqual
+            "CREATE KEYSPACE tmp_keyspace WITH REPLICATION = { 'class' : 'org.apache.cassandra.locator.SimpleStrategy', 'replication_factor': '1' } AND DURABLE_WRITES = true;"
         }
 
         "tables" in {
@@ -233,7 +239,8 @@ class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
         "replication" in {
           keyspaceMetadata1.replication.toTry.get shouldEqual Map(
             ("class", "org.apache.cassandra.locator.SimpleStrategy"),
-            ("replication_factor", "1"))
+            ("replication_factor", "1"),
+          )
         }
 
         "userTypes" in {

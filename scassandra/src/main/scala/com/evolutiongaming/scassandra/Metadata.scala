@@ -3,7 +3,12 @@ package com.evolutiongaming.scassandra
 import cats.effect.Sync
 import cats.implicits._
 import cats.{FlatMap, ~>}
-import com.datastax.driver.core.{UserType, KeyspaceMetadata => KeyspaceMetadataJ, Metadata => MetadataJ, TableMetadata => TableMetadataJ}
+import com.datastax.driver.core.{
+  KeyspaceMetadata => KeyspaceMetadataJ,
+  Metadata => MetadataJ,
+  TableMetadata => TableMetadataJ,
+  UserType,
+}
 import com.evolutiongaming.util.ToScala
 
 trait Metadata[F[_]] {
@@ -19,7 +24,7 @@ trait Metadata[F[_]] {
 
 object Metadata {
 
-  def apply[F[_] : Sync](metadata: MetadataJ): Metadata[F] = {
+  def apply[F[_]: Sync](metadata: MetadataJ): Metadata[F] = {
     new Metadata[F] {
 
       val clusterName = Sync[F].delay { metadata.getClusterName }
@@ -48,30 +53,37 @@ object Metadata {
     }
   }
 
-
   implicit class MetadataOps[F[_]](val self: Metadata[F]) extends AnyVal {
 
-    def mapK[G[_]](f: F ~> G)(implicit G: FlatMap[G]): Metadata[G] = new Metadata[G] {
+    def mapK[G[_]](
+      f: F ~> G,
+    )(implicit
+      G: FlatMap[G],
+    ): Metadata[G] = new Metadata[G] {
 
       def clusterName = f(self.clusterName)
 
       def keyspace(name: String) = {
         for {
           a <- f(self.keyspace(name))
-        } yield for {
-          a <- a
         } yield {
-          a.mapK(f)
+          for {
+            a <- a
+          } yield {
+            a.mapK(f)
+          }
         }
       }
 
       def keyspaces = {
         for {
           a <- f(self.keyspaces)
-        } yield for {
-          a <- a
         } yield {
-          a.mapK(f)
+          for {
+            a <- a
+          } yield {
+            a.mapK(f)
+          }
         }
       }
 
@@ -79,7 +91,6 @@ object Metadata {
     }
   }
 }
-
 
 trait KeyspaceMetadata[F[_]] {
 
@@ -104,7 +115,7 @@ trait KeyspaceMetadata[F[_]] {
 
 object KeyspaceMetadata {
 
-  def apply[F[_] : Sync](keyspaceMetadata: KeyspaceMetadataJ): KeyspaceMetadata[F] = {
+  def apply[F[_]: Sync](keyspaceMetadata: KeyspaceMetadataJ): KeyspaceMetadata[F] = {
     new KeyspaceMetadata[F] {
 
       val name = keyspaceMetadata.getName
@@ -147,7 +158,6 @@ object KeyspaceMetadata {
     }
   }
 
-
   implicit class KeyspaceMetadataOps[F[_]](val self: KeyspaceMetadata[F]) extends AnyVal {
 
     def mapK[G[_]](f: F ~> G): KeyspaceMetadata[G] = new KeyspaceMetadata[G] {
@@ -172,7 +182,6 @@ object KeyspaceMetadata {
     }
   }
 }
-
 
 trait TableMetadata {
   def name: String

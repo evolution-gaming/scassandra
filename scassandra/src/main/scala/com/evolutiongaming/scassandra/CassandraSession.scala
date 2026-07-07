@@ -1,16 +1,15 @@
 package com.evolutiongaming.scassandra
 
-
 import cats.effect.{Resource, Sync}
 import cats.implicits._
 import cats.~>
 import com.datastax.driver.core.{Session => SessionJ, _}
 import com.evolutiongaming.scassandra.util.FromGFuture
-import com.evolutiongaming.util.{ToScala, ToJava}
+import com.evolutiongaming.util.{ToJava, ToScala}
 
 /**
-  * See [[com.datastax.driver.core.Session]]
-  */
+ * See [[com.datastax.driver.core.Session]]
+ */
 trait CassandraSession[F[_]] {
 
   def loggedKeyspace: F[Option[String]]
@@ -34,10 +33,12 @@ trait CassandraSession[F[_]] {
 
 object CassandraSession {
 
-  def apply[F[_]](implicit F: CassandraSession[F]): CassandraSession[F] = F
+  def apply[F[_]](
+    implicit
+    F: CassandraSession[F],
+  ): CassandraSession[F] = F
 
-
-  def apply[F[_] : Sync : FromGFuture](session: SessionJ): CassandraSession[F] = {
+  def apply[F[_]: Sync: FromGFuture](session: SessionJ): CassandraSession[F] = {
 
     new CassandraSession[F] {
 
@@ -80,8 +81,7 @@ object CassandraSession {
     }
   }
 
-
-  def of[F[_] : Sync : FromGFuture](session: F[SessionJ]): Resource[F, CassandraSession[F]] = {
+  def of[F[_]: Sync: FromGFuture](session: F[SessionJ]): Resource[F, CassandraSession[F]] = {
     val result = for {
       session <- session
     } yield {
@@ -91,10 +91,9 @@ object CassandraSession {
     Resource(result)
   }
 
-
   /**
-    * See [[com.evolutiongaming.scassandra.CassandraSession.State]]
-    */
+   * See [[com.evolutiongaming.scassandra.CassandraSession.State]]
+   */
   trait State[F[_]] {
 
     def connectedHosts: F[Iterable[Host]]
@@ -108,7 +107,7 @@ object CassandraSession {
 
   object State {
 
-    def apply[F[_] : Sync](state: SessionJ.State): State[F] = {
+    def apply[F[_]: Sync](state: SessionJ.State): State[F] = {
       new State[F] {
 
         val connectedHosts = {
@@ -133,7 +132,6 @@ object CassandraSession {
       }
     }
 
-
     implicit class StateOps[F[_]](val self: State[F]) extends AnyVal {
 
       def mapK[G[_]](f: F ~> G): State[G] = new State[G] {
@@ -148,7 +146,6 @@ object CassandraSession {
       }
     }
   }
-
 
   implicit class SessionOps[F[_]](val self: CassandraSession[F]) extends AnyVal {
 

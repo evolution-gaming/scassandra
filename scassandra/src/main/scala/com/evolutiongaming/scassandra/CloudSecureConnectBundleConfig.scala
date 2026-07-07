@@ -5,8 +5,8 @@ import pureconfig.ConfigReader
 import pureconfig.error.ExceptionThrown
 
 /**
-  * See [[https://docs.datastax.com/en/developer/java-driver/3.11/manual/cloud/]]
-  */
+ * See [[https://docs.datastax.com/en/developer/java-driver/3.11/manual/cloud/]]
+ */
 sealed trait CloudSecureConnectBundleConfig
 
 object CloudSecureConnectBundleConfig {
@@ -25,19 +25,20 @@ object CloudSecureConnectBundleConfig {
 
       (fileOpt, urlOpt) match {
         case (Some(filePath), _) => File(filePath).asRight
-        case (_, Some(urlStr))   => Url(urlStr).asRight
-        case (None, None)        => c.failed(ExceptionThrown(new IllegalArgumentException(
-          "a non-empty string should be set for either file or url",
-        )))
+        case (_, Some(urlStr)) => Url(urlStr).asRight
+        case (None, None) => c.failed(ExceptionThrown(new IllegalArgumentException(
+            "a non-empty string should be set for either file or url",
+          )))
       }
     }
 
   /**
-    * Cloud secure connect bundle file will be loaded from the filesystem
-    */
+   * Cloud secure connect bundle file will be loaded from the filesystem
+   */
   final case class File(path: String) extends CloudSecureConnectBundleConfig
+
   /**
-    * Cloud secure connect bundle file will be loaded from an URL
-    */
+   * Cloud secure connect bundle file will be loaded from an URL
+   */
   final case class Url(value: String) extends CloudSecureConnectBundleConfig
 }

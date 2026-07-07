@@ -12,7 +12,8 @@ final case class NextHostRetryPolicy(retries: Int) extends RetryPolicy {
     consistencyLevel: ConsistencyLevel,
     requiredReplica: Int,
     aliveReplica: Int,
-    retryNr: Int): RetryDecision = {
+    retryNr: Int,
+  ): RetryDecision = {
 
     if (retryNr == 0) tryNextHost(consistencyLevel, retryNr)
     else retry(consistencyLevel, retryNr)
@@ -24,7 +25,8 @@ final case class NextHostRetryPolicy(retries: Int) extends RetryPolicy {
     writeType: WriteType,
     requiredAcks: Int,
     receivedAcks: Int,
-    retryNr: Int): RetryDecision = {
+    retryNr: Int,
+  ): RetryDecision = {
 
     retry(consistencyLevel, retryNr)
   }
@@ -35,7 +37,8 @@ final case class NextHostRetryPolicy(retries: Int) extends RetryPolicy {
     requiredResponses: Int,
     receivedResponses: Int,
     dataRetrieved: Boolean,
-    retryNr: Int): RetryDecision = {
+    retryNr: Int,
+  ): RetryDecision = {
 
     retry(consistencyLevel, retryNr)
   }
@@ -43,7 +46,8 @@ final case class NextHostRetryPolicy(retries: Int) extends RetryPolicy {
     statement: Statement,
     consistencyLevel: ConsistencyLevel,
     cause: DriverException,
-    nbRetry: Int): RetryDecision = {
+    nbRetry: Int,
+  ): RetryDecision = {
 
     tryNextHost(consistencyLevel, nbRetry)
   }

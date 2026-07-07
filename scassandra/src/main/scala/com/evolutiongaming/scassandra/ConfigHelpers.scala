@@ -10,17 +10,25 @@ import scala.reflect.ClassTag
 
 object ConfigHelpers {
 
-  implicit def nelFromConf[A](implicit fromConf: FromConf[List[A]]): FromConf[Nel[A]] = {
+  implicit def nelFromConf[A](
+    implicit
+    fromConf: FromConf[List[A]],
+  ): FromConf[Nel[A]] = {
     FromConf { case (conf, path) =>
       val list = fromConf(conf, path)
       list match {
-        case Nil     => throw new ConfigException.BadValue(conf.origin(), path, s"Cannot parse Nel from empty list")
-        case x :: xs => Nel(x, xs)
+        case Nil =>
+          throw new ConfigException.BadValue(conf.origin(), path, s"Cannot parse Nel from empty list")
+        case x :: xs =>
+          Nel(x, xs)
       }
     }
   }
 
-  implicit def nelReader[T](implicit reader: ConfigReader[List[T]]): ConfigReader[Nel[T]] = {
+  implicit def nelReader[T](
+    implicit
+    reader: ConfigReader[List[T]],
+  ): ConfigReader[Nel[T]] = {
     reader.emap { x =>
       Nel.opt(x).toRight(EmptyTraversableFound(implicitly[ClassTag[Nel[T]]].toString()))
     }

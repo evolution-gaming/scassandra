@@ -26,7 +26,8 @@ lazy val commonSettings = Seq(
     scalaVersion.value,
     if3 = List("-Ykind-projector", "-language:implicitConversions", "-explain", "-deprecation"),
     if2 = List("-Xsource:3"),
-  ))
+  ),
+)
 
 addCommandAlias("fmt", "+all scalafmtAll scalafmtSbt")
 //  addCommandAlias("check", "all versionPolicyCheck Compile/doc")
@@ -38,7 +39,7 @@ lazy val root = (project in file("."))
   .settings(commonSettings)
   .settings(
     publish / skip := true,
-    skip / publishArtifact := true
+    skip / publishArtifact := true,
   )
   .aggregate(scassandra, tests)
 
@@ -57,15 +58,15 @@ lazy val scassandra = (project in file("scassandra"))
       `cassandra-driver`,
       jffi,
       `executor-tools`,
-      Pureconfig.cats
-    )
+      Pureconfig.cats,
+    ),
   )
   .settings(
     libraryDependencies ++= crossSettings(
       scalaVersion.value,
       if3 = List(Pureconfig.core),
       if2 = List(Pureconfig.pureconfig),
-    )
+    ),
   )
 
 lazy val tests = (project in file("tests"))
@@ -76,8 +77,8 @@ lazy val tests = (project in file("tests"))
       publish / skip := true,
       skip / publishArtifact := true,
       Test / fork := true,
-      Test / parallelExecution := false
-    )
+      Test / parallelExecution := false,
+    ),
   )
   .dependsOn(scassandra % "test->test;compile->compile")
   .settings(
@@ -87,6 +88,6 @@ lazy val tests = (project in file("tests"))
       Slf4j.`log4j-over-slf4j` % Test,
       Logback.core % Test,
       Logback.classic % Test,
-      scalatest % Test
-    )
+      scalatest % Test,
+    ),
   )

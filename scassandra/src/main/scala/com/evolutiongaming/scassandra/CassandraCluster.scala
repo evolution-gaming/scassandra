@@ -21,10 +21,12 @@ trait CassandraCluster[F[_]] {
 
 object CassandraCluster {
 
-  def apply[F[_]](implicit F: CassandraCluster[F]): CassandraCluster[F] = F
+  def apply[F[_]](
+    implicit
+    F: CassandraCluster[F],
+  ): CassandraCluster[F] = F
 
-
-  def apply[F[_] : Sync : FromGFuture](cluster: ClusterJ): CassandraCluster[F] = {
+  def apply[F[_]: Sync: FromGFuture](cluster: ClusterJ): CassandraCluster[F] = {
 
     new CassandraCluster[F] {
 
@@ -60,17 +62,15 @@ object CassandraCluster {
     }
   }
 
-
-  def of[F[_] : Sync : FromGFuture](
+  def of[F[_]: Sync: FromGFuture](
     config: CassandraConfig,
-    clusterId: Int
+    clusterId: Int,
   ): Resource[F, CassandraCluster[F]] = {
     val clusterJ = Sync[F].delay { CreateClusterJ(config, clusterId) }
     of(clusterJ)
   }
 
-
-  def of[F[_] : Sync : FromGFuture](cluster: F[ClusterJ]): Resource[F, CassandraCluster[F]] = {
+  def of[F[_]: Sync: FromGFuture](cluster: F[ClusterJ]): Resource[F, CassandraCluster[F]] = {
     val result = for {
       cluster <- cluster
     } yield {
@@ -80,10 +80,14 @@ object CassandraCluster {
     Resource(result)
   }
 
-
   implicit class CassandraClusterOps[F[_]](val self: CassandraCluster[F]) extends AnyVal {
 
-    def mapK[G[_]](f: F ~> G)(implicit F: MonadCancel[F, _], G: MonadCancel[G, _]): CassandraCluster[G] = new CassandraCluster[G] {
+    def mapK[G[_]](
+      f: F ~> G,
+    )(implicit
+      F: MonadCancel[F, _],
+      G: MonadCancel[G, _],
+    ): CassandraCluster[G] = new CassandraCluster[G] {
 
       def connect = {
         for {

@@ -7,8 +7,9 @@ import pureconfig.ConfigSource
 import scala.concurrent.duration._
 
 /**
-  * See [[https://docs.datastax.com/en/drivers/java/3.5/com/datastax/driver/core/QueryOptions.html]]
-  */
+ * See
+ * [[https://docs.datastax.com/en/drivers/java/3.5/com/datastax/driver/core/QueryOptions.html]]
+ */
 final case class QueryConfig(
   consistency: ConsistencyLevel = ConsistencyLevel.LOCAL_ONE,
   serialConsistency: ConsistencyLevel = ConsistencyLevel.SERIAL,
@@ -22,7 +23,8 @@ final case class QueryConfig(
   refreshSchemaInterval: FiniteDuration = 1.second,
   metadata: Boolean = true,
   rePrepareOnUp: Boolean = true,
-  prepareOnAllHosts: Boolean = true) {
+  prepareOnAllHosts: Boolean = true,
+) {
 
   def asJava: QueryOptions = {
     new QueryOptions()
@@ -51,7 +53,7 @@ object QueryConfig extends QueryConfigImplicits {
 
   @deprecated("use ConfigReader instead", "1.1.5")
   def apply(config: Config, default: => QueryConfig): QueryConfig = fromConfig(config, default)
-  
+
   def fromConfig(config: Config, default: => QueryConfig): QueryConfig = {
     ConfigSource.fromConfig(config).load[QueryConfig] getOrElse default
   }

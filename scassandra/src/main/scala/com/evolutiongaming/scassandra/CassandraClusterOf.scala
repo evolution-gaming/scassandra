@@ -11,8 +11,9 @@ trait CassandraClusterOf[F[_]] {
   def apply(config: CassandraConfig): Resource[F, CassandraCluster[F]]
 
   /**
-   * Creates a new [[CassandraClusterOf]] instance with an added hook for observing the value of
-   * the underlying Java Cassandra driver `Cluster` object used for [[CassandraCluster]] creation.
+   * Creates a new [[CassandraClusterOf]] instance with an added hook for observing the
+   * value of the underlying Java Cassandra driver `Cluster` object used for
+   * [[CassandraCluster]] creation.
    *
    * This method can be used to register listeners to the Java Cassandra driver `Cluster`.
    */
@@ -37,10 +38,12 @@ trait CassandraClusterOf[F[_]] {
 
 object CassandraClusterOf {
 
-  def apply[F[_]](implicit F: CassandraClusterOf[F]): CassandraClusterOf[F] = F
+  def apply[F[_]](
+    implicit
+    F: CassandraClusterOf[F],
+  ): CassandraClusterOf[F] = F
 
-
-  def of[F[_] : Sync : FromGFuture]: F[CassandraClusterOf[F]] = {
+  def of[F[_]: Sync: FromGFuture]: F[CassandraClusterOf[F]] = {
     for {
       clusterIdRef <- Ref[F].of(0)
     } yield {
@@ -48,16 +51,14 @@ object CassandraClusterOf {
     }
   }
 
-
-  private def makeImpl[F[_] : Sync : FromGFuture](genClusterId: F[Int]): CassandraClusterOf[F] = {
+  private def makeImpl[F[_]: Sync: FromGFuture](genClusterId: F[Int]): CassandraClusterOf[F] = {
     new CassandraClusterOfImpl(
       genClusterId = genClusterId,
       clusterJObserveHook = _ => Applicative[F].unit,
     )
   }
 
-  private final class CassandraClusterOfImpl[F[_] : Sync : FromGFuture]
-  (
+  private final class CassandraClusterOfImpl[F[_]: Sync: FromGFuture](
     genClusterId: F[Int],
     clusterJObserveHook: ClusterJ => F[Unit],
   ) extends CassandraClusterOf[F] {

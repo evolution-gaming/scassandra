@@ -4,8 +4,8 @@ import com.typesafe.config.Config
 import pureconfig.ConfigSource
 
 /**
-  * See [[https://docs.datastax.com/en/developer/java-driver/3.5/manual/auth/]]
-  */
+ * See [[https://docs.datastax.com/en/developer/java-driver/3.5/manual/auth/]]
+ */
 final case class AuthenticationConfig(username: String, password: Masked[String])
 
 object AuthenticationConfig extends AuthenticationConfigImplicits {

@@ -10,10 +10,12 @@ import com.typesafe.config.Config
 import pureconfig.{ConfigCursor, ConfigReader, ConfigSource}
 
 /**
-  * See [[https://docs.datastax.com/en/developer/java-driver/3.5/manual/#setting-up-the-driver]]
-  *
-  * If a cloud secure connect bundle is specified, the contact points and port settings will be ignored.
-  */
+ * See
+ * [[https://docs.datastax.com/en/developer/java-driver/3.5/manual/#setting-up-the-driver]]
+ *
+ * If a cloud secure connect bundle is specified, the contact points and port settings
+ * will be ignored.
+ */
 final case class CassandraConfig(
   name: String = "cluster",
   port: Int = 9042,
@@ -30,10 +32,10 @@ final case class CassandraConfig(
   logQueries: Boolean = false,
   jmxReporting: Boolean = false,
   cloudSecureConnectBundle: Option[CloudSecureConnectBundleConfig] = None,
-  metrics: Boolean = false
+  metrics: Boolean = false,
 ) {
 
-  //for binary compatibility
+  // for binary compatibility
   private[scassandra] def this(
     name: String,
     port: Int,
@@ -66,10 +68,10 @@ final case class CassandraConfig(
       logQueries = logQueries,
       jmxReporting = jmxReporting,
       cloudSecureConnectBundle = None,
-      metrics = false)
+      metrics = false,
+    )
   }
 }
-
 
 object CassandraConfig {
 
@@ -77,18 +79,16 @@ object CassandraConfig {
 
   implicit val configReaderCompression: ConfigReader[Compression] = ConfigReaderFromEnum(Compression.values())
 
-  implicit val configReaderProtocolVersion: ConfigReader[ProtocolVersion] = ConfigReaderFromEnum(ProtocolVersion.values())
+  implicit val configReaderProtocolVersion: ConfigReader[ProtocolVersion] =
+    ConfigReaderFromEnum(ProtocolVersion.values())
 
-  implicit val configReaderCassandraConfig: ConfigReader[CassandraConfig] = {
-    (cursor: ConfigCursor) => {
-      for {
-        cursor <- cursor.asObjectCursor
-      } yield {
-        fromConfig(cursor.objValue.toConfig, Default)
-      }
+  implicit val configReaderCassandraConfig: ConfigReader[CassandraConfig] = (cursor: ConfigCursor) => {
+    for {
+      cursor <- cursor.asObjectCursor
+    } yield {
+      fromConfig(cursor.objValue.toConfig, Default)
     }
   }
-
 
   @deprecated("use ConfigReader instead", "1.1.5")
   def apply(config: Config): CassandraConfig = fromConfig(config, Default)
@@ -96,7 +96,7 @@ object CassandraConfig {
   @deprecated("use ConfigReader instead", "1.1.5")
   def apply(config: Config, default: => CassandraConfig): CassandraConfig = fromConfig(config, default)
 
-  //for binary compatibility
+  // for binary compatibility
   private[scassandra] def apply(
     name: String,
     port: Int,
@@ -130,7 +130,6 @@ object CassandraConfig {
     jmxReporting = jmxReporting,
   )
 
-
   def fromConfig(config: Config, default: => CassandraConfig): CassandraConfig = {
 
     val source = ConfigSource.fromConfig(config)
@@ -143,7 +142,8 @@ object CassandraConfig {
     val socket = get[SocketConfig]("socket") getOrElse default.socket
     val authentication = get[AuthenticationConfig]("authentication").toOption orElse default.authentication
     val loadBalancing = get[LoadBalancingConfig]("load-balancing").toOption orElse default.loadBalancing
-    val speculativeExecution = get[SpeculativeExecutionConfig]("speculative-execution").toOption orElse default.speculativeExecution
+    val speculativeExecution = get[SpeculativeExecutionConfig]("speculative-execution").toOption
+      .orElse(default.speculativeExecution)
     val cloudSecureConnectBundle = get[CloudSecureConnectBundleConfig](
       "cloud-secure-connect-bundle",
     ).toOption orElse default.cloudSecureConnectBundle
@@ -164,6 +164,7 @@ object CassandraConfig {
       compression = get[Compression]("compression") getOrElse default.compression,
       logQueries = get[Boolean]("log-queries") getOrElse default.logQueries,
       jmxReporting = get[Boolean]("jmx-reporting") getOrElse default.jmxReporting,
-      metrics = get[Boolean]("metrics") getOrElse default.metrics)
+      metrics = get[Boolean]("metrics") getOrElse default.metrics,
+    )
   }
 }

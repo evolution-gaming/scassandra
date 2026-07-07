@@ -1,12 +1,12 @@
 package com.evolutiongaming.scassandra
 
-import java.nio.ByteBuffer
-import java.time.{Instant, LocalDate => LocalDateJ}
-import java.util.Date
-
 import cats.Contravariant
 import com.datastax.driver.core.{Duration, LocalDate, SettableData, TypeCodec}
 import com.evolutiongaming.util.ToJava
+
+import java.nio.ByteBuffer
+import java.time.{Instant, LocalDate => LocalDateJ}
+import java.util.Date
 
 trait EncodeByIdx[-A] {
 
@@ -19,10 +19,15 @@ object EncodeByIdx {
     def contramap[A, B](fa: EncodeByIdx[A])(f: B => A) = fa.contramap(f)
   }
 
+  def apply[A](
+    implicit
+    encode: EncodeByIdx[A],
+  ): EncodeByIdx[A] = encode
 
-  def apply[A](implicit encode: EncodeByIdx[A]): EncodeByIdx[A] = encode
-
-  implicit def optEncodeByIdx[A](implicit encode: EncodeByIdx[A]): EncodeByIdx[Option[A]] = new EncodeByIdx[Option[A]] {
+  implicit def optEncodeByIdx[A](
+    implicit
+    encode: EncodeByIdx[A],
+  ): EncodeByIdx[Option[A]] = new EncodeByIdx[Option[A]] {
 
     def apply[B <: SettableData[B]](data: B, idx: Int, value: Option[A]) = {
       value.fold {
@@ -33,41 +38,33 @@ object EncodeByIdx {
     }
   }
 
-
   implicit val boolEncodeByIdx: EncodeByIdx[Boolean] = new EncodeByIdx[Boolean] {
     def apply[B <: SettableData[B]](data: B, idx: Int, value: Boolean) = data.setBool(idx, value)
   }
-
 
   implicit val strEncodeByIdx: EncodeByIdx[String] = new EncodeByIdx[String] {
     def apply[B <: SettableData[B]](data: B, idx: Int, value: String) = data.setString(idx, value)
   }
 
-
   implicit val shortEncodeByIdx: EncodeByIdx[Short] = new EncodeByIdx[Short] {
     def apply[B <: SettableData[B]](data: B, idx: Int, value: Short) = data.setShort(idx, value)
   }
-
 
   implicit val intEncodeByIdx: EncodeByIdx[Int] = new EncodeByIdx[Int] {
     def apply[B <: SettableData[B]](data: B, idx: Int, value: Int) = data.setInt(idx, value)
   }
 
-
   implicit val longEncodeByIdx: EncodeByIdx[Long] = new EncodeByIdx[Long] {
     def apply[B <: SettableData[B]](data: B, idx: Int, value: Long) = data.setLong(idx, value)
   }
-
 
   implicit val floatEncodeByIdx: EncodeByIdx[Float] = new EncodeByIdx[Float] {
     def apply[B <: SettableData[B]](data: B, idx: Int, value: Float) = data.setFloat(idx, value)
   }
 
-
   implicit val DoubleEncodeByIdx: EncodeByIdx[Double] = new EncodeByIdx[Double] {
     def apply[B <: SettableData[B]](data: B, idx: Int, value: Double) = data.setDouble(idx, value)
   }
-
 
   implicit val instantEncodeByIdx: EncodeByIdx[Instant] = new EncodeByIdx[Instant] {
 
@@ -77,13 +74,11 @@ object EncodeByIdx {
     }
   }
 
-
   implicit val bigDecimalEncodeByIdx: EncodeByIdx[BigDecimal] = new EncodeByIdx[BigDecimal] {
     def apply[B <: SettableData[B]](data: B, idx: Int, value: BigDecimal) = {
       data.setDecimal(idx, value.bigDecimal)
     }
   }
-
 
   implicit val setStrEncodeByIdx: EncodeByIdx[Set[String]] = new EncodeByIdx[Set[String]] {
     def apply[B <: SettableData[B]](data: B, idx: Int, value: Set[String]) = {
@@ -121,18 +116,21 @@ object EncodeByIdx {
 
     implicit class SettableDataOps[A <: SettableData[A]](val self: A) extends AnyVal {
 
-      def encodeAt[B](idx: Int, value: B)(implicit encode: EncodeByIdx[B]): A = {
+      def encodeAt[B](
+        idx: Int,
+        value: B,
+      )(implicit
+        encode: EncodeByIdx[B],
+      ): A = {
         encode(self, idx, value)
       }
     }
   }
 
-
   implicit class EncodeByIdxOps[A](val self: EncodeByIdx[A]) extends AnyVal {
-    
+
     def contramap[B](f: B => A): EncodeByIdx[B] = new EncodeByIdx[B] {
       def apply[C <: SettableData[C]](data: C, idx: Int, value: B) = self(data, idx, f(value))
     }
   }
 }
-
