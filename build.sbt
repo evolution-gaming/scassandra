@@ -28,15 +28,14 @@ lazy val commonSettings = Seq(
     if2 = List("-Xsource:3"),
   ))
 
-val alias: Seq[sbt.Def.Setting[?]] =
-  //  addCommandAlias("check", "all versionPolicyCheck Compile/doc") ++
-  addCommandAlias("check", "show version") ++
-    addCommandAlias("build", "all compile test")
+addCommandAlias("fmt", "+all scalafmtAll scalafmtSbt")
+//  addCommandAlias("check", "all versionPolicyCheck Compile/doc")
+addCommandAlias("check", "show version")
+addCommandAlias("build", "all compile test")
 
 lazy val root = (project in file("."))
   .settings(name := "scassandra")
   .settings(commonSettings)
-  .settings(alias)
   .settings(
     publish / skip := true,
     skip / publishArtifact := true
