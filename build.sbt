@@ -30,9 +30,10 @@ lazy val commonSettings = Seq(
 )
 
 addCommandAlias("fmt", "+all scalafmtAll scalafmtSbt")
-//  addCommandAlias("check", "all versionPolicyCheck Compile/doc")
-addCommandAlias("check", "show version")
-addCommandAlias("build", "all compile test")
+// check needed for Evo workflows/release.yml - it adds '+' before calling check,
+// tests are executed separately
+addCommandAlias("check", "all scalafmtCheckAll scalafmtSbtCheck versionPolicyCheck Compile/doc")
+addCommandAlias("build", "; +check; +test")
 
 lazy val root = (project in file("."))
   .settings(name := "scassandra")
