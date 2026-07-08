@@ -1,12 +1,13 @@
 package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.{Duration, LocalDate}
-import com.evolutiongaming.scassandra.syntax._
+import com.evolutiongaming.scassandra.syntax.*
+import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import java.time.temporal.ChronoUnit
-import java.time.{Instant, LocalDate => LocalDateJ}
+import java.time.{Instant, LocalDate as LocalDateJ}
 
 class EncodeDecodeByNameSpec extends AnyWordSpec with Matchers {
 
@@ -17,7 +18,7 @@ class EncodeDecodeByNameSpec extends AnyWordSpec with Matchers {
     d: DecodeByName[A],
     eOpt: EncodeByName[Option[A]],
     dOpt: DecodeByName[Option[A]],
-  ) = {
+  ): () => Assertion = {
 
     () =>
       {

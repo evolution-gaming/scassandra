@@ -1,27 +1,32 @@
-import sbt._
+import sbt.*
 
 object Dependencies {
 
   val `cassandra-driver` = "com.datastax.cassandra" % "cassandra-driver-core" % "3.11.5"
-  // upgrade to version, which doesn't use JDK's `Unsafe` (https://github.com/jnr/jffi/issues/165#issuecomment-3444932263)
+  // Override the version coming with the Cassandra driver to the version,
+  // which doesn't use JDK's `Unsafe`:
+  // https://github.com/jnr/jffi/issues/165#issuecomment-3444932263
+  //
+  // when updating, make sure it is compatible with the driver version used
+  // TODO: remove explicit dependency when driver 3 support dropped
   val jffi = "com.github.jnr" % "jffi" % "1.3.14"
 
-  val scalatest = "org.scalatest" %% "scalatest" % "3.2.19"
+  val scalatest = "org.scalatest" %% "scalatest" % "3.2.20"
   val `executor-tools` = "com.evolutiongaming" %% "executor-tools" % "1.0.5"
   val `config-tools` = "com.evolutiongaming" %% "config-tools" % "1.0.5"
   val nel = "com.evolutiongaming" %% "nel" % "1.3.5"
   val `testcontainers-cassandra` = "com.dimafeng" %% "testcontainers-scala-cassandra" % "0.44.1"
-  val `cats-helper` = "com.evolutiongaming" %% "cats-helper" % "3.9.0"
+  val `cats-helper` = "com.evolutiongaming" %% "cats-helper" % "3.12.2"
   val sstream = "com.evolutiongaming" %% "sstream" % "1.1.0"
 
   object Logback {
-    private val version = "1.5.20"
+    private val version = "1.5.37"
     val core = "ch.qos.logback" % "logback-core" % version
     val classic = "ch.qos.logback" % "logback-classic" % version
   }
 
   object Slf4j {
-    private val version = "2.0.17"
+    private val version = "2.0.18"
     val api = "org.slf4j" % "slf4j-api" % version
     val `log4j-over-slf4j` = "org.slf4j" % "log4j-over-slf4j" % version
   }
@@ -32,7 +37,7 @@ object Dependencies {
   }
 
   object Pureconfig {
-    private val version = "0.17.9"
+    private val version = "0.17.10"
 
     val core = "com.github.pureconfig" %% "pureconfig-core" % version
     val pureconfig = "com.github.pureconfig" %% "pureconfig" % version

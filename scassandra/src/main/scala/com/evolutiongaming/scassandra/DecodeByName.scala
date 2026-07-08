@@ -2,9 +2,9 @@ package com.evolutiongaming.scassandra
 
 import cats.Functor
 import com.datastax.driver.core.{Duration, GettableByNameData, LocalDate, TypeCodec}
-import com.evolutiongaming.util.ToScala
 
-import java.time.{Instant, LocalDate => LocalDateJ}
+import java.time.{Instant, LocalDate as LocalDateJ}
+import scala.jdk.CollectionConverters.*
 
 /**
  * Reconstruct `A` data type from a named column stored in [[GettableByNameData]].
@@ -33,7 +33,7 @@ object DecodeByName {
   ): DecodeByName[A] = decode
 
   implicit val functorDecodeByName: Functor[DecodeByName] = new Functor[DecodeByName] {
-    def map[A, B](fa: DecodeByName[A])(f: A => B) = fa.map(f)
+    override def map[A, B](fa: DecodeByName[A])(f: A => B): DecodeByName[B] = fa.map(f)
   }
 
   implicit def optDecodeByName[A](
@@ -73,8 +73,7 @@ object DecodeByName {
   }
 
   implicit val instantDecodeByName: DecodeByName[Instant] = (data: GettableByNameData, name: String) => {
-    val timestamp = data.getTimestamp(name)
-    timestamp.toInstant
+    data.getTimestamp(name).toInstant
   }
 
   implicit val bigDecimalDecodeByName: DecodeByName[BigDecimal] =
@@ -83,13 +82,11 @@ object DecodeByName {
     }
 
   implicit val setStrDecodeByName: DecodeByName[Set[String]] = (data: GettableByNameData, name: String) => {
-    val set = data.getSet(name, classOf[String])
-    ToScala.from(set).toSet
+    data.getSet(name, classOf[String]).asScala.toSet
   }
 
   implicit val bytesDecodeByName: DecodeByName[Array[Byte]] = (data: GettableByNameData, name: String) => {
-    val bytes = data.getBytes(name)
-    bytes.array()
+    data.getBytes(name).array()
   }
 
   implicit val durationDecodeByName: DecodeByName[Duration] = (data: GettableByNameData, name: String) => {
@@ -100,8 +97,8 @@ object DecodeByName {
     data.getDate(name)
   }
 
-  implicit val localDateJDecodeByName: DecodeByName[LocalDateJ] = {
-    DecodeByName[LocalDate].map { a => LocalDateJ.ofEpochDay(a.getDaysSinceEpoch.toLong) }
+  implicit val localDateJDecodeByName: DecodeByName[LocalDateJ] = DecodeByName[LocalDate].map { a =>
+    LocalDateJ.ofEpochDay(a.getDaysSinceEpoch.toLong)
   }
 
   object Ops {

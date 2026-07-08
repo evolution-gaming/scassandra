@@ -1,12 +1,14 @@
 package com.evolutiongaming.scassandra
 
-import cats.effect.implicits._
+import cats.effect.implicits.*
 import cats.effect.{Async, Sync}
-import cats.syntax.all._
-import com.datastax.driver.core._
+import cats.syntax.all.*
+import com.datastax.driver.core.*
 import com.evolutiongaming.scassandra.util.FromGFuture
-import com.evolutiongaming.sstream.FoldWhile._
+import com.evolutiongaming.sstream.FoldWhile.*
 import com.evolutiongaming.sstream.Stream
+
+import scala.annotation.nowarn
 
 object syntax {
 
@@ -22,10 +24,10 @@ object syntax {
 
       new Stream[F, Row] {
 
-        def foldWhileM[L, R](l: L)(f: (L, Row) => F[Either[L, R]]) = {
+        def foldWhileM[L, R](l: L)(f: (L, Row) => F[Either[L, R]]): F[Either[L, R]] = {
 
           l.tailRecM[F, Either[L, R]] { l =>
-            def apply(rows: List[Row]) = {
+            def apply(rows: List[Row]): F[Either[L, Either[L, R]]] = {
               for {
                 result <- rows.foldWhileM(l)(f)
               } yield {
@@ -33,7 +35,7 @@ object syntax {
               }
             }
 
-            def fetchAndApply(rows: List[Row]) = {
+            def fetchAndApply(rows: List[Row]): F[Either[L, Either[L, R]]] = {
               for {
                 fetching <- fetch.start
                 result <- rows.foldWhileM(l)(f)
@@ -136,6 +138,24 @@ object syntax {
     }
   }
 
+  /*
+  TODO: sort this out
+  
+  migesok:
+  ToCql.Ops & ToCql.Ops.IdOps deprecated in "improve ToCql Yaroslav Klymko 2019-10-28, 00:53"
+  but still used in syntax.toCqlOps which is not deprecated.
+  Replaced with ToCql.implicits.* which is not used in any of our code.
+  
+  Scala 2.13 for some reason doesn't generate deprecation warning for syntax.toCqlOps
+  but Scala 3 does.
+
+  All the production code still uses com.evolutiongaming.scassandra.syntax.*.
+
+  For better ergonomics and following existing usage, it is proposed to keep toCql syntax in
+  com.evolutiongaming.scassandra.syntax.*, undeprecate related classes
+  and deprecate the unused alternative (com.evolutiongaming.scassandra.ToCql.implicits.*).
+   */
+  @nowarn("cat=deprecation")
   implicit def toCqlOps[A](a: A): ToCql.Ops.IdOps[A] = new ToCql.Ops.IdOps(a)
 
   implicit class ScassandraStatementOps(val self: Statement) extends AnyVal {

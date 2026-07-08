@@ -4,7 +4,7 @@ import com.datastax.driver.core.SocketOptions
 import com.typesafe.config.Config
 import pureconfig.ConfigSource
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 /**
  * See [[https://docs.datastax.com/en/developer/java-driver/3.5/manual/socket_options/]]

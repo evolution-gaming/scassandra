@@ -10,7 +10,7 @@ trait ToCql[-A] {
 object ToCql {
 
   implicit val contravariantToCql: Contravariant[ToCql] = new Contravariant[ToCql] {
-    def contramap[A, B](fa: ToCql[A])(f: B => A) = fa.contramap(f)
+    override def contramap[A, B](fa: ToCql[A])(f: B => A): ToCql[B] = fa.contramap(f)
   }
 
   def apply[A](

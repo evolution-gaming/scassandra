@@ -96,7 +96,7 @@ object CassandraHealthCheck {
         } yield ()
       }
     } yield new CassandraHealthCheck[F] {
-      def error = ref.get
+      override def error: F[Option[Throwable]] = ref.get
     }
 
   }
