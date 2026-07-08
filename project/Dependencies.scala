@@ -4,7 +4,7 @@ object Dependencies {
 
   val `cassandra-driver` = "com.datastax.cassandra" % "cassandra-driver-core" % "3.11.5"
   // upgrade to version, which doesn't use JDK's `Unsafe` (https://github.com/jnr/jffi/issues/165#issuecomment-3444932263)
-  val jffi = "com.github.jnr" % "jffi" % "1.3.14"
+  val jffi = "com.github.jnr" % "jffi" % "1.3.15"
 
   val scalatest = "org.scalatest" %% "scalatest" % "3.2.19"
   val `executor-tools` = "com.evolutiongaming" %% "executor-tools" % "1.0.5"
