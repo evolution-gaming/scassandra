@@ -17,6 +17,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.testcontainers.utility.DockerImageName
 
+import scala.annotation.nowarn
 import scala.util.Try
 
 class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
@@ -74,36 +75,87 @@ class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
         session.init.toTry.get
       }
 
-      "State" should {
+      "state" should {
+
+        @nowarn("cat=deprecation")
+        def getState(session: CassandraSession[IO] = session): CassandraSession.State[IO] = session.state
 
         "connectedHosts" in {
-          session.state.connectedHosts.toTry.get.nonEmpty shouldEqual true
+          getState().connectedHosts.toTry.get.nonEmpty shouldEqual true
         }
 
         "openConnections" in {
-          val state = session.state
           for {
-            host <- state.connectedHosts.toTry.get
+            host <- getState().connectedHosts.toTry.get
           } {
-            state.openConnections(host).toTry.get should be > 0
+            getState().openConnections(host).toTry.get should be > 0
           }
         }
 
         "trashedConnections" in {
-          val state = session.state
           for {
-            host <- state.connectedHosts.toTry.get
+            host <- getState().connectedHosts.toTry.get
           } {
-            state.trashedConnections(host).toTry.get shouldEqual 0
+            getState().trashedConnections(host).toTry.get shouldEqual 0
           }
         }
 
         "inFlightQueries" in {
-          val state = session.state
           for {
-            host <- state.connectedHosts.toTry.get
+            host <- getState().connectedHosts.toTry.get
           } {
-            state.inFlightQueries(host).toTry.get shouldEqual 0
+            getState().inFlightQueries(host).toTry.get shouldEqual 0
+          }
+        }
+
+        // newSession returns an unconnected session, so connections established by
+        // init are only visible if state takes a fresh snapshot on each access
+        //
+        // see CassandraSession.state scaladoc for more info about the bug this test case is
+        // checking
+        "reflect connections established after construction" in {
+          val hosts = cluster.newSession
+            .use { newSession =>
+              for {
+                _ <- newSession.init
+                hosts <- getState(newSession).connectedHosts
+              } yield hosts
+            }
+            .toTry
+            .get
+          hosts.nonEmpty shouldEqual true
+        }
+      }
+
+      "stateSnapshot" should {
+
+        def getStateSnapshot: CassandraSession.StateSnapshot = session.stateSnapshot.toTry.get
+
+        "connectedHosts" in {
+          getStateSnapshot.connectedHosts.nonEmpty shouldEqual true
+        }
+
+        "openConnections" in {
+          for {
+            host <- getStateSnapshot.connectedHosts
+          } {
+            getStateSnapshot.openConnections(host) should be > 0
+          }
+        }
+
+        "trashedConnections" in {
+          for {
+            host <- getStateSnapshot.connectedHosts
+          } {
+            getStateSnapshot.trashedConnections(host) shouldEqual 0
+          }
+        }
+
+        "inFlightQueries" in {
+          for {
+            host <- getStateSnapshot.connectedHosts
+          } {
+            getStateSnapshot.inFlightQueries(host) shouldEqual 0
           }
         }
       }
@@ -169,6 +221,22 @@ class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
         }
 
         resultStream.toTry shouldEqual ("value", duration).some.pure[Try]
+      }
+
+      "insert and select with positional values" in {
+        val insert = s"INSERT INTO $keyspace.$table (key, value) VALUES (?, ?)"
+        session.execute(insert, "key1", "value1").toTry.get
+
+        val select = s"SELECT value FROM $keyspace.$table WHERE key = ?"
+        val result = for {
+          result <- session.execute(select, "key1")
+        } yield {
+          for {
+            row <- Option(result.one())
+          } yield row.decode[String]("value")
+        }
+
+        result.toTry shouldEqual "value1".some.pure[Try]
       }
     }
 
