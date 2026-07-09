@@ -1,12 +1,12 @@
 package com.evolutiongaming.scassandra
 
-import cats.implicits._
+import cats.implicits.*
 import com.typesafe.config.ConfigFactory
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 import pureconfig.ConfigSource
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class SocketConfigSpec extends AnyFunSuite with Matchers {
 

@@ -1,8 +1,8 @@
 package com.evolutiongaming.scassandra
 
-import com.evolutiongaming.config.ConfigHelper._
+import com.evolutiongaming.config.ConfigHelper.*
 import com.evolutiongaming.nel.Nel
-import com.evolutiongaming.scassandra.ConfigHelpers._
+import com.evolutiongaming.scassandra.ConfigHelpers.*
 import com.typesafe.config.{Config, ConfigException}
 import pureconfig.{ConfigCursor, ConfigReader, ConfigSource}
 
@@ -95,9 +95,18 @@ object ReplicationStrategyConfig {
         val path = "replication-factors"
         config.get[Nel[String]](path).map { str =>
           str.split(":").map(_.trim) match {
+            // [minor bug]
+            // TODO [AI review] a non-numeric factor (e.g. "dc1:two") makes `factor.toInt` throw
+            // a raw NumberFormatException without config origin/path, bypassing the BadValue error
+            // below; guard with `factor.toIntOption` and route failures through the same BadValue.
             case Array(name, factor) => DcFactor(name, factor.toInt)
-            case str =>
-              throw new ConfigException.BadValue(config.origin(), path, s"Cannot parse DcFactor from $str")
+            case unexpectedTokensArr =>
+              throw new ConfigException.BadValue(
+                config.origin(),
+                path,
+                // Array[T] doesn't have a nice toString, has to be formatted manually
+                s"Cannot parse DcFactor from ${ unexpectedTokensArr.mkString("(", ", ", ")") }",
+              )
           }
         }
       }

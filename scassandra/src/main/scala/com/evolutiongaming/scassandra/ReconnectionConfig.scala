@@ -4,7 +4,7 @@ import com.datastax.driver.core.policies.{ExponentialReconnectionPolicy, Reconne
 import com.typesafe.config.Config
 import pureconfig.ConfigSource
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 /**
  * See [[https://docs.datastax.com/en/developer/java-driver/3.5/manual/reconnection/]]

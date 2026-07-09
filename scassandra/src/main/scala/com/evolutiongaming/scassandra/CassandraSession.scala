@@ -1,11 +1,12 @@
 package com.evolutiongaming.scassandra
 
 import cats.effect.{Resource, Sync}
-import cats.implicits._
+import cats.implicits.*
 import cats.~>
-import com.datastax.driver.core.{Session => SessionJ, _}
+import com.datastax.driver.core.{Session as SessionJ, *}
 import com.evolutiongaming.scassandra.util.FromGFuture
-import com.evolutiongaming.util.{ToJava, ToScala}
+
+import scala.jdk.CollectionConverters.*
 
 /**
  * See [[com.datastax.driver.core.Session]]
@@ -42,42 +43,45 @@ object CassandraSession {
 
     new CassandraSession[F] {
 
-      val loggedKeyspace = {
-        for {
-          loggedKeyspace <- Sync[F].delay { session.getLoggedKeyspace }
-        } yield {
-          Option(loggedKeyspace)
-        }
-      }
+      override val loggedKeyspace: F[Option[String]] = Sync[F].delay { Option(session.getLoggedKeyspace) }
 
-      val init = FromGFuture[F].apply { session.initAsync() }.void
+      override val init: F[Unit] = FromGFuture[F].apply { session.initAsync() }.void
 
-      def execute(query: String) = {
+      override def execute(query: String): F[ResultSet] = {
         FromGFuture[F].apply { session.executeAsync(query) }
       }
 
-      def execute(query: String, values: Any*) = {
+      // [potential major bug]
+      // TODO [AI review] `values` is passed to the Java varargs `executeAsync(String, Object...)`
+      // as a single Seq argument instead of being expanded with `values*`, so all positional bound
+      // values collapse into one value and the statement fails at runtime. This overload is not
+      // covered by any test.
+      override def execute(query: String, values: Any*): F[ResultSet] = {
         FromGFuture[F].apply { session.executeAsync(query, values) }
       }
 
-      def execute(query: String, values: Map[String, AnyRef]) = {
-        val values1 = ToJava.from(values)
-        FromGFuture[F].apply { session.executeAsync(query, values1) }
+      override def execute(query: String, values: Map[String, AnyRef]): F[ResultSet] = {
+        FromGFuture[F].apply { session.executeAsync(query, values.asJava) }
       }
 
-      def execute(statement: Statement) = {
+      override def execute(statement: Statement): F[ResultSet] = {
         FromGFuture[F].apply { session.executeAsync(statement) }
       }
 
-      def prepare(query: String) = {
+      override def prepare(query: String): F[PreparedStatement] = {
         FromGFuture[F].apply { session.prepareAsync(query) }
       }
 
-      def prepare(statement: RegularStatement) = {
+      override def prepare(statement: RegularStatement): F[PreparedStatement] = {
         FromGFuture[F].apply { session.prepareAsync(statement) }
       }
 
-      val state = State[F](session.getState)
+      // [major bug]
+      // TODO [AI review] `session.getState` returns an immutable point-in-time snapshot and is
+      // called eagerly here, so later reads of connectedHosts/openConnections/inFlightQueries return
+      // frozen construction-time values; the side-effecting getState() also runs unsuspended outside F.
+      // Make this a `def` (or suspend the getState() call) so each access takes a fresh snapshot.
+      override val state: State[F] = State[F](session.getState)
     }
   }
 
@@ -110,23 +114,17 @@ object CassandraSession {
     def apply[F[_]: Sync](state: SessionJ.State): State[F] = {
       new State[F] {
 
-        val connectedHosts = {
-          for {
-            a <- Sync[F].delay { state.getConnectedHosts }
-          } yield {
-            ToScala.from(a)
-          }
-        }
+        override val connectedHosts: F[Iterable[Host]] = Sync[F].delay { state.getConnectedHosts.asScala }
 
-        def openConnections(host: Host) = {
+        override def openConnections(host: Host): F[Int] = {
           Sync[F].delay { state.getOpenConnections(host) }
         }
 
-        def trashedConnections(host: Host) = {
+        override def trashedConnections(host: Host): F[Int] = {
           Sync[F].delay { state.getTrashedConnections(host) }
         }
 
-        def inFlightQueries(host: Host) = {
+        override def inFlightQueries(host: Host): F[Int] = {
           Sync[F].delay { state.getInFlightQueries(host) }
         }
       }
@@ -136,13 +134,13 @@ object CassandraSession {
 
       def mapK[G[_]](f: F ~> G): State[G] = new State[G] {
 
-        def connectedHosts = f(self.connectedHosts)
+        override def connectedHosts: G[Iterable[Host]] = f(self.connectedHosts)
 
-        def openConnections(host: Host) = f(self.openConnections(host))
+        override def openConnections(host: Host): G[Int] = f(self.openConnections(host))
 
-        def trashedConnections(host: Host) = f(self.trashedConnections(host))
+        override def trashedConnections(host: Host): G[Int] = f(self.trashedConnections(host))
 
-        def inFlightQueries(host: Host) = f(self.inFlightQueries(host))
+        override def inFlightQueries(host: Host): G[Int] = f(self.inFlightQueries(host))
       }
     }
   }
@@ -151,23 +149,24 @@ object CassandraSession {
 
     def mapK[G[_]](f: F ~> G): CassandraSession[G] = new CassandraSession[G] {
 
-      def loggedKeyspace = f(self.loggedKeyspace)
+      override def loggedKeyspace: G[Option[String]] = f(self.loggedKeyspace)
 
-      def init = f(self.init)
+      override def init: G[Unit] = f(self.init)
 
-      def execute(query: String) = f(self.execute(query))
+      override def execute(query: String): G[ResultSet] = f(self.execute(query))
 
-      def execute(query: String, values: Any*) = f(self.execute(query, values: _*))
+      override def execute(query: String, values: Any*): G[ResultSet] = f(self.execute(query, values*))
 
-      def execute(query: String, values: Map[String, AnyRef]) = f(self.execute(query, values))
+      override def execute(query: String, values: Map[String, AnyRef]): G[ResultSet] =
+        f(self.execute(query, values))
 
-      def execute(statement: Statement) = f(self.execute(statement))
+      override def execute(statement: Statement): G[ResultSet] = f(self.execute(statement))
 
-      def prepare(query: String) = f(self.prepare(query))
+      override def prepare(query: String): G[PreparedStatement] = f(self.prepare(query))
 
-      def prepare(statement: RegularStatement) = f(self.prepare(statement))
+      override def prepare(statement: RegularStatement): G[PreparedStatement] = f(self.prepare(statement))
 
-      def state = self.state.mapK(f)
+      override def state: State[G] = self.state.mapK(f)
     }
   }
 }

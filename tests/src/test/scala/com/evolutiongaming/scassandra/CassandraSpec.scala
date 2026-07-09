@@ -3,15 +3,15 @@ package com.evolutiongaming.scassandra
 import cats.arrow.FunctionK
 import cats.effect.unsafe.implicits
 import cats.effect.{IO, Resource}
-import cats.implicits._
+import cats.implicits.*
 import com.datastax.driver.core.{Duration, Row}
 import com.dimafeng.testcontainers.CassandraContainer
-import com.evolutiongaming.catshelper.CatsHelper._
+import com.evolutiongaming.catshelper.CatsHelper.*
 import com.evolutiongaming.catshelper.ToTry
 import com.evolutiongaming.nel.Nel
-import com.evolutiongaming.scassandra.IOSuite._
-import com.evolutiongaming.scassandra.syntax._
-import com.evolutiongaming.sstream.Stream._
+import com.evolutiongaming.scassandra.IOSuite.*
+import com.evolutiongaming.scassandra.syntax.*
+import com.evolutiongaming.sstream.Stream.*
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -49,7 +49,7 @@ class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
 
   private lazy val (session, sessionRelease) = cluster.connect.allocated.toTry.get
 
-  override def afterAll() = {
+  override def afterAll(): Unit = {
     cassandraContainer.stop()
     super.afterAll()
   }

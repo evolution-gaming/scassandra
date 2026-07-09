@@ -1,15 +1,16 @@
 package com.evolutiongaming.scassandra
 
 import cats.effect.Sync
-import cats.implicits._
+import cats.implicits.*
 import cats.{FlatMap, ~>}
 import com.datastax.driver.core.{
-  KeyspaceMetadata => KeyspaceMetadataJ,
-  Metadata => MetadataJ,
-  TableMetadata => TableMetadataJ,
+  KeyspaceMetadata as KeyspaceMetadataJ,
+  Metadata as MetadataJ,
+  TableMetadata as TableMetadataJ,
   UserType,
 }
-import com.evolutiongaming.util.ToScala
+
+import scala.jdk.CollectionConverters.*
 
 trait Metadata[F[_]] {
 
@@ -27,28 +28,16 @@ object Metadata {
   def apply[F[_]: Sync](metadata: MetadataJ): Metadata[F] = {
     new Metadata[F] {
 
-      val clusterName = Sync[F].delay { metadata.getClusterName }
+      override val clusterName: F[String] = Sync[F].delay { metadata.getClusterName }
 
-      val schema = Sync[F].delay { metadata.exportSchemaAsString() }
+      override val schema: F[String] = Sync[F].delay { metadata.exportSchemaAsString() }
 
-      def keyspace(name: String) = {
-        Sync[F].delay {
-          for {
-            keyspace <- Option(metadata.getKeyspace(name))
-          } yield {
-            KeyspaceMetadata(keyspace)
-          }
-        }
+      override def keyspace(name: String): F[Option[KeyspaceMetadata[F]]] = Sync[F].delay {
+        Option(metadata.getKeyspace(name)).map(KeyspaceMetadata(_))
       }
 
-      val keyspaces = {
-        Sync[F].delay {
-          for {
-            keyspace <- ToScala.from(metadata.getKeyspaces).toList
-          } yield {
-            KeyspaceMetadata(keyspace)
-          }
-        }
+      override val keyspaces: F[List[KeyspaceMetadata[F]]] = Sync[F].delay {
+        metadata.getKeyspaces.asScala.view.map(KeyspaceMetadata(_)).toList
       }
     }
   }
@@ -61,9 +50,9 @@ object Metadata {
       G: FlatMap[G],
     ): Metadata[G] = new Metadata[G] {
 
-      def clusterName = f(self.clusterName)
+      override def clusterName: G[String] = f(self.clusterName)
 
-      def keyspace(name: String) = {
+      override def keyspace(name: String): G[Option[KeyspaceMetadata[G]]] = {
         for {
           a <- f(self.keyspace(name))
         } yield {
@@ -75,7 +64,7 @@ object Metadata {
         }
       }
 
-      def keyspaces = {
+      override def keyspaces: G[List[KeyspaceMetadata[G]]] = {
         for {
           a <- f(self.keyspaces)
         } yield {
@@ -87,7 +76,7 @@ object Metadata {
         }
       }
 
-      def schema = f(self.schema)
+      override def schema: G[String] = f(self.schema)
     }
   }
 }
@@ -118,42 +107,30 @@ object KeyspaceMetadata {
   def apply[F[_]: Sync](keyspaceMetadata: KeyspaceMetadataJ): KeyspaceMetadata[F] = {
     new KeyspaceMetadata[F] {
 
-      val name = keyspaceMetadata.getName
+      override val name: String = keyspaceMetadata.getName
 
-      val schema = Sync[F].delay { keyspaceMetadata.exportAsString() }
+      override val schema: F[String] = Sync[F].delay { keyspaceMetadata.exportAsString() }
 
-      val asCql = Sync[F].delay { keyspaceMetadata.asCQLQuery() }
+      override val asCql: F[String] = Sync[F].delay { keyspaceMetadata.asCQLQuery() }
 
-      def table(name: String) = {
-        Sync[F].delay {
-          for {
-            tableMetadata <- Option(keyspaceMetadata.getTable(name))
-          } yield {
-            TableMetadata(tableMetadata)
-          }
-        }
+      override def table(name: String): F[Option[TableMetadata]] = Sync[F].delay {
+        Option(keyspaceMetadata.getTable(name)).map(TableMetadata(_))
       }
 
-      val tables = {
-        Sync[F].delay {
-          for {
-            tableMetadata <- ToScala.from(keyspaceMetadata.getTables).toList
-          } yield {
-            TableMetadata(tableMetadata)
-          }
-        }
+      override val tables: F[List[TableMetadata]] = Sync[F].delay {
+        keyspaceMetadata.getTables.asScala.view.map(TableMetadata(_)).toList
       }
 
-      val durableWrites = keyspaceMetadata.isDurableWrites
+      override val durableWrites: Boolean = keyspaceMetadata.isDurableWrites
 
-      val virtual = keyspaceMetadata.isVirtual
+      override val virtual: Boolean = keyspaceMetadata.isVirtual
 
-      val replication = {
-        Sync[F].delay { ToScala.from(keyspaceMetadata.getReplication).toMap }
+      override val replication: F[Map[String, String]] = Sync[F].delay {
+        keyspaceMetadata.getReplication.asScala.toMap
       }
 
-      val userTypes = {
-        Sync[F].delay { ToScala.from(keyspaceMetadata.getUserTypes).toList }
+      override val userTypes: F[List[UserType]] = Sync[F].delay {
+        keyspaceMetadata.getUserTypes.asScala.toList
       }
     }
   }
@@ -162,23 +139,23 @@ object KeyspaceMetadata {
 
     def mapK[G[_]](f: F ~> G): KeyspaceMetadata[G] = new KeyspaceMetadata[G] {
 
-      def name = self.name
+      override def name: String = self.name
 
-      def schema = f(self.schema)
+      override def schema: G[String] = f(self.schema)
 
-      def asCql = f(self.asCql)
+      override def asCql: G[String] = f(self.asCql)
 
-      def table(name: String) = f(self.table(name))
+      override def table(name: String): G[Option[TableMetadata]] = f(self.table(name))
 
-      def tables = f(self.tables)
+      override def tables: G[List[TableMetadata]] = f(self.tables)
 
-      def durableWrites = self.durableWrites
+      override def durableWrites: Boolean = self.durableWrites
 
-      def virtual = self.virtual
+      override def virtual: Boolean = self.virtual
 
-      def replication = f(self.replication)
+      override def replication: G[Map[String, String]] = f(self.replication)
 
-      def userTypes = f(self.userTypes)
+      override def userTypes: G[List[UserType]] = f(self.userTypes)
     }
   }
 }
@@ -190,6 +167,6 @@ trait TableMetadata {
 object TableMetadata {
 
   def apply(tableMetadata: TableMetadataJ): TableMetadata = new TableMetadata {
-    val name = tableMetadata.getName
+    override val name: String = tableMetadata.getName
   }
 }
