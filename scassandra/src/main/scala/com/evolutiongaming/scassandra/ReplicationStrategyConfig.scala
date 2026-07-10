@@ -95,11 +95,7 @@ object ReplicationStrategyConfig {
         val path = "replication-factors"
         config.get[Nel[String]](path).map { str =>
           str.split(":").map(_.trim) match {
-            // [minor bug]
-            // TODO [AI review] a non-numeric factor (e.g. "dc1:two") makes `factor.toInt` throw
-            // a raw NumberFormatException without config origin/path, bypassing the BadValue error
-            // below; guard with `factor.toIntOption` and route failures through the same BadValue.
-            case Array(name, factor) => DcFactor(name, factor.toInt)
+            case Array(name, ParseInt(factor)) => DcFactor(name, factor)
             case unexpectedTokensArr =>
               throw new ConfigException.BadValue(
                 config.origin(),
@@ -115,5 +111,9 @@ object ReplicationStrategyConfig {
     }
 
     final case class DcFactor(name: String = "localDc", replicationFactor: Int = 1)
+  }
+
+  private object ParseInt {
+    def unapply(str: String): Option[Int] = str.toIntOption
   }
 }
