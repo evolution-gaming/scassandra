@@ -1,9 +1,9 @@
 package com.evolutiongaming.scassandra
 
 import cats.effect.{MonadCancel, Resource, Sync}
-import cats.implicits._
+import cats.implicits.*
 import cats.~>
-import com.datastax.driver.core.{Cluster => ClusterJ}
+import com.datastax.driver.core.Cluster as ClusterJ
 import com.evolutiongaming.scassandra.util.FromGFuture
 
 trait CassandraCluster[F[_]] {
@@ -30,35 +30,21 @@ object CassandraCluster {
 
     new CassandraCluster[F] {
 
-      val connect = {
-        CassandraSession.of {
-          FromGFuture[F].apply { cluster.connectAsync() }
-        }
+      override val connect: Resource[F, CassandraSession[F]] = CassandraSession.of {
+        FromGFuture[F].apply { cluster.connectAsync() }
       }
 
-      def connect(keyspace: String) = {
-        CassandraSession.of {
-          FromGFuture[F].apply { cluster.connectAsync(keyspace) }
-        }
+      override def connect(keyspace: String): Resource[F, CassandraSession[F]] = CassandraSession.of {
+        FromGFuture[F].apply { cluster.connectAsync(keyspace) }
       }
 
-      val clusterName = {
-        Sync[F].delay { cluster.getClusterName }
+      override val clusterName: F[String] = Sync[F].delay { cluster.getClusterName }
+
+      override val newSession: Resource[F, CassandraSession[F]] = CassandraSession.of {
+        Sync[F].delay { cluster.newSession() }
       }
 
-      val newSession = {
-        CassandraSession.of {
-          Sync[F].delay { cluster.newSession() }
-        }
-      }
-
-      val metadata = {
-        for {
-          metadata <- Sync[F].delay { cluster.getMetadata }
-        } yield {
-          Metadata(metadata)
-        }
-      }
+      override val metadata: F[Metadata[F]] = Sync[F].delay { Metadata(cluster.getMetadata) }
     }
   }
 
@@ -85,11 +71,11 @@ object CassandraCluster {
     def mapK[G[_]](
       f: F ~> G,
     )(implicit
-      F: MonadCancel[F, _],
-      G: MonadCancel[G, _],
+      F: MonadCancel[F, ?],
+      G: MonadCancel[G, ?],
     ): CassandraCluster[G] = new CassandraCluster[G] {
 
-      def connect = {
+      override def connect: Resource[G, CassandraSession[G]] = {
         for {
           a <- self.connect.mapK(f)
         } yield {
@@ -97,7 +83,7 @@ object CassandraCluster {
         }
       }
 
-      def connect(keyspace: String) = {
+      override def connect(keyspace: String): Resource[G, CassandraSession[G]] = {
         for {
           a <- self.connect(keyspace).mapK(f)
         } yield {
@@ -105,9 +91,9 @@ object CassandraCluster {
         }
       }
 
-      def clusterName = f(self.clusterName)
+      override def clusterName: G[String] = f(self.clusterName)
 
-      def newSession = {
+      override def newSession: Resource[G, CassandraSession[G]] = {
         for {
           a <- self.newSession.mapK(f)
         } yield {
@@ -115,7 +101,7 @@ object CassandraCluster {
         }
       }
 
-      def metadata = {
+      override def metadata: G[Metadata[G]] = {
         for {
           a <- f(self.metadata)
         } yield {

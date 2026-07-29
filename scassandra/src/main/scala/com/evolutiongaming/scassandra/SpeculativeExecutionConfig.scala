@@ -4,7 +4,7 @@ import com.datastax.driver.core.policies.{ConstantSpeculativeExecutionPolicy, Sp
 import com.typesafe.config.Config
 import pureconfig.ConfigSource
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 /**
  * See

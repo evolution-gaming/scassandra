@@ -1,6 +1,6 @@
 package com.evolutiongaming.scassandra
 
-import com.datastax.driver.core._
+import com.datastax.driver.core.*
 import com.datastax.driver.core.exceptions.DriverException
 import com.datastax.driver.core.policies.RetryPolicy.RetryDecision
 import com.datastax.driver.core.querybuilder.QueryBuilder
@@ -30,7 +30,7 @@ class NextHostRetryPolicySpec extends AnyWordSpec with Matchers {
 
       s"onReadTimeout, retry: $retry, expected: $expected" in {
         val policy = NextHostRetryPolicy(1)
-        val decision = policy.onReadTimeout(statement, consistency, 1, 1, false, retry)
+        val decision = policy.onReadTimeout(statement, consistency, 1, 1, dataRetrieved = false, retry)
         decision.getType shouldEqual expected
       }
 

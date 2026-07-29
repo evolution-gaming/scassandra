@@ -3,7 +3,7 @@ package com.evolutiongaming.scassandra
 import com.datastax.driver.core.exceptions.DriverException
 import com.datastax.driver.core.policies.RetryPolicy
 import com.datastax.driver.core.policies.RetryPolicy.RetryDecision
-import com.datastax.driver.core.{Cluster => ClusterJ, ConsistencyLevel, Statement, WriteType}
+import com.datastax.driver.core.{Cluster as ClusterJ, ConsistencyLevel, Statement, WriteType}
 
 final case class NextHostRetryPolicy(retries: Int) extends RetryPolicy {
 

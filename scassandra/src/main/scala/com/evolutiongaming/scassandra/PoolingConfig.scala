@@ -1,10 +1,10 @@
 package com.evolutiongaming.scassandra
 
-import com.datastax.driver.core.{HostDistance, PoolingOptions => PoolingOptionsJ}
+import com.datastax.driver.core.{HostDistance, PoolingOptions as PoolingOptionsJ}
 import com.typesafe.config.Config
 import pureconfig.{ConfigCursor, ConfigReader, ConfigSource}
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 /**
  * See [[https://docs.datastax.com/en/developer/java-driver/3.5/manual/pooling/]]
@@ -18,7 +18,7 @@ final case class PoolingConfig(
   heartbeatInterval: FiniteDuration = 30.seconds,
 ) {
 
-  import PoolingConfig._
+  import PoolingConfig.*
 
   def asJava: PoolingOptionsJ = {
     new PoolingOptionsJ()

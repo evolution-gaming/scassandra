@@ -1,6 +1,6 @@
 package com.evolutiongaming.scassandra
 
-import cats.syntax.either._
+import cats.syntax.either.*
 import pureconfig.ConfigReader
 import pureconfig.error.ExceptionThrown
 

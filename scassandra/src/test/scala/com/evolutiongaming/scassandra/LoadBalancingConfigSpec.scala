@@ -1,6 +1,6 @@
 package com.evolutiongaming.scassandra
 
-import cats.implicits._
+import cats.implicits.*
 import com.typesafe.config.ConfigFactory
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers

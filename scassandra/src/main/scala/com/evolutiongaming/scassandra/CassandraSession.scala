@@ -1,11 +1,13 @@
 package com.evolutiongaming.scassandra
 
 import cats.effect.{Resource, Sync}
-import cats.implicits._
+import cats.implicits.*
 import cats.~>
-import com.datastax.driver.core.{Session => SessionJ, _}
+import com.datastax.driver.core.{Session as SessionJ, *}
+import com.evolutiongaming.scassandra.CassandraSession.StateSnapshot
 import com.evolutiongaming.scassandra.util.FromGFuture
-import com.evolutiongaming.util.{ToJava, ToScala}
+
+import scala.jdk.CollectionConverters.*
 
 /**
  * See [[com.datastax.driver.core.Session]]
@@ -28,7 +30,33 @@ trait CassandraSession[F[_]] {
 
   def prepare(statement: RegularStatement): F[PreparedStatement]
 
+  /**
+   * Deprecated method.
+   *
+   * Pre 5.6.0 implementation was incorrect. It was fixed in 5.6.0 but a better way to
+   * access this functionality was added, which is semantically closer to what the Java
+   * driver offers. Please use [[CassandraSession.stateSnapshot]] instead.
+   *
+   * The original bug description:
+   * {{{
+   * // TODO `session.getState` returns an immutable point-in-time snapshot and is
+   * // called eagerly here, so later reads of connectedHosts/openConnections/inFlightQueries return
+   * // frozen construction-time values; the side-effecting getState() also runs unsuspended outside F.
+   * // Make this a `def` (or suspend the getState() call) so each access takes a fresh snapshot.
+   * }}}
+   */
+  @deprecated("use stateSnapshot instead", since = "5.6.0")
   def state: CassandraSession.State[F]
+
+  /**
+   * @see
+   *   [[com.datastax.driver.core.Session.getState]]
+   */
+  def stateSnapshot: F[StateSnapshot] = {
+    // default impl to preserve bincompat
+    // TODO: remove in a major release > 5
+    ???
+  }
 }
 
 object CassandraSession {
@@ -42,42 +70,42 @@ object CassandraSession {
 
     new CassandraSession[F] {
 
-      val loggedKeyspace = {
-        for {
-          loggedKeyspace <- Sync[F].delay { session.getLoggedKeyspace }
-        } yield {
-          Option(loggedKeyspace)
-        }
-      }
+      override val loggedKeyspace: F[Option[String]] = Sync[F].delay { Option(session.getLoggedKeyspace) }
 
-      val init = FromGFuture[F].apply { session.initAsync() }.void
+      override val init: F[Unit] = FromGFuture[F].apply { session.initAsync() }.void
 
-      def execute(query: String) = {
+      override def execute(query: String): F[ResultSet] = {
         FromGFuture[F].apply { session.executeAsync(query) }
       }
 
-      def execute(query: String, values: Any*) = {
-        FromGFuture[F].apply { session.executeAsync(query, values) }
+      override def execute(query: String, values: Any*): F[ResultSet] = {
+        FromGFuture[F].apply { session.executeAsync(query, values*) }
       }
 
-      def execute(query: String, values: Map[String, AnyRef]) = {
-        val values1 = ToJava.from(values)
-        FromGFuture[F].apply { session.executeAsync(query, values1) }
+      override def execute(query: String, values: Map[String, AnyRef]): F[ResultSet] = {
+        FromGFuture[F].apply { session.executeAsync(query, values.asJava) }
       }
 
-      def execute(statement: Statement) = {
+      override def execute(statement: Statement): F[ResultSet] = {
         FromGFuture[F].apply { session.executeAsync(statement) }
       }
 
-      def prepare(query: String) = {
+      override def prepare(query: String): F[PreparedStatement] = {
         FromGFuture[F].apply { session.prepareAsync(query) }
       }
 
-      def prepare(statement: RegularStatement) = {
+      override def prepare(statement: RegularStatement): F[PreparedStatement] = {
         FromGFuture[F].apply { session.prepareAsync(statement) }
       }
 
-      val state = State[F](session.getState)
+      override val stateSnapshot: F[StateSnapshot] = Sync[F].delay {
+        // com.datastax.driver.core.Session.getState return value is guaranteed to be immutable
+        StateSnapshot.wrapImmutable(session.getState)
+      }
+
+      // see the trait method scaladoc for more details
+      @deprecated("use stateSnapshot instead", since = "5.6.0")
+      override val state: State[F] = State.suspended(stateSnapshot)
     }
   }
 
@@ -92,8 +120,46 @@ object CassandraSession {
   }
 
   /**
-   * See [[com.evolutiongaming.scassandra.CassandraSession.State]]
+   * Immutable object exposing information on the connections maintained by a Session:
+   * which host it is connected to, how many connections it has for each host, etc...
+   *
+   * Scala wrapper around [[com.datastax.driver.core.Session.State]], assuming the Java
+   * implementation is immutable, which is the case for the values returned by
+   * [[com.datastax.driver.core.Session.getState]].
    */
+  trait StateSnapshot {
+    def connectedHosts: Iterable[Host]
+
+    def openConnections(host: Host): Int
+
+    def trashedConnections(host: Host): Int
+
+    def inFlightQueries(host: Host): Int
+  }
+
+  object StateSnapshot {
+
+    /**
+     * Wraps [[com.datastax.driver.core.Session.State]] in [[StateSnapshot]] assuming it
+     * is immutable.
+     *
+     * Immutability is guaranteed by the [[com.datastax.driver.core.Session.getState]]
+     * contract but using this method in other contexts might be unsafe.
+     */
+    def wrapImmutable(driverState: SessionJ.State): StateSnapshot = new Impl(driverState)
+
+    private final class Impl(driverState: SessionJ.State) extends StateSnapshot {
+      override val connectedHosts: Iterable[Host] = driverState.getConnectedHosts.asScala
+
+      override def openConnections(host: Host): Int = driverState.getOpenConnections(host)
+
+      override def trashedConnections(host: Host): Int = driverState.getTrashedConnections(host)
+
+      override def inFlightQueries(host: Host): Int = driverState.getInFlightQueries(host)
+    }
+  }
+
+  @deprecated("replaced by StateSnapshot, returned by CassandraSession.stateSnapshot", since = "5.6.0")
   trait State[F[_]] {
 
     def connectedHosts: F[Iterable[Host]]
@@ -105,30 +171,45 @@ object CassandraSession {
     def inFlightQueries(host: Host): F[Int]
   }
 
+  @deprecated("replaced by StateSnapshot, returned by CassandraSession.stateSnapshot", since = "5.6.0")
   object State {
 
     def apply[F[_]: Sync](state: SessionJ.State): State[F] = {
       new State[F] {
 
-        val connectedHosts = {
-          for {
-            a <- Sync[F].delay { state.getConnectedHosts }
-          } yield {
-            ToScala.from(a)
-          }
-        }
+        override val connectedHosts: F[Iterable[Host]] = Sync[F].delay { state.getConnectedHosts.asScala }
 
-        def openConnections(host: Host) = {
+        override def openConnections(host: Host): F[Int] = {
           Sync[F].delay { state.getOpenConnections(host) }
         }
 
-        def trashedConnections(host: Host) = {
+        override def trashedConnections(host: Host): F[Int] = {
           Sync[F].delay { state.getTrashedConnections(host) }
         }
 
-        def inFlightQueries(host: Host) = {
+        override def inFlightQueries(host: Host): F[Int] = {
           Sync[F].delay { state.getInFlightQueries(host) }
         }
+      }
+    }
+
+    def suspended[F[_]: Sync](snapshotF: F[StateSnapshot]): State[F] = new Suspended[F](snapshotF)
+
+    private final class Suspended[F[_]: Sync](snapshotF: F[StateSnapshot]) extends State[F] {
+      override val connectedHosts: F[Iterable[Host]] = {
+        snapshotF.map(_.connectedHosts)
+      }
+
+      override def openConnections(host: Host): F[Int] = {
+        snapshotF.map(_.openConnections(host))
+      }
+
+      override def trashedConnections(host: Host): F[Int] = {
+        snapshotF.map(_.trashedConnections(host))
+      }
+
+      override def inFlightQueries(host: Host): F[Int] = {
+        snapshotF.map(_.inFlightQueries(host))
       }
     }
 
@@ -136,13 +217,13 @@ object CassandraSession {
 
       def mapK[G[_]](f: F ~> G): State[G] = new State[G] {
 
-        def connectedHosts = f(self.connectedHosts)
+        override def connectedHosts: G[Iterable[Host]] = f(self.connectedHosts)
 
-        def openConnections(host: Host) = f(self.openConnections(host))
+        override def openConnections(host: Host): G[Int] = f(self.openConnections(host))
 
-        def trashedConnections(host: Host) = f(self.trashedConnections(host))
+        override def trashedConnections(host: Host): G[Int] = f(self.trashedConnections(host))
 
-        def inFlightQueries(host: Host) = f(self.inFlightQueries(host))
+        override def inFlightQueries(host: Host): G[Int] = f(self.inFlightQueries(host))
       }
     }
   }
@@ -151,23 +232,28 @@ object CassandraSession {
 
     def mapK[G[_]](f: F ~> G): CassandraSession[G] = new CassandraSession[G] {
 
-      def loggedKeyspace = f(self.loggedKeyspace)
+      override def loggedKeyspace: G[Option[String]] = f(self.loggedKeyspace)
 
-      def init = f(self.init)
+      override def init: G[Unit] = f(self.init)
 
-      def execute(query: String) = f(self.execute(query))
+      override def execute(query: String): G[ResultSet] = f(self.execute(query))
 
-      def execute(query: String, values: Any*) = f(self.execute(query, values: _*))
+      override def execute(query: String, values: Any*): G[ResultSet] = f(self.execute(query, values*))
 
-      def execute(query: String, values: Map[String, AnyRef]) = f(self.execute(query, values))
+      override def execute(query: String, values: Map[String, AnyRef]): G[ResultSet] =
+        f(self.execute(query, values))
 
-      def execute(statement: Statement) = f(self.execute(statement))
+      override def execute(statement: Statement): G[ResultSet] = f(self.execute(statement))
 
-      def prepare(query: String) = f(self.prepare(query))
+      override def prepare(query: String): G[PreparedStatement] = f(self.prepare(query))
 
-      def prepare(statement: RegularStatement) = f(self.prepare(statement))
+      override def prepare(statement: RegularStatement): G[PreparedStatement] = f(self.prepare(statement))
 
-      def state = self.state.mapK(f)
+      // see the trait method scaladoc for more details
+      @deprecated("use stateSnapshot instead", since = "5.6.0")
+      override def state: State[G] = self.state.mapK(f)
+
+      override def stateSnapshot: G[StateSnapshot] = f(self.stateSnapshot)
     }
   }
 }

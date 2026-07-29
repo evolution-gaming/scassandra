@@ -1,6 +1,6 @@
 package com.evolutiongaming.scassandra.util
 
-import pureconfig._
+import pureconfig.*
 import pureconfig.error.ConfigReaderFailures
 
 private[scassandra] object PureconfigSyntax {

@@ -1,7 +1,7 @@
 package com.evolutiongaming.scassandra
 
-import com.evolutiongaming.scassandra.ReplicationStrategyConfig._
-import com.evolutiongaming.scassandra.util.PureconfigSyntax._
+import com.evolutiongaming.scassandra.ReplicationStrategyConfig.*
+import com.evolutiongaming.scassandra.util.PureconfigSyntax.*
 import pureconfig.ConfigReader
 
 trait ReplicationStrategyConfigSimpleImplicits {

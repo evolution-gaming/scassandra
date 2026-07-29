@@ -1,10 +1,10 @@
 package com.evolutiongaming.scassandra
 
-import cats.implicits._
+import cats.implicits.*
 import com.evolutiongaming.nel.Nel
+import com.evolutiongaming.scassandra.ReplicationStrategyConfig.*
 import com.evolutiongaming.scassandra.ReplicationStrategyConfig.NetworkTopology.DcFactor
-import com.evolutiongaming.scassandra.ReplicationStrategyConfig._
-import com.evolutiongaming.scassandra.syntax._
+import com.evolutiongaming.scassandra.syntax.*
 import com.typesafe.config.ConfigFactory
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers

@@ -5,7 +5,7 @@ import cats.effect.unsafe.implicits.global
 import com.evolutiongaming.scassandra.util.FromGFuture
 import org.scalatest.Succeeded
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 
 object IOSuite {

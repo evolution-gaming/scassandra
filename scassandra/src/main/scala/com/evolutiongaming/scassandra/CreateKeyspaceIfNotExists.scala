@@ -1,6 +1,6 @@
 package com.evolutiongaming.scassandra
 
-import com.evolutiongaming.scassandra.syntax._
+import com.evolutiongaming.scassandra.syntax.*
 
 object CreateKeyspaceIfNotExists {
 

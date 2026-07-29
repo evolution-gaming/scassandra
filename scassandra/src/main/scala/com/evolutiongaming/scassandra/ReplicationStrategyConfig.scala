@@ -1,8 +1,8 @@
 package com.evolutiongaming.scassandra
 
-import com.evolutiongaming.config.ConfigHelper._
+import com.evolutiongaming.config.ConfigHelper.*
 import com.evolutiongaming.nel.Nel
-import com.evolutiongaming.scassandra.ConfigHelpers._
+import com.evolutiongaming.scassandra.ConfigHelpers.*
 import com.typesafe.config.{Config, ConfigException}
 import pureconfig.{ConfigCursor, ConfigReader, ConfigSource}
 
@@ -95,9 +95,14 @@ object ReplicationStrategyConfig {
         val path = "replication-factors"
         config.get[Nel[String]](path).map { str =>
           str.split(":").map(_.trim) match {
-            case Array(name, factor) => DcFactor(name, factor.toInt)
-            case str =>
-              throw new ConfigException.BadValue(config.origin(), path, s"Cannot parse DcFactor from $str")
+            case Array(name, ParseInt(factor)) => DcFactor(name, factor)
+            case unexpectedTokensArr =>
+              throw new ConfigException.BadValue(
+                config.origin(),
+                path,
+                // Array[T] doesn't have a nice toString, has to be formatted manually
+                s"Cannot parse DcFactor from ${ unexpectedTokensArr.mkString("(", ", ", ")") }",
+              )
           }
         }
       }
@@ -106,5 +111,9 @@ object ReplicationStrategyConfig {
     }
 
     final case class DcFactor(name: String = "localDc", replicationFactor: Int = 1)
+  }
+
+  private object ParseInt {
+    def unapply(str: String): Option[Int] = str.toIntOption
   }
 }

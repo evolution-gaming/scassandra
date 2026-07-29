@@ -2,10 +2,10 @@ package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.ConsistencyLevel
 import com.evolutiongaming.scassandra.util.ConfigReaderFromEnum
-import com.evolutiongaming.scassandra.util.PureconfigSyntax._
+import com.evolutiongaming.scassandra.util.PureconfigSyntax.*
 import pureconfig.ConfigReader
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 trait QueryConfigImplicits {
   implicit val configReaderConsistencyLevel: ConfigReader[ConsistencyLevel] =
