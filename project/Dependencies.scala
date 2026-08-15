@@ -20,7 +20,7 @@ object Dependencies {
   val sstream = "com.evolutiongaming" %% "sstream" % "1.3.0"
 
   object Logback {
-    private val version = "1.6.2"
+    private val version = "1.6.3"
     val core = "ch.qos.logback" % "logback-core" % version
     val classic = "ch.qos.logback" % "logback-classic" % version
   }
