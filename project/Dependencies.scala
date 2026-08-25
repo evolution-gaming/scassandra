@@ -11,6 +11,26 @@ object Dependencies {
   // TODO: remove explicit dependency when driver 3 support dropped
   val jffi = "com.github.jnr" % "jffi" % "1.3.14"
 
+  // The Cassandra driver 3 pulls in outdated Netty, Jackson and Guava versions with known CVEs.
+  // Pin them explicitly so both this build and downstream consumers resolve the patched ones.
+  //
+  // when updating, make sure they stay compatible with the driver version used
+  // TODO: remove explicit dependencies when driver 3 support dropped
+  object Netty {
+    private val version = "4.1.136.Final"
+    val common = "io.netty" % "netty-common" % version
+    val codec = "io.netty" % "netty-codec" % version
+    val handler = "io.netty" % "netty-handler" % version
+  }
+
+  object Jackson {
+    private val version = "2.18.8"
+    val core = "com.fasterxml.jackson.core" % "jackson-core" % version
+    val databind = "com.fasterxml.jackson.core" % "jackson-databind" % version
+  }
+
+  val guava = "com.google.guava" % "guava" % "33.5.0-jre"
+
   val scalatest = "org.scalatest" %% "scalatest" % "3.2.20"
   val `executor-tools` = "com.evolutiongaming" %% "executor-tools" % "1.0.5"
   val `config-tools` = "com.evolutiongaming" %% "config-tools" % "1.0.5"
