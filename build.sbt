@@ -20,6 +20,9 @@ lazy val commonSettings = Seq(
   crossScalaVersions := Seq("2.13.18", "3.3.8"),
   Compile / doc / scalacOptions ++= Seq("-groups", "-implicits", "-no-link-warnings"),
   publishTo := Some(Resolver.evolutionReleases),
+  // Netty guarantees binary compatibility within 4.1.x, but its `.Final` qualifier
+  // makes the early-semver check reject patch bumps.
+  libraryDependencySchemes += "io.netty" % "netty-*" % VersionScheme.Always,
   licenses := Seq(("MIT", url("https://opensource.org/licenses/MIT"))),
   scalacOptions ++= Seq(
     "-release:11",
@@ -79,9 +82,18 @@ lazy val scassandra = (project in file("scassandra"))
       nel,
       `cassandra-driver`,
       jffi,
+      Netty.common,
+      Netty.codec,
+      Netty.handler,
+      Jackson.core,
+      Jackson.databind,
+      guava,
       `executor-tools`,
       Pureconfig.cats,
     ),
+    // Guava major bump is a security fix. The only Guava type in the public API is
+    // `ListenableFuture`, which is unchanged since 19.0.
+    versionPolicyIgnored += "com.google.guava" % "guava",
   )
   .settings(
     libraryDependencies ++= crossSettings(
