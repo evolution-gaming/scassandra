@@ -36,7 +36,7 @@ object Dependencies {
   val `config-tools` = "com.evolutiongaming" %% "config-tools" % "1.0.5"
   val nel = "com.evolutiongaming" %% "nel" % "1.3.5"
   val `testcontainers-cassandra` = "com.dimafeng" %% "testcontainers-scala-cassandra" % "0.44.1"
-  val `cats-helper` = "com.evolutiongaming" %% "cats-helper" % "3.12.2"
+  val `cats-helper` = "com.evolutiongaming" %% "cats-helper" % "3.13.1"
   val sstream = "com.evolutiongaming" %% "sstream" % "1.3.0"
 
   object Logback {
