@@ -17,7 +17,7 @@ object Dependencies {
   // when updating, make sure they stay compatible with the driver version used
   // TODO: remove explicit dependencies when driver 3 support dropped
   object Netty {
-    private val version = "4.1.137.Final"
+    private val version = "4.2.17.Final"
     val common = "io.netty" % "netty-common" % version
     val codec = "io.netty" % "netty-codec" % version
     val handler = "io.netty" % "netty-handler" % version
