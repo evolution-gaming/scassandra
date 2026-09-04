@@ -17,7 +17,7 @@ lazy val commonSettings = Seq(
   organizationName := "Evolution",
   organizationHomepage := Some(url("https://evolution.com")),
   scalaVersion := crossScalaVersions.value.head,
-  crossScalaVersions := Seq("2.13.18", "3.3.8"),
+  crossScalaVersions := Seq("3.9.0", "3.3.8"),
   Compile / doc / scalacOptions ++= Seq("-groups", "-implicits", "-no-link-warnings"),
   publishTo := Some(Resolver.evolutionReleases),
   // Netty guarantees binary compatibility within 4.1.x, but its `.Final` qualifier
