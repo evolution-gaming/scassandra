@@ -58,10 +58,10 @@ addCommandAlias("fmt", "+all scalafmtAll scalafmtSbt")
 // check needed for Evo workflows/release.yml - it adds '+' before calling check,
 // tests are executed separately
 addCommandAlias("check", "all scalafmtCheckAll scalafmtSbtCheck versionPolicyCheck Compile/doc")
-addCommandAlias("build", "; +check; +test")
+addCommandAlias("build", "; +check; +testFull")
 
 lazy val root = (project in file("."))
-  .settings(name := "scassandra")
+  .settings(name := "scassandra-root")
   .settings(commonSettings)
   .settings(
     publish / skip := true,
