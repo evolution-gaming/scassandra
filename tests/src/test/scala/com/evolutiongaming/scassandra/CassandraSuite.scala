@@ -9,12 +9,15 @@ import com.evolutiongaming.nel.Nel
 import org.scalatest.{BeforeAndAfterAll, Suite}
 import org.testcontainers.utility.DockerImageName
 
+import java.time.Duration
+
 object CassandraSuite {
 
   val image: String = sys.env.getOrElse("CASSANDRA_IMAGE", "cassandra:3.11.7")
 
   lazy val container: CassandraContainer = {
     val container = CassandraContainer(DockerImageName.parse(image))
+    container.container.withStartupTimeout(Duration.ofMinutes(3))
     container.start()
     container
   }
