@@ -3,6 +3,7 @@ package com.evolutiongaming.scassandra
 import cats.arrow.FunctionK
 import cats.effect.unsafe.implicits.global
 import cats.effect.{IO, Ref, Resource}
+import com.datastax.driver.core.ProtocolOptions.Compression
 import com.datastax.driver.core.policies.{
   ConstantSpeculativeExecutionPolicy,
   DCAwareRoundRobinPolicy,
@@ -10,7 +11,6 @@ import com.datastax.driver.core.policies.{
   NoSpeculativeExecutionPolicy,
   TokenAwarePolicy,
 }
-import com.datastax.driver.core.ProtocolOptions.Compression
 import com.datastax.driver.core.{AuthProvider, Cluster as ClusterJ, PlainTextAuthProvider}
 import com.evolutiongaming.nel.Nel
 import org.scalatest.matchers.should.Matchers
@@ -55,7 +55,6 @@ class CassandraClusterSpec extends AnyWordSpec with Matchers {
       }
     }
 
-
     "apply load balancing policy when set" in {
       withClusterJ(CassandraConfig(loadBalancing = Some(LoadBalancingConfig(localDc = "dc1")))) { cluster =>
         val policy = cluster.getConfiguration.getPolicies.getLoadBalancingPolicy
@@ -66,7 +65,8 @@ class CassandraClusterSpec extends AnyWordSpec with Matchers {
 
     "apply speculative execution policy when set" in {
       withClusterJ(CassandraConfig(speculativeExecution = Some(SpeculativeExecutionConfig()))) {
-        _.getConfiguration.getPolicies.getSpeculativeExecutionPolicy shouldBe a[ConstantSpeculativeExecutionPolicy]
+        _.getConfiguration.getPolicies.getSpeculativeExecutionPolicy shouldBe
+          a[ConstantSpeculativeExecutionPolicy]
       }
       withClusterJ(CassandraConfig()) {
         _.getConfiguration.getPolicies.getSpeculativeExecutionPolicy shouldBe a[NoSpeculativeExecutionPolicy]
@@ -98,9 +98,11 @@ class CassandraClusterSpec extends AnyWordSpec with Matchers {
     }
 
     "reject malformed contact points" in {
-      val error = the[IllegalArgumentException] thrownBy CreateClusterJ(CassandraConfig(contactPoints = Nel("a:b:c")), 1)
+      val error = the[IllegalArgumentException] thrownBy
+        CreateClusterJ(CassandraConfig(contactPoints = Nel("a:b:c")), 1)
       error.getMessage should include("a:b:c")
-      a[NumberFormatException] should be thrownBy CreateClusterJ(CassandraConfig(contactPoints = Nel("127.0.0.1:port")), 1)
+      a[NumberFormatException] should be thrownBy
+        CreateClusterJ(CassandraConfig(contactPoints = Nel("127.0.0.1:port")), 1)
     }
   }
 
@@ -145,7 +147,10 @@ class CassandraClusterSpec extends AnyWordSpec with Matchers {
   "CassandraCluster" should {
 
     "expose the cluster name" in {
-      CassandraCluster.of[IO](CassandraConfig(name = "name"), clusterId = 3).use(_.clusterName).unsafeRunSync() shouldEqual "name-3"
+      CassandraCluster.of[IO](
+        CassandraConfig(name = "name"),
+        clusterId = 3,
+      ).use(_.clusterName).unsafeRunSync() shouldEqual "name-3"
     }
 
     "mapK" in {

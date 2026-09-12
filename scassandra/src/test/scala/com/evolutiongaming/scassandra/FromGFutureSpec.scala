@@ -20,7 +20,8 @@ class FromGFutureSpec extends AnyFunSuite with Matchers {
 
   test("failed future") {
     val error = new RuntimeException("boom") with NoStackTrace
-    FromGFuture[IO].apply(Futures.immediateFailedFuture[Int](error)).attempt.unsafeRunSync() shouldEqual Left(error)
+    FromGFuture[IO].apply(Futures.immediateFailedFuture[Int](error)).attempt.unsafeRunSync() shouldEqual
+      Left(error)
   }
 
   test("future is created lazily and on every run") {
@@ -67,6 +68,8 @@ class FromGFutureSpec extends AnyFunSuite with Matchers {
 
   test("deprecated lift") {
     implicit val executor: Executor = _.run()
-    (FromGFuture.lift[IO]: @nowarn("cat=deprecation")).apply(Futures.immediateFuture(1)).unsafeRunSync() shouldEqual 1
+    (FromGFuture.lift[IO]: @nowarn(
+      "cat=deprecation",
+    )).apply(Futures.immediateFuture(1)).unsafeRunSync() shouldEqual 1
   }
 }

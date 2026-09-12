@@ -27,7 +27,8 @@ class MetadataSpec extends AnyWordSpec with Matchers {
 
   private val metadata: Metadata[IO] = new Metadata[IO] {
     def clusterName: IO[String] = IO.pure("cluster")
-    def keyspace(name: String): IO[Option[KeyspaceMetadata[IO]]] = IO.pure(Option.when(name == "keyspace")(keyspaceMetadata))
+    def keyspace(name: String): IO[Option[KeyspaceMetadata[IO]]] =
+      IO.pure(Option.when(name == "keyspace")(keyspaceMetadata))
     def keyspaces: IO[List[KeyspaceMetadata[IO]]] = IO.pure(List(keyspaceMetadata))
     def schema: IO[String] = IO.pure("schema")
   }
@@ -49,8 +50,17 @@ class MetadataSpec extends AnyWordSpec with Matchers {
         keyspaces <- metadata1.keyspaces
         keyspaceSchema <- keyspace.get.schema
         count <- counter.get
-      } yield (clusterName, schema, keyspace.map(_.name), missing, keyspaces.map(_.name), keyspaceSchema, count)
-      program.unsafeRunSync() shouldEqual (("cluster", "schema", Some("keyspace"), None, List("keyspace"), "schema", 6))
+      } yield (
+        clusterName,
+        schema,
+        keyspace.map(_.name),
+        missing,
+        keyspaces.map(_.name),
+        keyspaceSchema,
+        count,
+      )
+      program.unsafeRunSync() shouldEqual
+        (("cluster", "schema", Some("keyspace"), None, List("keyspace"), "schema", 6))
     }
   }
 
@@ -69,7 +79,8 @@ class MetadataSpec extends AnyWordSpec with Matchers {
         userTypes <- keyspace1.userTypes
         count <- counter.get
       } yield (schema, cql, table.map(_.name), missing, tables.map(_.name), replication, userTypes, count)
-      program.unsafeRunSync() shouldEqual (("schema", "cql", Some("table"), None, List("table"), Map("class" -> "SimpleStrategy"), Nil, 7))
+      program.unsafeRunSync() shouldEqual
+        (("schema", "cql", Some("table"), None, List("table"), Map("class" -> "SimpleStrategy"), Nil, 7))
       val keyspace1 = keyspaceMetadata.mapK(cats.arrow.FunctionK.id[IO])
       keyspace1.name shouldEqual "keyspace"
       keyspace1.durableWrites shouldEqual true

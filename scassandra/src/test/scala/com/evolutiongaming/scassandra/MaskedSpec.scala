@@ -18,7 +18,8 @@ class MaskedSpec extends AnyFunSuite with Matchers {
   }
 
   test("read from config") {
-    ConfigSource.string("password = secret").at("password").load[Masked[String]] shouldEqual Right(Masked("secret"))
+    ConfigSource.string("password = secret").at("password").load[Masked[String]] shouldEqual
+      Right(Masked("secret"))
     ConfigSource.string("port = 1").at("port").load[Masked[Int]] shouldEqual Right(Masked(1))
   }
 }

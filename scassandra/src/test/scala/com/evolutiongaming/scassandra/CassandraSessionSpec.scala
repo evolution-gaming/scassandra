@@ -22,7 +22,12 @@ import scala.collection.mutable.ListBuffer
 
 class CassandraSessionSpec extends AnyWordSpec with Matchers {
 
-  private def stateJ(hosts: Int, open: Int, trashed: Int, inFlight: Int): SessionJ.State = ProxyMock[SessionJ.State] {
+  private def stateJ(
+    hosts: Int,
+    open: Int,
+    trashed: Int,
+    inFlight: Int,
+  ): SessionJ.State = ProxyMock[SessionJ.State] {
     case ("getConnectedHosts", Nil) => Collections.nCopies(hosts, null: Host)
     case ("getOpenConnections", _) => Int.box(open)
     case ("getTrashedConnections", _) => Int.box(trashed)
@@ -169,7 +174,7 @@ class CassandraSessionSpec extends AnyWordSpec with Matchers {
   "CassandraSession.State" should {
 
     "wrap the driver state" in {
-      val state = (CassandraSession.State[IO](stateJ(1, 2, 3, 4)): @nowarn("cat=deprecation"))
+      val state = CassandraSession.State[IO](stateJ(1, 2, 3, 4)): @nowarn("cat=deprecation")
       state.connectedHosts.unsafeRunSync().size shouldEqual 1
       state.openConnections(null).unsafeRunSync() shouldEqual 2
       state.trashedConnections(null).unsafeRunSync() shouldEqual 3
@@ -177,7 +182,8 @@ class CassandraSessionSpec extends AnyWordSpec with Matchers {
     }
 
     "mapK" in {
-      val state = (CassandraSession.State[IO](stateJ(1, 2, 3, 4)): @nowarn("cat=deprecation")).mapK(FunctionK.id[IO])
+      val state =
+        (CassandraSession.State[IO](stateJ(1, 2, 3, 4)): @nowarn("cat=deprecation")).mapK(FunctionK.id[IO])
       state.connectedHosts.unsafeRunSync().size shouldEqual 1
       state.openConnections(null).unsafeRunSync() shouldEqual 2
       state.trashedConnections(null).unsafeRunSync() shouldEqual 3

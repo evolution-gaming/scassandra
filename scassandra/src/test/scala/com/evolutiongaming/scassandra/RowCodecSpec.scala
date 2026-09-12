@@ -17,7 +17,8 @@ class RowCodecSpec extends AnyWordSpec with Matchers {
     }
 
     "contramap" in {
-      EncodeRow[String]("key").contramap[Int](_.toString).apply(DataMock(), 1).byName shouldEqual Map("key" -> "1")
+      EncodeRow[String]("key").contramap[Int](_.toString).apply(DataMock(), 1).byName shouldEqual
+        Map("key" -> "1")
     }
 
     "have a Contravariant instance" in {

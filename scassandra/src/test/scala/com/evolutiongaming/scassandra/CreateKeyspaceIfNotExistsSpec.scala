@@ -14,7 +14,8 @@ class CreateKeyspaceIfNotExistsSpec extends AnyFunSuite with Matchers {
   }
 
   test("network topology strategy") {
-    val strategy = NetworkTopology(Nel(NetworkTopology.DcFactor("dc1", 2), NetworkTopology.DcFactor("dc2", 3)))
+    val strategy =
+      NetworkTopology(Nel(NetworkTopology.DcFactor("dc1", 2), NetworkTopology.DcFactor("dc2", 3)))
     CreateKeyspaceIfNotExists("ks", strategy) shouldEqual
       "CREATE KEYSPACE IF NOT EXISTS ks WITH REPLICATION = { 'class' : 'NetworkTopologyStrategy','dc1':2,'dc2':3 }"
   }

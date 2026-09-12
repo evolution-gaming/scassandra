@@ -10,7 +10,6 @@ import com.evolutiongaming.sstream.Stream.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-
 class ResultSetStreamSpec extends AnyWordSpec with Matchers {
 
   private def session(resultSet: ResultSet, executed: Statement => Unit = _ => ()): CassandraSession[IO] = {
@@ -26,7 +25,10 @@ class ResultSetStreamSpec extends AnyWordSpec with Matchers {
 
   private val streams: List[(String, ResultSetMock => Stream[IO, Row])] = List(
     ("ResultSet.stream", resultSet => resultSet.stream[IO]),
-    ("executeStream(statement)", resultSet => session(resultSet).executeStream(new SimpleStatement("SELECT 1"))),
+    (
+      "executeStream(statement)",
+      resultSet => session(resultSet).executeStream(new SimpleStatement("SELECT 1")),
+    ),
     ("executeStream(query)", resultSet => session(resultSet).executeStream("SELECT 1")),
   )
 
@@ -48,7 +50,8 @@ class ResultSetStreamSpec extends AnyWordSpec with Matchers {
       }
 
       "return all rows across pages in order, fetching every next page once" in {
-        val resultSet = ResultSetMock(ResultSetMock.rows(1, 2), ResultSetMock.rows(3), ResultSetMock.rows(4, 5))
+        val resultSet =
+          ResultSetMock(ResultSetMock.rows(1, 2), ResultSetMock.rows(3), ResultSetMock.rows(4, 5))
         ids(stream(resultSet).toList.unsafeRunSync()) shouldEqual List(1, 2, 3, 4, 5)
         resultSet.fetchCount shouldEqual 2
       }
@@ -79,7 +82,10 @@ class ResultSetStreamSpec extends AnyWordSpec with Matchers {
 
     "wrap the query into a SimpleStatement" in {
       var executed = Option.empty[Statement]
-      session(ResultSetMock(), statement => executed = Some(statement)).executeStream("SELECT 1").toList.unsafeRunSync()
+      session(
+        ResultSetMock(),
+        statement => executed = Some(statement),
+      ).executeStream("SELECT 1").toList.unsafeRunSync()
       executed.map(_.asInstanceOf[SimpleStatement].getQueryString) shouldEqual Some("SELECT 1")
     }
   }
@@ -89,7 +95,10 @@ class ResultSetStreamSpec extends AnyWordSpec with Matchers {
     "execute the statement as is" in {
       var executed = Option.empty[Statement]
       val statement = new SimpleStatement("SELECT 1")
-      session(ResultSetMock(), statement => executed = Some(statement)).executeStream(statement).toList.unsafeRunSync()
+      session(
+        ResultSetMock(),
+        statement => executed = Some(statement),
+      ).executeStream(statement).toList.unsafeRunSync()
       executed.map(_ eq statement) shouldEqual Some(true)
     }
   }

@@ -21,7 +21,8 @@ class ConfigHelpersSpec extends AnyFunSuite with Matchers {
   }
 
   test("nelFromConf fails on an empty list") {
-    a[ConfigException.BadValue] should be thrownBy ConfigFactory.parseString("a = []").getOpt[Nel[String]]("a")
+    a[ConfigException.BadValue] should be thrownBy
+      ConfigFactory.parseString("a = []").getOpt[Nel[String]]("a")
   }
 
   test("nelReader reads a non-empty list") {

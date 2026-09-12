@@ -89,7 +89,11 @@ object ResultSetFutureMock {
       }
     }
     Proxy
-      .newProxyInstance(classOf[ResultSetFuture].getClassLoader, Array[Class[?]](classOf[ResultSetFuture]), handler)
+      .newProxyInstance(
+        classOf[ResultSetFuture].getClassLoader,
+        Array[Class[?]](classOf[ResultSetFuture]),
+        handler,
+      )
       .asInstanceOf[ResultSetFuture]
   }
 }
