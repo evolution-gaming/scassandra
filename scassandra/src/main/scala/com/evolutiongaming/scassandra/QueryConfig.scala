@@ -1,48 +1,28 @@
 package com.evolutiongaming.scassandra
 
-import com.datastax.driver.core.{ConsistencyLevel, QueryOptions}
+import com.datastax.oss.driver.api.core.{ConsistencyLevel, DefaultConsistencyLevel}
 import com.typesafe.config.Config
 import pureconfig.ConfigSource
 
 import scala.concurrent.duration.*
 
 /**
- * See
- * [[https://docs.datastax.com/en/drivers/java/3.5/com/datastax/driver/core/QueryOptions.html]]
+ * Request and metadata options, see `basic.request`, `advanced.metadata` and
+ * `advanced.prepared-statements` in the driver reference configuration.
  */
 final case class QueryConfig(
-  consistency: ConsistencyLevel = ConsistencyLevel.LOCAL_ONE,
-  serialConsistency: ConsistencyLevel = ConsistencyLevel.SERIAL,
+  consistency: ConsistencyLevel = DefaultConsistencyLevel.LOCAL_ONE,
+  serialConsistency: ConsistencyLevel = DefaultConsistencyLevel.SERIAL,
   fetchSize: Int = 5000,
   defaultIdempotence: Boolean = false,
   maxPendingRefreshNodeListRequests: Int = 20,
-  maxPendingRefreshNodeRequests: Int = 20,
   maxPendingRefreshSchemaRequests: Int = 20,
   refreshNodeListInterval: FiniteDuration = 1.second,
-  refreshNodeInterval: FiniteDuration = 1.second,
   refreshSchemaInterval: FiniteDuration = 1.second,
   metadata: Boolean = true,
   rePrepareOnUp: Boolean = true,
   prepareOnAllHosts: Boolean = true,
-) {
-
-  def asJava: QueryOptions = {
-    new QueryOptions()
-      .setConsistencyLevel(consistency)
-      .setSerialConsistencyLevel(serialConsistency)
-      .setFetchSize(fetchSize)
-      .setDefaultIdempotence(defaultIdempotence)
-      .setMaxPendingRefreshNodeListRequests(maxPendingRefreshNodeListRequests)
-      .setMaxPendingRefreshNodeRequests(maxPendingRefreshNodeRequests)
-      .setMaxPendingRefreshSchemaRequests(maxPendingRefreshSchemaRequests)
-      .setRefreshNodeListIntervalMillis(refreshNodeListInterval.toMillis.toInt)
-      .setRefreshNodeIntervalMillis(refreshNodeInterval.toMillis.toInt)
-      .setRefreshSchemaIntervalMillis(refreshSchemaInterval.toMillis.toInt)
-      .setMetadataEnabled(metadata)
-      .setReprepareOnUp(rePrepareOnUp)
-      .setPrepareOnAllHosts(prepareOnAllHosts)
-  }
-}
+)
 
 object QueryConfig extends QueryConfigImplicits {
 

@@ -1,7 +1,6 @@
 package com.evolutiongaming.scassandra
 
 import cats.implicits.*
-import com.datastax.driver.core.policies.{DCAwareRoundRobinPolicy, TokenAwarePolicy}
 import com.typesafe.config.ConfigFactory
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
@@ -18,26 +17,12 @@ class LoadBalancingConfigSpec extends AnyFunSuite with Matchers {
 
   test("apply from config") {
     val config = ConfigFactory.parseURL(getClass.getResource("load-balancing.conf"))
-    val expected = LoadBalancingConfig(
-      localDc = "local",
-      allowRemoteDcsForLocalConsistencyLevel = true,
-    )
+    val expected = LoadBalancingConfig(localDc = "local")
     ConfigSource.fromConfig(config).load[LoadBalancingConfig] shouldEqual expected.asRight
   }
 
-  test("asJava wraps a DC aware policy into a token aware one") {
-    val policy = LoadBalancingConfig(localDc = "dc1").asJava
-    policy.map(_.getClass) shouldEqual Some(classOf[TokenAwarePolicy])
-    policy.map(_.asInstanceOf[TokenAwarePolicy].getChildPolicy.getClass) shouldEqual
-      Some(classOf[DCAwareRoundRobinPolicy])
-  }
-
-  test("asJava is None for an empty local DC") {
-    LoadBalancingConfig(localDc = "").asJava shouldEqual None
-  }
-
   test("fromConfig falls back to default on invalid config") {
-    val config = ConfigFactory.parseString("allow-remote-dcs-for-local-consistency-level = nope")
+    val config = ConfigFactory.parseString("local-dc = [1]")
     LoadBalancingConfig.fromConfig(config, LoadBalancingConfig.Default) shouldEqual
       LoadBalancingConfig.Default
   }

@@ -11,13 +11,7 @@ trait LoadBalancingConfigImplicits {
       for {
         objCur <- cursor.asObjectCursor
         localDc <- objCur.getAtOpt[String]("local-dc").map(_.getOrElse(defaultConfig.localDc))
-        allowRemoteDcsForLocalConsistencyLevel <- objCur.getAtOpt[Boolean](
-          "allow-remote-dcs-for-local-consistency-level",
-        ).map(_.getOrElse(defaultConfig.allowRemoteDcsForLocalConsistencyLevel))
-      } yield LoadBalancingConfig(
-        localDc = localDc,
-        allowRemoteDcsForLocalConsistencyLevel = allowRemoteDcsForLocalConsistencyLevel,
-      )
+      } yield LoadBalancingConfig(localDc = localDc)
     }
 
 }

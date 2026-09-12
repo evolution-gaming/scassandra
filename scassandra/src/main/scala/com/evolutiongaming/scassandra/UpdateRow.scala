@@ -1,10 +1,10 @@
 package com.evolutiongaming.scassandra
 
-import com.datastax.driver.core.{GettableData, SettableData}
+import com.datastax.oss.driver.api.core.data.{GettableByName, SettableByName}
 
 trait UpdateRow[-A] {
 
-  def apply[D <: GettableData & SettableData[D]](
+  def apply[D <: GettableByName & SettableByName[D]](
     data: D,
     value: A,
   ): D
@@ -17,7 +17,7 @@ object UpdateRow {
 
   implicit def fromEncodeRow[A: EncodeRow]: UpdateRow[A] =
     new UpdateRow[A] {
-      def apply[D <: GettableData & SettableData[D]](
+      def apply[D <: GettableByName & SettableByName[D]](
         data: D,
         value: A,
       ): D = EncodeRow[A].apply(data, value)
@@ -26,7 +26,7 @@ object UpdateRow {
   implicit final class Syntax[A](val self: UpdateRow[A]) extends AnyVal {
 
     def contramap[B](f: B => A): UpdateRow[B] = new UpdateRow[B] {
-      def apply[D <: GettableData & SettableData[D]](
+      def apply[D <: GettableByName & SettableByName[D]](
         data: D,
         value: B,
       ): D = self(data, f(value))

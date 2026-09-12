@@ -3,166 +3,108 @@ package com.evolutiongaming.scassandra
 import cats.arrow.FunctionK
 import cats.effect.unsafe.implicits.global
 import cats.effect.{IO, Ref, Resource}
-import com.datastax.driver.core.ProtocolOptions.Compression
-import com.datastax.driver.core.policies.{
-  ConstantSpeculativeExecutionPolicy,
-  DCAwareRoundRobinPolicy,
-  ExponentialReconnectionPolicy,
-  NoSpeculativeExecutionPolicy,
-  TokenAwarePolicy,
-}
-import com.datastax.driver.core.{AuthProvider, Cluster as ClusterJ, PlainTextAuthProvider}
+import com.datastax.oss.driver.api.core.{AllNodesFailedException, CqlSessionBuilder}
 import com.evolutiongaming.nel.Nel
 import com.evolutiongaming.scassandra.MockSupport.notSupported
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.net.InetSocketAddress
 import scala.concurrent.duration.*
 
 class CassandraClusterSpec extends AnyWordSpec with Matchers {
 
-  private def withClusterJ[A](config: CassandraConfig, clusterId: Int = 1)(f: ClusterJ => A): A = {
-    val cluster = CreateClusterJ(config, clusterId)
-    try f(cluster)
-    finally cluster.close()
-  }
+  private val unreachable = CassandraConfig(
+    contactPoints = Nel("127.0.0.1:1"),
+    socket = SocketConfig(connectTimeout = 1.second, readTimeout = 1.second),
+    authentication = Some(AuthenticationConfig("user", "pass")),
+    loadBalancing = Some(LoadBalancingConfig(localDc = "dc1")),
+    speculativeExecution = Some(SpeculativeExecutionConfig()),
+    logQueries = true,
+  )
 
-  "CreateClusterJ" should {
-
-    "append the cluster id to the cluster name" in {
-      withClusterJ(CassandraConfig(name = "name"), clusterId = 7) { _.getClusterName shouldEqual "name-7" }
-    }
-
-    "apply socket, query, pooling and reconnection config" in {
-      val config = CassandraConfig(
-        port = 9043,
-        socket = SocketConfig(readTimeout = 1.second),
-        query = QueryConfig(fetchSize = 42),
-        pooling = PoolingConfig(maxQueueSize = 7),
-        reconnection = ReconnectionConfig(minDelay = 2.seconds, maxDelay = 3.seconds),
-        compression = Compression.NONE,
-      )
-      withClusterJ(config) { cluster =>
-        val configuration = cluster.getConfiguration
-        configuration.getSocketOptions.getReadTimeoutMillis shouldEqual 1000
-        configuration.getQueryOptions.getFetchSize shouldEqual 42
-        configuration.getPoolingOptions.getMaxQueueSize shouldEqual 7
-        configuration.getProtocolOptions.getPort shouldEqual 9043
-        configuration.getProtocolOptions.getCompression shouldEqual Compression.NONE
-        val reconnection = configuration.getPolicies.getReconnectionPolicy
-        reconnection shouldBe a[ExponentialReconnectionPolicy]
-        reconnection.asInstanceOf[ExponentialReconnectionPolicy].getBaseDelayMs shouldEqual 2000
-        reconnection.asInstanceOf[ExponentialReconnectionPolicy].getMaxDelayMs shouldEqual 3000
-      }
-    }
-
-    "apply load balancing policy when set" in {
-      withClusterJ(CassandraConfig(loadBalancing = Some(LoadBalancingConfig(localDc = "dc1")))) { cluster =>
-        val policy = cluster.getConfiguration.getPolicies.getLoadBalancingPolicy
-        policy shouldBe a[TokenAwarePolicy]
-        policy.asInstanceOf[TokenAwarePolicy].getChildPolicy shouldBe a[DCAwareRoundRobinPolicy]
-      }
-    }
-
-    "apply speculative execution policy when set" in {
-      withClusterJ(CassandraConfig(speculativeExecution = Some(SpeculativeExecutionConfig()))) {
-        _.getConfiguration.getPolicies.getSpeculativeExecutionPolicy shouldBe
-          a[ConstantSpeculativeExecutionPolicy]
-      }
-      withClusterJ(CassandraConfig()) {
-        _.getConfiguration.getPolicies.getSpeculativeExecutionPolicy shouldBe a[NoSpeculativeExecutionPolicy]
-      }
-    }
-
-    "apply credentials when set" in {
-      withClusterJ(CassandraConfig(authentication = Some(AuthenticationConfig("user", Masked("pass"))))) {
-        _.getConfiguration.getProtocolOptions.getAuthProvider shouldBe a[PlainTextAuthProvider]
-      }
-      withClusterJ(CassandraConfig()) {
-        _.getConfiguration.getProtocolOptions.getAuthProvider shouldBe theSameInstanceAs(AuthProvider.NONE)
-      }
-    }
-
-    "disable metrics and JMX reporting by default" in {
-      withClusterJ(CassandraConfig()) { cluster =>
-        cluster.getConfiguration.getMetricsOptions.isEnabled shouldEqual false
-        cluster.getConfiguration.getMetricsOptions.isJMXReportingEnabled shouldEqual false
-      }
-      withClusterJ(CassandraConfig(metrics = true, jmxReporting = true)) { cluster =>
-        cluster.getConfiguration.getMetricsOptions.isEnabled shouldEqual true
-        cluster.getConfiguration.getMetricsOptions.isJMXReportingEnabled shouldEqual true
-      }
-    }
+  "CreateCqlSessionBuilder" should {
 
     "accept contact points with and without port" in {
-      withClusterJ(CassandraConfig(contactPoints = Nel("127.0.0.1:9043", " 127.0.0.2 "))) { _ => () }
+      val config = CassandraConfig(port = 9043, contactPoints = Nel("127.0.0.1:9044", " 127.0.0.2 "))
+      CreateCqlSessionBuilder.contactPoints(config) shouldEqual List(
+        new InetSocketAddress("127.0.0.1", 9044),
+        new InetSocketAddress("127.0.0.2", 9043),
+      )
     }
 
     "reject malformed contact points" in {
       val error = the[IllegalArgumentException] thrownBy
-        CreateClusterJ(CassandraConfig(contactPoints = Nel("a:b:c")), 1)
+        CreateCqlSessionBuilder(CassandraConfig(contactPoints = Nel("a:b:c")), 1)
       error.getMessage should include("a:b:c")
       a[NumberFormatException] should be thrownBy
-        CreateClusterJ(CassandraConfig(contactPoints = Nel("127.0.0.1:port")), 1)
-    }
-  }
-
-  "CassandraClusterOf" should {
-
-    "assign incrementing cluster ids" in {
-      val program = for {
-        clusterOf <- CassandraClusterOf.of[IO]
-        name1 <- clusterOf(CassandraConfig()).use(_.clusterName)
-        name2 <- clusterOf(CassandraConfig()).use(_.clusterName)
-      } yield (name1, name2)
-      program.unsafeRunSync() shouldEqual (("cluster-1", "cluster-2"))
+        CreateCqlSessionBuilder(CassandraConfig(contactPoints = Nel("127.0.0.1:port")), 1)
     }
 
-    "run observe hooks in order of registration" in {
-      val program = for {
-        ref <- Ref[IO].of(List.empty[String])
-        clusterOf <- CassandraClusterOf.of[IO]
-        clusterOf1 = clusterOf
-          .addClusterJObserveHook(cluster => ref.update(_ :+ s"a:${ cluster.getClusterName }"))
-          .addClusterJObserveHook(cluster => ref.update(_ :+ s"b:${ cluster.getClusterName }"))
-        _ <- clusterOf1(CassandraConfig()).use(_ => IO.unit)
-        hooks <- ref.get
-      } yield hooks
-      program.unsafeRunSync() shouldEqual List("a:cluster-1", "b:cluster-1")
-    }
-
-    "remove all observe hooks" in {
-      val program = for {
-        ref <- Ref[IO].of(List.empty[String])
-        clusterOf <- CassandraClusterOf.of[IO]
-        clusterOf1 = clusterOf
-          .addClusterJObserveHook(cluster => ref.update(_ :+ cluster.getClusterName))
-          .removeAllClusterJObserveHooks()
-        _ <- clusterOf1(CassandraConfig()).use(_ => IO.unit)
-        hooks <- ref.get
-      } yield hooks
-      program.unsafeRunSync() shouldEqual Nil
+    "build a session builder for a cloud secure connect bundle" in {
+      val file =
+        CassandraConfig(cloudSecureConnectBundle = Some(CloudSecureConnectBundleConfig.File("/bundle")))
+      val url =
+        CassandraConfig(cloudSecureConnectBundle = Some(CloudSecureConnectBundleConfig.Url("http://ws")))
+      CreateCqlSessionBuilder(file, 1) should not be null
+      CreateCqlSessionBuilder(url, 1) should not be null
     }
   }
 
   "CassandraCluster" should {
 
-    "expose the cluster name" in {
-      CassandraCluster.of[IO](
-        CassandraConfig(name = "name"),
-        clusterId = 3,
-      ).use(_.clusterName).unsafeRunSync() shouldEqual "name-3"
+    "fail to connect when no node is reachable" in {
+      val program = CassandraCluster.of[IO](unreachable, clusterId = 1).use(_.connect.use_)
+      a[AllNodesFailedException] should be thrownBy program.unsafeRunSync()
+    }
+
+    "apply the builder hook on connect" in {
+      val program = for {
+        hooks <- Ref[IO].of(0)
+        cluster = CassandraCluster.of[IO](
+          unreachable,
+          clusterId = 1,
+          { (builder: CqlSessionBuilder) =>
+            hooks.update(_ + 1).unsafeRunSync()
+            builder
+          },
+        )
+        _ <- cluster.use(_.connect("ks").use_).attempt
+        hooks <- hooks.get
+      } yield hooks
+      program.unsafeRunSync() shouldEqual 1
     }
 
     "mapK" in {
       val cluster = new CassandraCluster[IO] {
-        def connect: Resource[IO, CassandraSession[IO]] = notSupported
+        def connect: Resource[IO, CassandraSession[IO]] = Resource.pure(new CassandraSessionMock)
         def connect(keyspace: String): Resource[IO, CassandraSession[IO]] = notSupported
-        def clusterName: IO[String] = IO.pure("name")
-        def newSession: Resource[IO, CassandraSession[IO]] = notSupported
-        def metadata: IO[Metadata[IO]] = notSupported
       }
-      cluster.mapK(FunctionK.id[IO]).clusterName.unsafeRunSync() shouldEqual "name"
+      cluster.mapK(FunctionK.id[IO]).connect.use(_ => IO.unit).unsafeRunSync()
+    }
+  }
+
+  "CassandraClusterOf" should {
+
+    "apply the builder hook on connect" in {
+      val program = for {
+        hooks <- Ref[IO].of(0)
+        clusterOf <- CassandraClusterOf.of[IO] { (builder: CqlSessionBuilder) =>
+          hooks.update(_ + 1).unsafeRunSync()
+          builder
+        }
+        _ <- clusterOf(unreachable).use(_.connect.use_).attempt
+        hooks <- hooks.get
+      } yield hooks
+      program.unsafeRunSync() shouldEqual 1
+    }
+
+    "create clusters without a hook" in {
+      val program = for {
+        clusterOf <- CassandraClusterOf.of[IO]
+        _ <- clusterOf(unreachable).use(_ => IO.unit)
+      } yield ()
+      program.unsafeRunSync()
     }
   }
 }

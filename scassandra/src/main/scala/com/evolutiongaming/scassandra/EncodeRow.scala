@@ -1,11 +1,11 @@
 package com.evolutiongaming.scassandra
 
 import cats.Contravariant
-import com.datastax.driver.core.SettableData
+import com.datastax.oss.driver.api.core.data.SettableByName
 
 trait EncodeRow[-A] {
 
-  def apply[B <: SettableData[B]](data: B, value: A): B
+  def apply[B <: SettableByName[B]](data: B, value: A): B
 }
 
 object EncodeRow {
@@ -24,12 +24,12 @@ object EncodeRow {
   )(implicit
     encode: EncodeByName[A],
   ): EncodeRow[A] = new EncodeRow[A] {
-    override def apply[B <: SettableData[B]](data: B, value: A): B = encode(data, name, value)
+    override def apply[B <: SettableByName[B]](data: B, value: A): B = encode(data, name, value)
   }
 
   object Ops {
 
-    implicit class SettableDataOps[A <: SettableData[A]](val self: A) extends AnyVal {
+    implicit class SettableByNameOps[A <: SettableByName[A]](val self: A) extends AnyVal {
 
       def encode[B](
         value: B,
@@ -42,7 +42,7 @@ object EncodeRow {
   implicit class EncodeRowOps[A](val self: EncodeRow[A]) extends AnyVal {
 
     def contramap[B](f: B => A): EncodeRow[B] = new EncodeRow[B] {
-      override def apply[C <: SettableData[C]](data: C, value: B): C = self(data, f(value))
+      override def apply[C <: SettableByName[C]](data: C, value: B): C = self(data, f(value))
     }
   }
 }

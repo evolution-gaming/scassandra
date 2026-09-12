@@ -2,7 +2,7 @@ package com.evolutiongaming.scassandra
 
 import cats.effect.IO
 import cats.syntax.all.*
-import com.datastax.driver.core.{Row, SimpleStatement, Statement}
+import com.datastax.oss.driver.api.core.cql.{Row, SimpleStatement, Statement}
 import com.evolutiongaming.catshelper.CatsHelper.*
 import com.evolutiongaming.scassandra.StreamingCassandraSession.*
 import com.evolutiongaming.scassandra.syntax.*
@@ -18,7 +18,7 @@ class PagingSpec extends AnyFunSuite with CassandraSuite with Matchers {
 
   private lazy val query = s"SELECT id FROM $table"
 
-  private def paged: Statement = new SimpleStatement(query).setFetchSize(FetchSize)
+  private def paged: Statement[?] = SimpleStatement.newInstance(query).setPageSize(FetchSize)
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
@@ -34,14 +34,14 @@ class PagingSpec extends AnyFunSuite with CassandraSuite with Matchers {
 
   test("statement fetch size splits the result into pages") {
     val resultSet = session.execute(paged).toTry.get
-    resultSet.isFullyFetched shouldEqual false
-    resultSet.getAvailableWithoutFetching shouldEqual FetchSize
+    resultSet.hasMorePages shouldEqual true
+    resultSet.remaining() shouldEqual FetchSize
   }
 
   test("default fetch size returns everything in one page") {
     val resultSet = session.execute(query).toTry.get
-    resultSet.isFullyFetched shouldEqual true
-    resultSet.getAvailableWithoutFetching shouldEqual Ids.size
+    resultSet.hasMorePages shouldEqual false
+    resultSet.remaining() shouldEqual Ids.size
   }
 
   test("ResultSet.stream reads all pages") {
@@ -75,10 +75,10 @@ class PagingSpec extends AnyFunSuite with CassandraSuite with Matchers {
       for {
         resultSet <- session.execute(query)
         rows <- resultSet.stream[IO].toList
-      } yield (resultSet.getAvailableWithoutFetching, ids(rows))
+      } yield (resultSet.hasMorePages, ids(rows))
     }
-    val (available, rows) = program.toTry.get
-    available shouldEqual 0
+    val (hasMorePages, rows) = program.toTry.get
+    hasMorePages shouldEqual true
     rows shouldEqual Ids
   }
 }

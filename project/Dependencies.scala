@@ -2,37 +2,15 @@ import sbt.*
 
 object Dependencies {
 
-  val `cassandra-driver` = "com.datastax.cassandra" % "cassandra-driver-core" % "3.11.5"
+  val `cassandra-driver` = "org.apache.cassandra" % "java-driver-core" % "4.19.3"
   // Override the version coming with the Cassandra driver to the version,
   // which doesn't use JDK's `Unsafe`:
   // https://github.com/jnr/jffi/issues/165#issuecomment-3444932263
   //
   // when updating, make sure it is compatible with the driver version used
-  // TODO: remove explicit dependency when driver 3 support dropped
   val jffi = "com.github.jnr" % "jffi" % "1.3.14"
 
-  // The Cassandra driver 3 pulls in outdated Netty, Jackson and Guava versions with known CVEs.
-  // Pin them explicitly so both this build and downstream consumers resolve the patched ones.
-  //
-  // when updating, make sure they stay compatible with the driver version used
-  // TODO: remove explicit dependencies when driver 3 support dropped
-  object Netty {
-    private val version = "4.2.18.Final"
-    val common = "io.netty" % "netty-common" % version
-    val codec = "io.netty" % "netty-codec" % version
-    val handler = "io.netty" % "netty-handler" % version
-  }
-
-  object Jackson {
-    private val version = "2.22.2"
-    val core = "com.fasterxml.jackson.core" % "jackson-core" % version
-    val databind = "com.fasterxml.jackson.core" % "jackson-databind" % version
-  }
-
-  val guava = "com.google.guava" % "guava" % "33.7.1-jre"
-
   val scalatest = "org.scalatest" %% "scalatest" % "3.2.20"
-  val `executor-tools` = "com.evolutiongaming" %% "executor-tools" % "1.0.5"
   val `config-tools` = "com.evolutiongaming" %% "config-tools" % "1.0.5"
   val nel = "com.evolutiongaming" %% "nel" % "1.3.5"
   val `testcontainers-cassandra` = "com.dimafeng" %% "testcontainers-scala-cassandra" % "0.44.1"

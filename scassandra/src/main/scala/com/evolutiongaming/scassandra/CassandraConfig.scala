@@ -1,7 +1,6 @@
 package com.evolutiongaming.scassandra
 
-import com.datastax.driver.core.ProtocolOptions.Compression
-import com.datastax.driver.core.ProtocolVersion
+import com.datastax.oss.driver.api.core.{DefaultProtocolVersion, ProtocolVersion}
 import com.evolutiongaming.config.ConfigHelper.*
 import com.evolutiongaming.nel.Nel
 import com.evolutiongaming.scassandra.ConfigHelpers.*
@@ -10,8 +9,8 @@ import com.typesafe.config.Config
 import pureconfig.{ConfigCursor, ConfigReader, ConfigSource}
 
 /**
- * See
- * [[https://docs.datastax.com/en/developer/java-driver/3.5/manual/#setting-up-the-driver]]
+ * Translated into the driver configuration by [[CreateDriverConfigLoader]], see
+ * [[https://docs.datastax.com/en/developer/java-driver/4.17/manual/core/configuration/]]
  *
  * If a cloud secure connect bundle is specified, the contact points and port settings
  * will be ignored.
@@ -28,59 +27,18 @@ final case class CassandraConfig(
   authentication: Option[AuthenticationConfig] = None,
   loadBalancing: Option[LoadBalancingConfig] = None,
   speculativeExecution: Option[SpeculativeExecutionConfig] = None,
-  compression: Compression = Compression.NONE,
+  compression: Compression = Compression.None,
   logQueries: Boolean = false,
-  jmxReporting: Boolean = false,
   cloudSecureConnectBundle: Option[CloudSecureConnectBundleConfig] = None,
-  metrics: Boolean = false,
-) {
-
-  // for binary compatibility
-  private[scassandra] def this(
-    name: String,
-    port: Int,
-    contactPoints: Nel[String],
-    protocolVersion: Option[ProtocolVersion],
-    pooling: PoolingConfig,
-    query: QueryConfig,
-    reconnection: ReconnectionConfig,
-    socket: SocketConfig,
-    authentication: Option[AuthenticationConfig],
-    loadBalancing: Option[LoadBalancingConfig],
-    speculativeExecution: Option[SpeculativeExecutionConfig],
-    compression: Compression,
-    logQueries: Boolean,
-    jmxReporting: Boolean,
-  ) = {
-    this(
-      name = name,
-      port = port,
-      contactPoints = contactPoints,
-      protocolVersion = protocolVersion,
-      pooling = pooling,
-      query = query,
-      reconnection = reconnection,
-      socket = socket,
-      authentication = authentication,
-      loadBalancing = loadBalancing,
-      speculativeExecution = speculativeExecution,
-      compression = compression,
-      logQueries = logQueries,
-      jmxReporting = jmxReporting,
-      cloudSecureConnectBundle = None,
-      metrics = false,
-    )
-  }
-}
+)
 
 object CassandraConfig {
 
   val Default: CassandraConfig = CassandraConfig()
 
-  implicit val configReaderCompression: ConfigReader[Compression] = ConfigReaderFromEnum(Compression.values())
-
-  implicit val configReaderProtocolVersion: ConfigReader[ProtocolVersion] =
-    ConfigReaderFromEnum(ProtocolVersion.values())
+  implicit val configReaderProtocolVersion: ConfigReader[ProtocolVersion] = {
+    ConfigReaderFromEnum(DefaultProtocolVersion.values()).map[ProtocolVersion](identity)
+  }
 
   implicit val configReaderCassandraConfig: ConfigReader[CassandraConfig] = (cursor: ConfigCursor) => {
     for {
@@ -95,40 +53,6 @@ object CassandraConfig {
 
   @deprecated("use ConfigReader instead", "1.1.5")
   def apply(config: Config, default: => CassandraConfig): CassandraConfig = fromConfig(config, default)
-
-  // for binary compatibility
-  private[scassandra] def apply(
-    name: String,
-    port: Int,
-    contactPoints: Nel[String],
-    protocolVersion: Option[ProtocolVersion],
-    pooling: PoolingConfig,
-    query: QueryConfig,
-    reconnection: ReconnectionConfig,
-    socket: SocketConfig,
-    authentication: Option[AuthenticationConfig],
-    loadBalancing: Option[LoadBalancingConfig],
-    speculativeExecution: Option[SpeculativeExecutionConfig],
-    compression: Compression,
-    logQueries: Boolean,
-    jmxReporting: Boolean,
-  ): CassandraConfig = CassandraConfig(
-    name = name,
-    port = port,
-    contactPoints = contactPoints,
-    cloudSecureConnectBundle = None,
-    protocolVersion = protocolVersion,
-    pooling = pooling,
-    query = query,
-    reconnection = reconnection,
-    socket = socket,
-    authentication = authentication,
-    loadBalancing = loadBalancing,
-    speculativeExecution = speculativeExecution,
-    compression = compression,
-    logQueries = logQueries,
-    jmxReporting = jmxReporting,
-  )
 
   def fromConfig(config: Config, default: => CassandraConfig): CassandraConfig = {
 
@@ -163,8 +87,6 @@ object CassandraConfig {
       speculativeExecution = speculativeExecution,
       compression = get[Compression]("compression") getOrElse default.compression,
       logQueries = get[Boolean]("log-queries") getOrElse default.logQueries,
-      jmxReporting = get[Boolean]("jmx-reporting") getOrElse default.jmxReporting,
-      metrics = get[Boolean]("metrics") getOrElse default.metrics,
     )
   }
 }

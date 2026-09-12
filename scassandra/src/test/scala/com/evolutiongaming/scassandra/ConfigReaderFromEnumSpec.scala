@@ -1,6 +1,6 @@
 package com.evolutiongaming.scassandra
 
-import com.datastax.driver.core.ProtocolVersion
+import com.datastax.oss.driver.api.core.DefaultProtocolVersion
 import com.evolutiongaming.scassandra.util.ConfigReaderFromEnum
 import com.typesafe.config.ConfigValueFactory
 import org.scalatest.EitherValues
@@ -12,15 +12,15 @@ import scala.jdk.CollectionConverters.*
 
 class ConfigReaderFromEnumSpec extends AnyFunSuite with Matchers with EitherValues {
 
-  private val reader = ConfigReaderFromEnum(ProtocolVersion.values())
+  private val reader = ConfigReaderFromEnum(DefaultProtocolVersion.values())
 
   test("read exact name") {
-    reader.from(ConfigValueFactory.fromAnyRef("V4")) shouldEqual Right(ProtocolVersion.V4)
+    reader.from(ConfigValueFactory.fromAnyRef("V4")) shouldEqual Right(DefaultProtocolVersion.V4)
   }
 
   test("read ignoring case") {
-    reader.from(ConfigValueFactory.fromAnyRef("v4")) shouldEqual Right(ProtocolVersion.V4)
-    reader.from(ConfigValueFactory.fromAnyRef("v3")) shouldEqual Right(ProtocolVersion.V3)
+    reader.from(ConfigValueFactory.fromAnyRef("v4")) shouldEqual Right(DefaultProtocolVersion.V4)
+    reader.from(ConfigValueFactory.fromAnyRef("v3")) shouldEqual Right(DefaultProtocolVersion.V3)
   }
 
   test("fail on unknown name") {

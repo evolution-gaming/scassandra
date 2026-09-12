@@ -1,16 +1,15 @@
 package com.evolutiongaming.scassandra
 
 import cats.Contravariant
-import com.datastax.driver.core.{Duration, LocalDate, SettableData, TypeCodec}
+import com.datastax.oss.driver.api.core.data.{CqlDuration, SettableByName}
 
 import java.nio.ByteBuffer
-import java.time.{Instant, LocalDate as LocalDateJ}
-import java.util.Date
+import java.time.{Instant, LocalDate}
 import scala.jdk.CollectionConverters.*
 
 trait EncodeByName[-A] {
 
-  def apply[B <: SettableData[B]](data: B, name: String, value: A): B
+  def apply[B <: SettableByName[B]](data: B, name: String, value: A): B
 }
 
 object EncodeByName {
@@ -34,7 +33,7 @@ object EncodeByName {
     encode: EncodeByName[A],
   ): EncodeByName[Option[A]] = new EncodeByName[Option[A]] {
 
-    override def apply[B <: SettableData[B]](data: B, name: String, value: Option[A]): B = {
+    override def apply[B <: SettableByName[B]](data: B, name: String, value: Option[A]): B = {
       value match {
         case Some(value) => encode(data, name, value)
         case None => data.setToNull(name)
@@ -47,7 +46,7 @@ object EncodeByName {
     encode: EncodeByName[A],
   ): EncodeByName[Option[A]] = new EncodeByName[Option[A]] {
 
-    override def apply[B <: SettableData[B]](data: B, name: String, value: Option[A]): B = {
+    override def apply[B <: SettableByName[B]](data: B, name: String, value: Option[A]): B = {
       value match {
         case Some(value) => encode(data, name, value)
         case None => data
@@ -56,90 +55,86 @@ object EncodeByName {
   }
 
   implicit val boolEncodeByName: EncodeByName[Boolean] = new EncodeByName[Boolean] {
-    override def apply[B <: SettableData[B]](data: B, name: String, value: Boolean): B = {
-      data.setBool(name, value)
+    override def apply[B <: SettableByName[B]](data: B, name: String, value: Boolean): B = {
+      data.setBoolean(name, value)
     }
   }
 
   implicit val StrEncodeByName: EncodeByName[String] = new EncodeByName[String] {
-    override def apply[B <: SettableData[B]](data: B, name: String, value: String): B = {
+    override def apply[B <: SettableByName[B]](data: B, name: String, value: String): B = {
       data.setString(name, value)
     }
   }
 
   implicit val shortEncodeByName: EncodeByName[Short] = new EncodeByName[Short] {
-    override def apply[B <: SettableData[B]](data: B, name: String, value: Short): B = {
+    override def apply[B <: SettableByName[B]](data: B, name: String, value: Short): B = {
       data.setShort(name, value)
     }
   }
 
   implicit val intEncodeByName: EncodeByName[Int] = new EncodeByName[Int] {
-    override def apply[B <: SettableData[B]](data: B, name: String, value: Int): B = {
+    override def apply[B <: SettableByName[B]](data: B, name: String, value: Int): B = {
       data.setInt(name, value)
     }
   }
 
   implicit val longEncodeByName: EncodeByName[Long] = new EncodeByName[Long] {
-    override def apply[B <: SettableData[B]](data: B, name: String, value: Long): B = {
+    override def apply[B <: SettableByName[B]](data: B, name: String, value: Long): B = {
       data.setLong(name, value)
     }
   }
 
   implicit val floatEncodeByName: EncodeByName[Float] = new EncodeByName[Float] {
-    override def apply[B <: SettableData[B]](data: B, name: String, value: Float): B = {
+    override def apply[B <: SettableByName[B]](data: B, name: String, value: Float): B = {
       data.setFloat(name, value)
     }
   }
 
   implicit val doubleEncodeByName: EncodeByName[Double] = new EncodeByName[Double] {
-    override def apply[B <: SettableData[B]](data: B, name: String, value: Double): B = {
+    override def apply[B <: SettableByName[B]](data: B, name: String, value: Double): B = {
       data.setDouble(name, value)
     }
   }
 
   implicit val instantEncodeByName: EncodeByName[Instant] = new EncodeByName[Instant] {
-    override def apply[B <: SettableData[B]](data: B, name: String, value: Instant): B = {
-      data.setTimestamp(name, Date.from(value))
+    override def apply[B <: SettableByName[B]](data: B, name: String, value: Instant): B = {
+      data.setInstant(name, value)
     }
   }
 
   implicit val bigDecimalEncodeByName: EncodeByName[BigDecimal] = new EncodeByName[BigDecimal] {
-    override def apply[B <: SettableData[B]](data: B, name: String, value: BigDecimal): B = {
-      data.setDecimal(name, value.bigDecimal)
+    override def apply[B <: SettableByName[B]](data: B, name: String, value: BigDecimal): B = {
+      data.setBigDecimal(name, value.bigDecimal)
     }
   }
 
   implicit val setStrEncodeByName: EncodeByName[Set[String]] = new EncodeByName[Set[String]] {
-    override def apply[B <: SettableData[B]](data: B, name: String, value: Set[String]): B = {
+    override def apply[B <: SettableByName[B]](data: B, name: String, value: Set[String]): B = {
       data.setSet(name, value.asJava, classOf[String])
     }
   }
 
   implicit val bytesEncodeByName: EncodeByName[Array[Byte]] = new EncodeByName[Array[Byte]] {
-    override def apply[B <: SettableData[B]](data: B, name: String, value: Array[Byte]): B = {
-      data.setBytes(name, ByteBuffer.wrap(value))
+    override def apply[B <: SettableByName[B]](data: B, name: String, value: Array[Byte]): B = {
+      data.setByteBuffer(name, ByteBuffer.wrap(value))
     }
   }
 
-  implicit val durationEncodeByName: EncodeByName[Duration] = new EncodeByName[Duration] {
-    override def apply[B <: SettableData[B]](data: B, name: String, value: Duration): B = {
-      data.set(name, value, TypeCodec.duration())
+  implicit val durationEncodeByName: EncodeByName[CqlDuration] = new EncodeByName[CqlDuration] {
+    override def apply[B <: SettableByName[B]](data: B, name: String, value: CqlDuration): B = {
+      data.setCqlDuration(name, value)
     }
   }
 
   implicit val localDateEncodeByName: EncodeByName[LocalDate] = new EncodeByName[LocalDate] {
-    override def apply[B <: SettableData[B]](data: B, name: String, value: LocalDate): B = {
-      data.setDate(name, value)
+    override def apply[B <: SettableByName[B]](data: B, name: String, value: LocalDate): B = {
+      data.setLocalDate(name, value)
     }
-  }
-
-  implicit val localDateJEncodeByName: EncodeByName[LocalDateJ] = EncodeByName[LocalDate].contramap { a =>
-    LocalDate.fromDaysSinceEpoch(a.toEpochDay.toInt)
   }
 
   object Ops {
 
-    implicit class SettableDataOps[A <: SettableData[A]](val self: A) extends AnyVal {
+    implicit class SettableByNameOps[A <: SettableByName[A]](val self: A) extends AnyVal {
 
       def encode[B](
         name: String,
@@ -155,7 +150,7 @@ object EncodeByName {
   implicit class EncodeByNameOps[A](val self: EncodeByName[A]) extends AnyVal {
 
     def contramap[B](f: B => A): EncodeByName[B] = new EncodeByName[B] {
-      override def apply[C <: SettableData[C]](data: C, name: String, value: B): C =
+      override def apply[C <: SettableByName[C]](data: C, name: String, value: B): C =
         self(data, name, f(value))
     }
   }

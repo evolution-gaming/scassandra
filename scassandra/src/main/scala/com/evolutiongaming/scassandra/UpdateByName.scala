@@ -1,10 +1,10 @@
 package com.evolutiongaming.scassandra
 
-import com.datastax.driver.core.{GettableByNameData, SettableData}
+import com.datastax.oss.driver.api.core.data.{GettableByName, SettableByName}
 
 trait UpdateByName[-A] {
 
-  def apply[D <: GettableByNameData & SettableData[D]](
+  def apply[D <: GettableByName & SettableByName[D]](
     data: D,
     name: String,
     value: A,
@@ -18,7 +18,7 @@ object UpdateByName {
 
   implicit def fromEncodeByName[A: EncodeByName]: UpdateByName[A] =
     new UpdateByName[A] {
-      def apply[D <: GettableByNameData & SettableData[D]](
+      def apply[D <: GettableByName & SettableByName[D]](
         data: D,
         name: String,
         value: A,
@@ -28,7 +28,7 @@ object UpdateByName {
   implicit final class Syntax[A](val self: UpdateByName[A]) extends AnyVal {
 
     def contramap[B](f: B => A): UpdateByName[B] = new UpdateByName[B] {
-      def apply[D <: GettableByNameData & SettableData[D]](
+      def apply[D <: GettableByName & SettableByName[D]](
         data: D,
         name: String,
         value: B,

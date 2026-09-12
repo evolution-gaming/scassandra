@@ -3,14 +3,14 @@ package com.evolutiongaming.scassandra
 import cats.arrow.FunctionK
 import cats.effect.IO
 import cats.implicits.*
-import com.datastax.driver.core.{Duration, Row}
+import com.datastax.oss.driver.api.core.cql.Row
+import com.datastax.oss.driver.api.core.data.CqlDuration
 import com.evolutiongaming.catshelper.CatsHelper.*
 import com.evolutiongaming.scassandra.syntax.*
 import com.evolutiongaming.sstream.Stream.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.annotation.nowarn
 import scala.util.Try
 
 class CassandraSpec extends AnyWordSpec with CassandraSuite with Matchers {
@@ -21,106 +21,17 @@ class CassandraSpec extends AnyWordSpec with CassandraSuite with Matchers {
 
   "Cassandra" should {
 
-    "clusterName" in {
-      cluster1.clusterName.toTry.get should startWith(config.name)
-    }
-
     "connect" in {
       session
+    }
+
+    "connect via mapK" in {
+      cluster1.connect.use(_.loggedKeyspace).toTry.get shouldEqual None
     }
 
     val table = "tmp_table"
 
     "Session" should {
-
-      "init" in {
-        session.init.toTry.get
-      }
-
-      "state" should {
-
-        @nowarn("cat=deprecation")
-        def getState(session: CassandraSession[IO] = session): CassandraSession.State[IO] = session.state
-
-        "connectedHosts" in {
-          getState().connectedHosts.toTry.get.nonEmpty shouldEqual true
-        }
-
-        "openConnections" in {
-          for {
-            host <- getState().connectedHosts.toTry.get
-          } {
-            getState().openConnections(host).toTry.get should be > 0
-          }
-        }
-
-        "trashedConnections" in {
-          for {
-            host <- getState().connectedHosts.toTry.get
-          } {
-            getState().trashedConnections(host).toTry.get shouldEqual 0
-          }
-        }
-
-        "inFlightQueries" in {
-          for {
-            host <- getState().connectedHosts.toTry.get
-          } {
-            getState().inFlightQueries(host).toTry.get shouldEqual 0
-          }
-        }
-
-        // newSession returns an unconnected session, so connections established by
-        // init are only visible if state takes a fresh snapshot on each access
-        //
-        // see CassandraSession.state scaladoc for more info about the bug this test case is
-        // checking
-        "reflect connections established after construction" in {
-          val hosts = cluster.newSession
-            .use { newSession =>
-              for {
-                _ <- newSession.init
-                hosts <- getState(newSession).connectedHosts
-              } yield hosts
-            }
-            .toTry
-            .get
-          hosts.nonEmpty shouldEqual true
-        }
-      }
-
-      "stateSnapshot" should {
-
-        def getStateSnapshot: CassandraSession.StateSnapshot = session.stateSnapshot.toTry.get
-
-        "connectedHosts" in {
-          getStateSnapshot.connectedHosts.nonEmpty shouldEqual true
-        }
-
-        "openConnections" in {
-          for {
-            host <- getStateSnapshot.connectedHosts
-          } {
-            getStateSnapshot.openConnections(host) should be > 0
-          }
-        }
-
-        "trashedConnections" in {
-          for {
-            host <- getStateSnapshot.connectedHosts
-          } {
-            getStateSnapshot.trashedConnections(host) shouldEqual 0
-          }
-        }
-
-        "inFlightQueries" in {
-          for {
-            host <- getStateSnapshot.connectedHosts
-          } {
-            getStateSnapshot.inFlightQueries(host) shouldEqual 0
-          }
-        }
-      }
 
       "create keyspace" in {
         val query = CreateKeyspaceIfNotExists(keyspace, ReplicationStrategyConfig.Default)
@@ -133,7 +44,7 @@ class CassandraSpec extends AnyWordSpec with CassandraSuite with Matchers {
         session.execute(query).toTry.get
       }
 
-      val duration = Duration.newInstance(1, 1, 1)
+      val duration = CqlDuration.newInstance(1, 1, 1)
 
       "insert" in {
         val query = s"INSERT INTO $keyspace.$table (key, value, duration) VALUES (?, ?, ?)"
@@ -155,7 +66,7 @@ class CassandraSpec extends AnyWordSpec with CassandraSuite with Matchers {
 
         def decodeRow(row: Row) = {
           val value = row.decode[String]("value")
-          val duration = row.decode[Duration]("duration")
+          val duration = row.decode[CqlDuration]("duration")
           (value, duration)
         }
 
@@ -172,20 +83,17 @@ class CassandraSpec extends AnyWordSpec with CassandraSuite with Matchers {
 
         result.toTry shouldEqual ("value", duration).some.pure[Try]
 
-        val resultStream = for {
-          resultSet <- session.execute(query, Map("key" -> "key"))
-          stream = resultSet.stream[IO]
-          row <- stream.first
-        } yield {
-          for {
-            row <- row
-          } yield decodeRow(row)
-        }
+        val rows = for {
+          prepared <- session.prepare(query)
+          bound = prepared.bind().encode("key", "key")
+          result <- session.execute(bound)
+          rows <- result.stream[IO].toList
+        } yield rows.map(decodeRow)
 
-        resultStream.toTry shouldEqual ("value", duration).some.pure[Try]
+        rows.toTry shouldEqual List(("value", duration)).pure[Try]
       }
 
-      "insert and select with positional values" in {
+      "execute with positional values" in {
         val insert = s"INSERT INTO $keyspace.$table (key, value) VALUES (?, ?)"
         session.execute(insert, "key1", "value1").toTry.get
 
@@ -200,28 +108,44 @@ class CassandraSpec extends AnyWordSpec with CassandraSuite with Matchers {
 
         result.toTry shouldEqual "value1".some.pure[Try]
       }
+
+      "execute with named values" in {
+        val insert = s"INSERT INTO $keyspace.$table (key, value) VALUES (:key, :value)"
+        session.execute(insert, Map[String, AnyRef]("key" -> "key2", "value" -> "value2")).toTry.get
+
+        val select = s"SELECT value FROM $keyspace.$table WHERE key = :key"
+        val result = for {
+          result <- session.execute(select, Map[String, AnyRef]("key" -> "key2"))
+        } yield {
+          for {
+            row <- Option(result.one())
+          } yield row.decode[String]("value")
+        }
+
+        result.toTry shouldEqual "value2".some.pure[Try]
+      }
     }
 
-    lazy val metadata = cluster.metadata.toTry.get
+    lazy val metadata = session.metadata.toTry.get
 
     "Metadata" should {
 
       "clusterName" in {
-        metadata.clusterName.toTry.get shouldEqual "Test Cluster"
+        metadata.clusterName.toTry.get shouldEqual Some("Test Cluster")
       }
 
-      "schema" in {
-        metadata.schema.toTry.get should include("CREATE KEYSPACE system_traces")
+      "nodes" in {
+        metadata.nodes.toTry.get.map(_.getOpenConnections) should not be empty
       }
 
-      lazy val keyspaceMetadata = cluster.metadata.toTry.get.keyspace(keyspace).toTry.get
+      lazy val keyspaceMetadata = session.metadata.toTry.get.keyspace(keyspace).toTry.get
 
       "keyspace" in {
         keyspaceMetadata.isDefined shouldEqual true
       }
 
       "keyspaces" in {
-        cluster.metadata.toTry.get.keyspaces.toTry.get.map(_.name).toSet should contain allOf (
+        session.metadata.toTry.get.keyspaces.toTry.get.map(_.name).toSet should contain allOf (
           keyspace,
           "system_traces",
           "system",
@@ -240,14 +164,16 @@ class CassandraSpec extends AnyWordSpec with CassandraSuite with Matchers {
         }
 
         "schema" in {
-          keyspaceMetadata1.schema.toTry.get should startWith(
-            "CREATE KEYSPACE tmp_keyspace WITH REPLICATION = { 'class' : 'org.apache.cassandra.locator.SimpleStrategy', 'replication_factor': '1' } AND DURABLE_WRITES = true;",
-          )
+          val schema = keyspaceMetadata1.schema.toTry.get
+          schema should include(s"CREATE KEYSPACE $keyspace")
+          schema should include(s"CREATE TABLE $keyspace.$table")
         }
 
         "asCql" in {
-          keyspaceMetadata1.asCql.toTry.get shouldEqual
-            "CREATE KEYSPACE tmp_keyspace WITH REPLICATION = { 'class' : 'org.apache.cassandra.locator.SimpleStrategy', 'replication_factor': '1' } AND DURABLE_WRITES = true;"
+          val cql = keyspaceMetadata1.asCql.toTry.get
+          cql should include(s"CREATE KEYSPACE $keyspace")
+          cql should include("SimpleStrategy")
+          cql should not include "CREATE TABLE"
         }
 
         "tables" in {
@@ -278,6 +204,5 @@ class CassandraSpec extends AnyWordSpec with CassandraSuite with Matchers {
         }
       }
     }
-
   }
 }

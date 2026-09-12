@@ -13,7 +13,7 @@ import java.time.Duration
 
 object CassandraSuite {
 
-  val image: String = sys.env.getOrElse("CASSANDRA_IMAGE", "cassandra:3.11.7")
+  val image: String = sys.env.getOrElse("CASSANDRA_IMAGE", "cassandra:4.1")
 
   lazy val container: CassandraContainer = {
     val container = CassandraContainer(DockerImageName.parse(image))

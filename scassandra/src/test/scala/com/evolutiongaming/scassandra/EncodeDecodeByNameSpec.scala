@@ -1,13 +1,13 @@
 package com.evolutiongaming.scassandra
 
-import com.datastax.driver.core.{Duration, LocalDate}
+import com.datastax.oss.driver.api.core.data.CqlDuration
 import com.evolutiongaming.scassandra.syntax.*
 import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import java.time.temporal.ChronoUnit
-import java.time.{Instant, LocalDate as LocalDateJ}
+import java.time.{Instant, LocalDate}
 
 class EncodeDecodeByNameSpec extends AnyWordSpec with Matchers {
 
@@ -50,12 +50,20 @@ class EncodeDecodeByNameSpec extends AnyWordSpec with Matchers {
         ("Float", of(0f)),
         ("Instant", of(Instant.now().truncatedTo(ChronoUnit.MILLIS))),
         ("Set", of(Set("str"))),
-        ("Duration", of(Duration.newInstance(1, 1, 1))),
-        ("LocalDate", of(LocalDate.fromYearMonthDay(2019, 10, 4))),
-        ("LocalDateJ", of(LocalDateJ.of(2019, 10, 4))),
+        ("Boolean", of(true)),
+        ("Short", of(1.toShort)),
+        ("Duration", of(CqlDuration.newInstance(1, 1, 1))),
+        ("LocalDate", of(LocalDate.of(2019, 10, 4))),
       )
     } {
       s"encode & decode $name" in test()
+    }
+
+    "encode & decode Bytes" in {
+      val bytes = Array[Byte](1, 2, 3)
+      DataMock().encode("0", bytes).decode[Array[Byte]]("0").toList shouldEqual bytes.toList
+      DataMock().encode("1", Some(bytes)).decode[Option[Array[Byte]]]("1").map(_.toList) shouldEqual
+        Some(bytes.toList)
     }
   }
 }

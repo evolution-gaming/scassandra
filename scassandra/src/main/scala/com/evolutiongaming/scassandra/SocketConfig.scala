@@ -1,13 +1,14 @@
 package com.evolutiongaming.scassandra
 
-import com.datastax.driver.core.SocketOptions
 import com.typesafe.config.Config
 import pureconfig.ConfigSource
 
 import scala.concurrent.duration.*
 
 /**
- * See [[https://docs.datastax.com/en/developer/java-driver/3.5/manual/socket_options/]]
+ * See `advanced.socket`, `advanced.connection.connect-timeout` and
+ * `basic.request.timeout` in the driver reference configuration, `readTimeout` is the
+ * request timeout.
  */
 final case class SocketConfig(
   connectTimeout: FiniteDuration = 5.seconds,
@@ -18,23 +19,7 @@ final case class SocketConfig(
   tcpNoDelay: Option[Boolean] = Some(true),
   receiveBufferSize: Option[Int] = None,
   sendBufferSize: Option[Int] = None,
-) {
-
-  def asJava: SocketOptions = {
-    val socketOptions = new SocketOptions()
-      .setConnectTimeoutMillis(connectTimeout.toMillis.toInt)
-      .setReadTimeoutMillis(readTimeout.toMillis.toInt)
-
-    keepAlive.foreach(socketOptions.setKeepAlive)
-    reuseAddress.foreach(socketOptions.setReuseAddress)
-    soLinger.foreach(socketOptions.setSoLinger)
-    tcpNoDelay.foreach(socketOptions.setTcpNoDelay)
-    receiveBufferSize.foreach(socketOptions.setReceiveBufferSize)
-    sendBufferSize.foreach(socketOptions.setSendBufferSize)
-
-    socketOptions
-  }
-}
+)
 
 object SocketConfig extends SocketConfigImplicits {
 

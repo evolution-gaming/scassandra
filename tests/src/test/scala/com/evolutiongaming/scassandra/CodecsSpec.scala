@@ -1,13 +1,14 @@
 package com.evolutiongaming.scassandra
 
 import cats.effect.IO
-import com.datastax.driver.core.{Duration, LocalDate, Row}
+import com.datastax.oss.driver.api.core.cql.Row
+import com.datastax.oss.driver.api.core.data.CqlDuration
 import com.evolutiongaming.catshelper.CatsHelper.*
 import com.evolutiongaming.scassandra.syntax.*
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
-import java.time.{Instant, LocalDate as LocalDateJ}
+import java.time.{Instant, LocalDate}
 
 class CodecsSpec extends AnyFunSuite with CassandraSuite with Matchers {
 
@@ -29,7 +30,6 @@ class CodecsSpec extends AnyFunSuite with CassandraSuite with Matchers {
     "v_bytes",
     "v_duration",
     "v_date",
-    "v_date_j",
   )
 
   override protected def beforeAll(): Unit = {
@@ -49,8 +49,7 @@ class CodecsSpec extends AnyFunSuite with CassandraSuite with Matchers {
         v_strs SET<TEXT>,
         v_bytes BLOB,
         v_duration DURATION,
-        v_date DATE,
-        v_date_j DATE
+        v_date DATE
       )
     """
     val program = for {
@@ -74,7 +73,6 @@ class CodecsSpec extends AnyFunSuite with CassandraSuite with Matchers {
         .encode("v_bytes", bytes)
         .encode("v_duration", duration)
         .encode("v_date", date)
-        .encode("v_date_j", dateJ)
       _ <- session.execute(bound)
       _ <- session.execute(s"INSERT INTO $table (id) VALUES (?)", Int.box(NullRowId))
     } yield ()
@@ -101,9 +99,8 @@ class CodecsSpec extends AnyFunSuite with CassandraSuite with Matchers {
     row.decode[BigDecimal]("v_decimal") shouldEqual decimal
     row.decode[Set[String]]("v_strs") shouldEqual strs
     row.decode[Array[Byte]]("v_bytes").toList shouldEqual bytes.toList
-    row.decode[Duration]("v_duration") shouldEqual duration
+    row.decode[CqlDuration]("v_duration") shouldEqual duration
     row.decode[LocalDate]("v_date") shouldEqual date
-    row.decode[LocalDateJ]("v_date_j") shouldEqual dateJ
   }
 
   test("decode by index") {
@@ -120,9 +117,8 @@ class CodecsSpec extends AnyFunSuite with CassandraSuite with Matchers {
     row.decodeAt[BigDecimal](9) shouldEqual decimal
     row.decodeAt[Set[String]](10) shouldEqual strs
     row.decodeAt[Array[Byte]](11).toList shouldEqual bytes.toList
-    row.decodeAt[Duration](12) shouldEqual duration
+    row.decodeAt[CqlDuration](12) shouldEqual duration
     row.decodeAt[LocalDate](13) shouldEqual date
-    row.decodeAt[LocalDateJ](14) shouldEqual dateJ
   }
 
   test("decode present values as Some") {
@@ -138,9 +134,8 @@ class CodecsSpec extends AnyFunSuite with CassandraSuite with Matchers {
     row.decode[Option[BigDecimal]]("v_decimal") shouldEqual Some(decimal)
     row.decode[Option[Set[String]]]("v_strs") shouldEqual Some(strs)
     row.decode[Option[Array[Byte]]]("v_bytes").map(_.toList) shouldEqual Some(bytes.toList)
-    row.decode[Option[Duration]]("v_duration") shouldEqual Some(duration)
+    row.decode[Option[CqlDuration]]("v_duration") shouldEqual Some(duration)
     row.decode[Option[LocalDate]]("v_date") shouldEqual Some(date)
-    row.decode[Option[LocalDateJ]]("v_date_j") shouldEqual Some(dateJ)
   }
 
   test("decode null values as None") {
@@ -156,9 +151,8 @@ class CodecsSpec extends AnyFunSuite with CassandraSuite with Matchers {
     row.decode[Option[BigDecimal]]("v_decimal") shouldEqual None
     row.decode[Option[Set[String]]]("v_strs") shouldEqual None
     row.decode[Option[Array[Byte]]]("v_bytes") shouldEqual None
-    row.decode[Option[Duration]]("v_duration") shouldEqual None
+    row.decode[Option[CqlDuration]]("v_duration") shouldEqual None
     row.decode[Option[LocalDate]]("v_date") shouldEqual None
-    row.decode[Option[LocalDateJ]]("v_date_j") shouldEqual None
     row.decodeAt[Option[String]](2) shouldEqual None
   }
 
@@ -196,7 +190,6 @@ object CodecsSpec {
   val decimal: BigDecimal = BigDecimal("123.456")
   val strs: Set[String] = Set("a", "b")
   val bytes: Array[Byte] = Array[Byte](1, 2, 3)
-  val duration: Duration = Duration.newInstance(1, 2, 3)
-  val date: LocalDate = LocalDate.fromYearMonthDay(2020, 1, 2)
-  val dateJ: LocalDateJ = LocalDateJ.of(2020, 1, 2)
+  val duration: CqlDuration = CqlDuration.newInstance(1, 2, 3)
+  val date: LocalDate = LocalDate.of(2020, 1, 2)
 }

@@ -1,8 +1,7 @@
 package com.evolutiongaming.scassandra
 
 import cats.implicits.*
-import com.datastax.driver.core.ProtocolOptions.Compression
-import com.datastax.driver.core.ProtocolVersion
+import com.datastax.oss.driver.api.core.DefaultProtocolVersion
 import com.evolutiongaming.nel.Nel
 import com.typesafe.config.ConfigFactory
 import org.scalatest.funsuite.AnyFunSuite
@@ -22,7 +21,7 @@ class CassandraConfigSpec extends AnyFunSuite with Matchers {
       name = "name",
       port = 1,
       contactPoints = Nel("127.0.0.1", "127.0.0.2"),
-      protocolVersion = Some(ProtocolVersion.V5),
+      protocolVersion = Some(DefaultProtocolVersion.V5),
       pooling = PoolingConfig.Default,
       query = QueryConfig.Default,
       reconnection = ReconnectionConfig.Default,
@@ -30,7 +29,7 @@ class CassandraConfigSpec extends AnyFunSuite with Matchers {
       authentication = Some(AuthenticationConfig("username", "password")),
       loadBalancing = Some(LoadBalancingConfig.Default),
       speculativeExecution = Some(SpeculativeExecutionConfig.Default),
-      compression = Compression.LZ4,
+      compression = Compression.Lz4,
       logQueries = true,
     )
     ConfigSource.fromConfig(config).load[CassandraConfig] shouldEqual expected.asRight

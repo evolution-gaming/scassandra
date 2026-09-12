@@ -3,7 +3,7 @@ package com.evolutiongaming.scassandra
 import cats.Monad
 import cats.effect.*
 import cats.syntax.all.*
-import com.datastax.driver.core.ConsistencyLevel
+import com.datastax.oss.driver.api.core.ConsistencyLevel
 import com.evolutiongaming.catshelper.Log
 import com.evolutiongaming.catshelper.LogOf
 import com.evolutiongaming.catshelper.Schedule
