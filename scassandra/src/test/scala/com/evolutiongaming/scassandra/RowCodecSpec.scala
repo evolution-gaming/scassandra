@@ -2,13 +2,12 @@ package com.evolutiongaming.scassandra
 
 import cats.{Contravariant, Functor}
 import com.datastax.driver.core.{GettableByNameData, SettableData, SimpleStatement}
+import com.evolutiongaming.scassandra.RowCodecSpec.*
 import com.evolutiongaming.scassandra.syntax.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class RowCodecSpec extends AnyWordSpec with Matchers {
-
-  import RowCodecSpec.*
 
   "EncodeRow" should {
 

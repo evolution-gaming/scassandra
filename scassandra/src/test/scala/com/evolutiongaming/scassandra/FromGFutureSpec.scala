@@ -8,6 +8,7 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
 import java.util.concurrent.Executor
+import java.util.concurrent.atomic.AtomicInteger
 import scala.annotation.nowarn
 import scala.concurrent.duration.*
 import scala.util.control.NoStackTrace
@@ -25,12 +26,11 @@ class FromGFutureSpec extends AnyFunSuite with Matchers {
   }
 
   test("future is created lazily and on every run") {
-    var created = 0
+    val created = new AtomicInteger(0)
     val io = FromGFuture[IO].apply {
-      created += 1
-      Futures.immediateFuture(created)
+      Futures.immediateFuture(created.incrementAndGet())
     }
-    created shouldEqual 0
+    created.get() shouldEqual 0
     io.unsafeRunSync() shouldEqual 1
     io.unsafeRunSync() shouldEqual 2
   }
@@ -57,13 +57,13 @@ class FromGFutureSpec extends AnyFunSuite with Matchers {
   }
 
   test("fromExecutor runs the callback on the provided executor") {
-    var runs = 0
+    val runs = new AtomicInteger(0)
     val executor: Executor = runnable => {
-      runs += 1
+      runs.incrementAndGet()
       runnable.run()
     }
     FromGFuture.fromExecutor[IO](executor).apply(Futures.immediateFuture(1)).unsafeRunSync() shouldEqual 1
-    runs shouldEqual 1
+    runs.get() shouldEqual 1
   }
 
   test("deprecated lift") {

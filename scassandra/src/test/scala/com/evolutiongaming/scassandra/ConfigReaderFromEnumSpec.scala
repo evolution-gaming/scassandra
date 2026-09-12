@@ -3,13 +3,14 @@ package com.evolutiongaming.scassandra
 import com.datastax.driver.core.ProtocolVersion
 import com.evolutiongaming.scassandra.util.ConfigReaderFromEnum
 import com.typesafe.config.ConfigValueFactory
+import org.scalatest.EitherValues
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 import pureconfig.error.CannotParse
 
 import scala.jdk.CollectionConverters.*
 
-class ConfigReaderFromEnumSpec extends AnyFunSuite with Matchers {
+class ConfigReaderFromEnumSpec extends AnyFunSuite with Matchers with EitherValues {
 
   private val reader = ConfigReaderFromEnum(ProtocolVersion.values())
 
@@ -23,7 +24,7 @@ class ConfigReaderFromEnumSpec extends AnyFunSuite with Matchers {
   }
 
   test("fail on unknown name") {
-    val failure = reader.from(ConfigValueFactory.fromAnyRef("V0")).swap.toOption.get.toList.head
+    val failure = reader.from(ConfigValueFactory.fromAnyRef("V0")).left.value.toList.head
     failure shouldBe a[CannotParse]
     failure.description should include("ProtocolVersion")
     failure.description should include("V0")

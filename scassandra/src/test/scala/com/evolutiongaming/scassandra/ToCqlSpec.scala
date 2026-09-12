@@ -26,15 +26,13 @@ class ToCqlSpec extends AnyWordSpec with Matchers {
     }
 
     "provide toCql via implicits" in {
-      import ToCql.implicits.*
-      "value".toCql shouldEqual "value"
-      1.toCql shouldEqual "1"
+      new ToCql.implicits.IdOpsToCql("value").toCql shouldEqual "value"
+      new ToCql.implicits.IdOpsToCql(1).toCql shouldEqual "1"
     }
 
     "provide toCql via syntax" in {
-      import com.evolutiongaming.scassandra.syntax.*
-      "value".toCql shouldEqual "value"
-      2.toCql shouldEqual "2"
+      syntax.toCqlOps("value").toCql shouldEqual "value"
+      syntax.toCqlOps(2).toCql shouldEqual "2"
     }
 
     "provide toCql via deprecated Ops" in {
@@ -43,8 +41,5 @@ class ToCqlSpec extends AnyWordSpec with Matchers {
   }
 
   @nowarn("cat=deprecation")
-  private def viaDeprecatedOps(a: String): String = {
-    import ToCql.Ops.*
-    a.toCql
-  }
+  private def viaDeprecatedOps(a: String): String = new ToCql.Ops.IdOps(a).toCql
 }

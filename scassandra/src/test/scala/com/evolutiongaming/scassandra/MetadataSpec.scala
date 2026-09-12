@@ -2,6 +2,7 @@ package com.evolutiongaming.scassandra
 
 import cats.effect.unsafe.implicits.global
 import cats.effect.{IO, Ref}
+import cats.syntax.all.*
 import cats.~>
 import com.datastax.driver.core.UserType
 import org.scalatest.matchers.should.Matchers
@@ -48,7 +49,7 @@ class MetadataSpec extends AnyWordSpec with Matchers {
         keyspace <- metadata1.keyspace("keyspace")
         missing <- metadata1.keyspace("missing")
         keyspaces <- metadata1.keyspaces
-        keyspaceSchema <- keyspace.get.schema
+        keyspaceSchema <- keyspace.traverse(_.schema)
         count <- counter.get
       } yield (
         clusterName,
@@ -60,7 +61,7 @@ class MetadataSpec extends AnyWordSpec with Matchers {
         count,
       )
       program.unsafeRunSync() shouldEqual
-        (("cluster", "schema", Some("keyspace"), None, List("keyspace"), "schema", 6))
+        (("cluster", "schema", Some("keyspace"), None, List("keyspace"), Some("schema"), 6))
     }
   }
 

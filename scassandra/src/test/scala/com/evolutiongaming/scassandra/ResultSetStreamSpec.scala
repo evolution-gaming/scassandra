@@ -1,7 +1,7 @@
 package com.evolutiongaming.scassandra
 
-import cats.effect.IO
 import cats.effect.unsafe.implicits.global
+import cats.effect.{IO, Ref}
 import com.datastax.driver.core.{ResultSet, Row, SimpleStatement, Statement}
 import com.evolutiongaming.scassandra.StreamingCassandraSession.*
 import com.evolutiongaming.scassandra.syntax.*
@@ -14,12 +14,13 @@ class ResultSetStreamSpec extends AnyWordSpec with Matchers {
 
   private val query = "SELECT 1"
 
-  private def session(resultSet: ResultSet, executed: Statement => Unit = _ => ()): CassandraSession[IO] = {
+  private def session(
+    resultSet: ResultSet,
+    executed: Ref[IO, List[Statement]] = Ref.unsafe[IO, List[Statement]](Nil),
+  ): CassandraSession[IO] = {
     new CassandraSessionMock {
-      override def execute(statement: Statement): IO[ResultSet] = IO {
-        executed(statement)
-        resultSet
-      }
+      override def execute(statement: Statement): IO[ResultSet] =
+        executed.update(_ :+ statement).as(resultSet)
     }
   }
 
@@ -83,26 +84,25 @@ class ResultSetStreamSpec extends AnyWordSpec with Matchers {
   "executeStream(query)" should {
 
     "wrap the query into a SimpleStatement" in {
-      var executed = Option.empty[Statement]
-      session(
-        ResultSetMock(),
-        statement => executed = Some(statement),
-      ).executeStream(query).toList.unsafeRunSync()
-      executed.map(_.asInstanceOf[SimpleStatement].getQueryString) shouldEqual Some(query)
+      val program = for {
+        executed <- Ref[IO].of(List.empty[Statement])
+        _ <- session(ResultSetMock(), executed).executeStream(query).toList
+        executed <- executed.get
+      } yield executed.map(_.asInstanceOf[SimpleStatement].getQueryString)
+      program.unsafeRunSync() shouldEqual List(query)
     }
   }
 
   "executeStream(statement)" should {
 
     "execute the statement as is" in {
-      var executed = Option.empty[Statement]
       val statement = new SimpleStatement(query)
-      session(
-        ResultSetMock(),
-        statement => executed = Some(statement),
-      ).executeStream(statement).toList.unsafeRunSync()
-      executed.map(_ eq statement) shouldEqual Some(true)
+      val program = for {
+        executed <- Ref[IO].of(List.empty[Statement])
+        _ <- session(ResultSetMock(), executed).executeStream(statement).toList
+        executed <- executed.get
+      } yield executed.map(_ eq statement)
+      program.unsafeRunSync() shouldEqual List(true)
     }
   }
-
 }

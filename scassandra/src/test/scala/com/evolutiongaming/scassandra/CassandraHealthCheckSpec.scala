@@ -3,16 +3,7 @@ package com.evolutiongaming.scassandra
 import cats.effect.unsafe.implicits.global
 import cats.effect.{IO, Ref, Resource}
 import cats.syntax.all.*
-import com.datastax.driver.core.{
-  BoundStatement,
-  CodecRegistry,
-  ColumnDefinitionsMock,
-  ConsistencyLevel,
-  PreparedIdMock,
-  PreparedStatement,
-  ResultSet,
-  Statement,
-}
+import com.datastax.driver.core.*
 import com.evolutiongaming.catshelper.{Log, LogOf}
 import org.scalatest.Succeeded
 import org.scalatest.funsuite.AsyncFunSuite
@@ -44,19 +35,21 @@ class CassandraHealthCheckSpec extends AsyncFunSuite {
 
   test("CassandraHealthCheck#of(statement) reports no error when the statement succeeds") {
 
-    val healthCheck = CassandraHealthCheck.of[IO](
-      initial = 0.seconds,
-      interval = 10.millis,
-      statement = Resource.eval(IO.unit.pure[IO]),
-      log = Log.empty[IO],
-    )
-
-    val program = healthCheck.use { healthCheck =>
-      for {
-        _ <- IO.sleep(100.millis)
-        error <- healthCheck.error
-      } yield assert(error.isEmpty)
-    }
+    val program = for {
+      executions <- Ref[IO].of(0)
+      healthCheck = CassandraHealthCheck.of[IO](
+        initial = 0.seconds,
+        interval = 10.millis,
+        statement = Resource.eval(executions.update(_ + 1).pure[IO]),
+        log = Log.empty[IO],
+      )
+      error <- healthCheck.use { healthCheck =>
+        for {
+          _ <- executions.get.iterateUntil(_ >= 2)
+          error <- healthCheck.error
+        } yield error
+      }
+    } yield assert(error.isEmpty)
 
     program.timeout(10.seconds).as(Succeeded).unsafeToFuture()
   }
@@ -115,8 +108,9 @@ class CassandraHealthCheckSpec extends AsyncFunSuite {
       statement <- CassandraHealthCheck.Statement.of[IO](session, ConsistencyLevel.LOCAL_QUORUM)
       _ <- statement
       executed <- session.executed.get
+      prepared <- session.prepared.get
     } yield {
-      assert(session.prepared == List("SELECT now() FROM system.local"))
+      assert(prepared == List("SELECT now() FROM system.local"))
       assert(executed.map(_.getConsistencyLevel) == List(ConsistencyLevel.LOCAL_QUORUM))
       assert(executed.map(_.asInstanceOf[BoundStatement].preparedStatement()) ==
         List(session.preparedStatement))
@@ -135,8 +129,9 @@ class CassandraHealthCheckSpec extends AsyncFunSuite {
         CassandraHealthCheck.of[IO](Resource.pure[IO, CassandraSession[IO]](session), ConsistencyLevel.ONE)
       error <- healthCheck.use(_.error)
       executed <- session.executed.get
+      prepared <- session.prepared.get
     } yield {
-      assert(session.prepared == List("SELECT now() FROM system.local"))
+      assert(prepared == List("SELECT now() FROM system.local"))
       assert(error.isEmpty)
       assert(executed.isEmpty)
     }
@@ -146,7 +141,7 @@ class CassandraHealthCheckSpec extends AsyncFunSuite {
 
   private class SessionMock extends CassandraSessionMock {
 
-    var prepared: List[String] = Nil
+    val prepared: Ref[IO, List[String]] = Ref.unsafe[IO, List[String]](Nil)
 
     val executed: Ref[IO, List[Statement]] = Ref.unsafe[IO, List[Statement]](Nil)
 
@@ -164,9 +159,8 @@ class CassandraHealthCheckSpec extends AsyncFunSuite {
       case ("bind", Nil) => new BoundStatement(preparedStatement)
     }
 
-    override def prepare(query: String): IO[PreparedStatement] = IO {
-      prepared = prepared :+ query
-      preparedStatement
+    override def prepare(query: String): IO[PreparedStatement] = {
+      prepared.update(_ :+ query).as(preparedStatement)
     }
 
     override def execute(statement: Statement): IO[ResultSet] = {
