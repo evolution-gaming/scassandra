@@ -3,7 +3,11 @@ package com.evolutiongaming.scassandra
 import com.evolutiongaming.scassandra.util.PureconfigSyntax.*
 import pureconfig.ConfigReader
 
+import scala.annotation.nowarn
+
 trait LoadBalancingConfigImplicits {
+
+  @nowarn("cat=deprecation")
   implicit val configReaderLoadBalancingConfig: ConfigReader[LoadBalancingConfig] =
     ConfigReader.fromCursor[LoadBalancingConfig] { cursor =>
       val defaultConfig = LoadBalancingConfig()

@@ -4,11 +4,18 @@ import com.datastax.driver.core.policies.{DCAwareRoundRobinPolicy, LoadBalancing
 import com.typesafe.config.Config
 import pureconfig.ConfigSource
 
+import scala.annotation.nowarn
+
 /**
  * See [[https://docs.datastax.com/en/developer/java-driver/3.5/manual/load_balancing/]]
+ *
+ * `allowRemoteDcsForLocalConsistencyLevel` is accepted for compatibility only and has
+ * never been applied to the driver.
  */
+@nowarn("cat=deprecation")
 final case class LoadBalancingConfig(
   localDc: String = "localDc",
+  @deprecated("has never had any effect, will be removed in 6.0.0", "5.8.0")
   allowRemoteDcsForLocalConsistencyLevel: Boolean = false,
 ) {
 
