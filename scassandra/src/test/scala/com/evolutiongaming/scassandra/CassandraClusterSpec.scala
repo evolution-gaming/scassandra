@@ -13,6 +13,7 @@ import com.datastax.driver.core.policies.{
 }
 import com.datastax.driver.core.{AuthProvider, Cluster as ClusterJ, PlainTextAuthProvider}
 import com.evolutiongaming.nel.Nel
+import com.evolutiongaming.scassandra.MockSupport.notSupported
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -155,11 +156,11 @@ class CassandraClusterSpec extends AnyWordSpec with Matchers {
 
     "mapK" in {
       val cluster = new CassandraCluster[IO] {
-        def connect: Resource[IO, CassandraSession[IO]] = sys.error("not supported")
-        def connect(keyspace: String): Resource[IO, CassandraSession[IO]] = sys.error("not supported")
+        def connect: Resource[IO, CassandraSession[IO]] = notSupported
+        def connect(keyspace: String): Resource[IO, CassandraSession[IO]] = notSupported
         def clusterName: IO[String] = IO.pure("name")
-        def newSession: Resource[IO, CassandraSession[IO]] = sys.error("not supported")
-        def metadata: IO[Metadata[IO]] = sys.error("not supported")
+        def newSession: Resource[IO, CassandraSession[IO]] = notSupported
+        def metadata: IO[Metadata[IO]] = notSupported
       }
       cluster.mapK(FunctionK.id[IO]).clusterName.unsafeRunSync() shouldEqual "name"
     }

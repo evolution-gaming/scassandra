@@ -12,6 +12,8 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class ResultSetStreamSpec extends AnyWordSpec with Matchers {
 
+  private val query = "SELECT 1"
+
   private def session(resultSet: ResultSet, executed: Statement => Unit = _ => ()): CassandraSession[IO] = {
     new CassandraSessionMock {
       override def execute(statement: Statement): IO[ResultSet] = IO {
@@ -27,9 +29,9 @@ class ResultSetStreamSpec extends AnyWordSpec with Matchers {
     ("ResultSet.stream", resultSet => resultSet.stream[IO]),
     (
       "executeStream(statement)",
-      resultSet => session(resultSet).executeStream(new SimpleStatement("SELECT 1")),
+      resultSet => session(resultSet).executeStream(new SimpleStatement(query)),
     ),
-    ("executeStream(query)", resultSet => session(resultSet).executeStream("SELECT 1")),
+    ("executeStream(query)", resultSet => session(resultSet).executeStream(query)),
   )
 
   for {
@@ -85,8 +87,8 @@ class ResultSetStreamSpec extends AnyWordSpec with Matchers {
       session(
         ResultSetMock(),
         statement => executed = Some(statement),
-      ).executeStream("SELECT 1").toList.unsafeRunSync()
-      executed.map(_.asInstanceOf[SimpleStatement].getQueryString) shouldEqual Some("SELECT 1")
+      ).executeStream(query).toList.unsafeRunSync()
+      executed.map(_.asInstanceOf[SimpleStatement].getQueryString) shouldEqual Some(query)
     }
   }
 
@@ -94,7 +96,7 @@ class ResultSetStreamSpec extends AnyWordSpec with Matchers {
 
     "execute the statement as is" in {
       var executed = Option.empty[Statement]
-      val statement = new SimpleStatement("SELECT 1")
+      val statement = new SimpleStatement(query)
       session(
         ResultSetMock(),
         statement => executed = Some(statement),

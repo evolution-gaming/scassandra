@@ -22,6 +22,8 @@ import scala.collection.mutable.ListBuffer
 
 class CassandraSessionSpec extends AnyWordSpec with Matchers {
 
+  private val query = "SELECT 1"
+
   private def stateJ(
     hosts: Int,
     open: Int,
@@ -71,8 +73,8 @@ class CassandraSessionSpec extends AnyWordSpec with Matchers {
     "execute query" in {
       val resultSet = ResultSetMock()
       val stub = new SessionStub(resultSet = resultSet)
-      stub.session.execute("SELECT 1").unsafeRunSync() shouldBe theSameInstanceAs(resultSet)
-      stub.calls.toList shouldEqual List(("executeAsync", List("SELECT 1")))
+      stub.session.execute(query).unsafeRunSync() shouldBe theSameInstanceAs(resultSet)
+      stub.calls.toList shouldEqual List(("executeAsync", List(query)))
     }
 
     "execute query with positional values" in {
@@ -95,7 +97,7 @@ class CassandraSessionSpec extends AnyWordSpec with Matchers {
 
     "execute statement" in {
       val stub = new SessionStub()
-      val statement = new SimpleStatement("SELECT 1")
+      val statement = new SimpleStatement(query)
       stub.session.execute(statement).unsafeRunSync()
       stub.calls.head shouldEqual (("executeAsync", List(statement)))
     }
@@ -103,13 +105,13 @@ class CassandraSessionSpec extends AnyWordSpec with Matchers {
     "prepare query" in {
       val prepared = ProxyMock[PreparedStatement](PartialFunction.empty)
       val stub = new SessionStub(prepared = prepared)
-      stub.session.prepare("SELECT 1").unsafeRunSync() shouldBe theSameInstanceAs(prepared)
-      stub.calls.toList shouldEqual List(("prepareAsync", List("SELECT 1")))
+      stub.session.prepare(query).unsafeRunSync() shouldBe theSameInstanceAs(prepared)
+      stub.calls.toList shouldEqual List(("prepareAsync", List(query)))
     }
 
     "prepare statement" in {
       val stub = new SessionStub()
-      val statement = new SimpleStatement("SELECT 1")
+      val statement = new SimpleStatement(query)
       stub.session.prepare(statement).unsafeRunSync()
       stub.calls.head shouldEqual (("prepareAsync", List(statement)))
     }

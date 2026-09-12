@@ -1,6 +1,7 @@
 package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.{ColumnDefinitions, ExecutionInfo, ResultSet, ResultSetFuture, Row}
+import com.evolutiongaming.scassandra.MockSupport.notSupported
 import com.google.common.util.concurrent.{Futures, ListenableFuture}
 
 import java.lang.reflect.{InvocationHandler, Method, Proxy}
@@ -48,13 +49,13 @@ final class ResultSetMock(pages: List[List[Row]]) extends ResultSet {
     }
   }
 
-  override def getExecutionInfo: ExecutionInfo = sys.error("not supported")
+  override def getExecutionInfo: ExecutionInfo = notSupported
 
-  override def getAllExecutionInfo: ListJ[ExecutionInfo] = sys.error("not supported")
+  override def getAllExecutionInfo: ListJ[ExecutionInfo] = notSupported
 
-  override def getColumnDefinitions: ColumnDefinitions = sys.error("not supported")
+  override def getColumnDefinitions: ColumnDefinitions = notSupported
 
-  override def wasApplied(): Boolean = sys.error("not supported")
+  override def wasApplied(): Boolean = notSupported
 }
 
 object ResultSetMock {
