@@ -1,0 +1,45 @@
+name: Cassandra versions
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cassandra: [ 'cassandra:4.1', 'cassandra:5.0' ]
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: restore cache
+        uses: coursier/cache-action@v8
+
+      - name: setup Java 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'sbt'
+
+      - name: setup SBT
+        uses: sbt/setup-sbt@v1
+
+      - name: integration tests against ${{ matrix.cassandra }}
+        env:
+          CASSANDRA_IMAGE: ${{ matrix.cassandra }}
+        run: sbt "tests/testFull"
