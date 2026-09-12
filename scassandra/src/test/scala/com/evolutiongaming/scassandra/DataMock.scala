@@ -1,6 +1,7 @@
 package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.*
+import com.evolutiongaming.scassandra.MockSupport.notSupported
 import com.google.common.reflect.TypeToken
 
 import java.math.{BigDecimal as BigDecimalJ, BigInteger}
@@ -14,8 +15,6 @@ case class DataMock(
   byName: Map[String, Any] = Map.empty,
   byIdx: Map[Int, Any] = Map.empty,
 ) extends SettableData[DataMock] with GettableData {
-
-  private def notSupported() = sys.error("not support")
 
   override def setBool(i: Int, v: Boolean): DataMock = copy(byIdx = byIdx.updated(i, v))
   override def setByte(i: Int, v: Byte): DataMock = copy(byIdx = byIdx.updated(i, v))
@@ -35,21 +34,21 @@ case class DataMock(
   override def setUUID(i: Int, v: UUID): DataMock = copy(byIdx = byIdx.updated(i, v))
   override def setInet(i: Int, v: InetAddress): DataMock = copy(byIdx = byIdx.updated(i, v))
   override def setList[E](i: Int, v: ListJ[E]): DataMock = copy(byIdx = byIdx.updated(i, v))
-  override def setList[E](i: Int, v: ListJ[E], elementsClass: Class[E]): DataMock = notSupported()
-  override def setList[E](i: Int, v: ListJ[E], elementsType: TypeToken[E]): DataMock = notSupported()
+  override def setList[E](i: Int, v: ListJ[E], elementsClass: Class[E]): DataMock = notSupported
+  override def setList[E](i: Int, v: ListJ[E], elementsType: TypeToken[E]): DataMock = notSupported
   override def setMap[K, V](i: Int, v: MapJ[K, V]): DataMock = copy(byIdx = byIdx.updated(i, v))
   override def setMap[K, V](
     i: Int,
     v: MapJ[K, V],
     keysClass: Class[K],
     valuesClass: Class[V],
-  ): DataMock = notSupported()
+  ): DataMock = notSupported
   override def setMap[K, V](
     i: Int,
     v: MapJ[K, V],
     keysType: TypeToken[K],
     valuesType: TypeToken[V],
-  ): DataMock = notSupported()
+  ): DataMock = notSupported
   override def setSet[E](i: Int, v: SetJ[E]): DataMock = copy(byIdx = byIdx.updated(i, v))
   override def setSet[E](i: Int, v: SetJ[E], elementsClass: Class[E]): DataMock =
     copy(byIdx = byIdx.updated(i, v))
@@ -132,20 +131,20 @@ case class DataMock(
   override def getDecimal(name: String): BigDecimalJ = byName.getOrElse(name, null).asInstanceOf[BigDecimalJ]
   override def getUUID(name: String): UUID = byName.getOrElse(name, null).asInstanceOf[UUID]
   override def getInet(name: String): InetAddress = byName.getOrElse(name, null).asInstanceOf[InetAddress]
-  override def getList[T](name: String, elementsClass: Class[T]): ListJ[T] = notSupported()
-  override def getList[T](name: String, elementsType: TypeToken[T]): ListJ[T] = notSupported()
+  override def getList[T](name: String, elementsClass: Class[T]): ListJ[T] = notSupported
+  override def getList[T](name: String, elementsType: TypeToken[T]): ListJ[T] = notSupported
   override def getSet[T](name: String, elementsClass: Class[T]): SetJ[T] =
     byName.getOrElse(name, null).asInstanceOf[SetJ[T]]
-  override def getSet[T](name: String, elementsType: TypeToken[T]): SetJ[T] = notSupported()
+  override def getSet[T](name: String, elementsType: TypeToken[T]): SetJ[T] = notSupported
   override def getMap[K, V](name: String, keysClass: Class[K], valuesClass: Class[V]): MapJ[K, V] =
-    notSupported()
+    notSupported
   override def getMap[K, V](name: String, keysType: TypeToken[K], valuesType: TypeToken[V]): MapJ[K, V] =
-    notSupported()
-  override def getUDTValue(name: String): UDTValue = notSupported()
-  override def getTupleValue(name: String): TupleValue = notSupported()
-  override def getObject(name: String): Object = notSupported()
-  override def get[T](name: String, targetClass: Class[T]): T = notSupported()
-  override def get[T](name: String, targetType: TypeToken[T]): T = notSupported()
+    notSupported
+  override def getUDTValue(name: String): UDTValue = notSupported
+  override def getTupleValue(name: String): TupleValue = notSupported
+  override def getObject(name: String): Object = notSupported
+  override def get[T](name: String, targetClass: Class[T]): T = notSupported
+  override def get[T](name: String, targetType: TypeToken[T]): T = notSupported
   override def get[T](name: String, codec: TypeCodec[T]): T = byName.getOrElse(name, null).asInstanceOf[T]
 
   override def isNull(i: Int): Boolean = !byIdx.contains(i)
@@ -166,19 +165,19 @@ case class DataMock(
   override def getDecimal(i: Int): BigDecimalJ = byIdx.getOrElse(i, null).asInstanceOf[BigDecimalJ]
   override def getUUID(i: Int): UUID = byIdx.getOrElse(i, null).asInstanceOf[UUID]
   override def getInet(i: Int): InetAddress = byIdx.getOrElse(i, null).asInstanceOf[InetAddress]
-  override def getList[T](i: Int, elementsClass: Class[T]): ListJ[T] = notSupported()
-  override def getList[T](i: Int, elementsType: TypeToken[T]): ListJ[T] = notSupported()
+  override def getList[T](i: Int, elementsClass: Class[T]): ListJ[T] = notSupported
+  override def getList[T](i: Int, elementsType: TypeToken[T]): ListJ[T] = notSupported
   override def getSet[T](i: Int, elementsClass: Class[T]): SetJ[T] =
     byIdx.getOrElse(i, null).asInstanceOf[SetJ[T]]
   override def getSet[T](i: Int, elementsType: TypeToken[T]): SetJ[T] =
     byIdx.getOrElse(i, null).asInstanceOf[SetJ[T]]
-  override def getMap[K, V](i: Int, keysClass: Class[K], valuesClass: Class[V]): MapJ[K, V] = notSupported()
+  override def getMap[K, V](i: Int, keysClass: Class[K], valuesClass: Class[V]): MapJ[K, V] = notSupported
   override def getMap[K, V](i: Int, keysType: TypeToken[K], valuesType: TypeToken[V]): MapJ[K, V] =
-    notSupported()
-  override def getUDTValue(i: Int): UDTValue = notSupported()
-  override def getTupleValue(i: Int): TupleValue = notSupported()
-  override def getObject(i: Int): Object = notSupported()
-  override def get[T](i: Int, targetClass: Class[T]): T = notSupported()
-  override def get[T](i: Int, targetType: TypeToken[T]): T = notSupported()
+    notSupported
+  override def getUDTValue(i: Int): UDTValue = notSupported
+  override def getTupleValue(i: Int): TupleValue = notSupported
+  override def getObject(i: Int): Object = notSupported
+  override def get[T](i: Int, targetClass: Class[T]): T = notSupported
+  override def get[T](i: Int, targetType: TypeToken[T]): T = notSupported
   override def get[T](i: Int, codec: TypeCodec[T]): T = byIdx.getOrElse(i, null).asInstanceOf[T]
 }
