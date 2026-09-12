@@ -11,4 +11,6 @@ permissions:
 jobs:
   release:
     uses: evolution-gaming/scala-github-actions/.github/workflows/release.yml@61f111a4472fde7b63e5921ac8a238f22d1bb028 # v7.0.1
+    with:
+      verify_sbt_command: 'cleanFull; +check; +all testFull package'
     secrets: inherit
