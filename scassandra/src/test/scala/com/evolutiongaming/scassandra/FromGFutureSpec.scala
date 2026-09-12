@@ -3,14 +3,13 @@ package com.evolutiongaming.scassandra
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.evolutiongaming.scassandra.util.FromGFuture
-import com.google.common.util.concurrent.{Futures, SettableFuture}
+import com.google.common.util.concurrent.{AbstractFuture, Futures, SettableFuture}
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
-import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.{CountDownLatch, Executor}
 import scala.annotation.nowarn
-import scala.concurrent.duration.*
 import scala.util.control.NoStackTrace
 
 class FromGFutureSpec extends AnyFunSuite with Matchers {
@@ -46,10 +45,10 @@ class FromGFutureSpec extends AnyFunSuite with Matchers {
   }
 
   test("future is cancelled when F is cancelled") {
-    val future = SettableFuture.create[Int]()
+    val future = new ObservableFuture
     val program = for {
       fiber <- FromGFuture[IO].apply(future).start
-      _ <- IO.sleep(100.millis)
+      _ <- IO.interruptible(future.listenerAdded.await())
       _ <- fiber.cancel
     } yield ()
     program.unsafeRunSync()
@@ -64,6 +63,16 @@ class FromGFutureSpec extends AnyFunSuite with Matchers {
     }
     FromGFuture.fromExecutor[IO](executor).apply(Futures.immediateFuture(1)).unsafeRunSync() shouldEqual 1
     runs.get() shouldEqual 1
+  }
+
+  private class ObservableFuture extends AbstractFuture[Int] {
+
+    val listenerAdded = new CountDownLatch(1)
+
+    override def addListener(listener: Runnable, executor: Executor): Unit = {
+      super.addListener(listener, executor)
+      listenerAdded.countDown()
+    }
   }
 
   test("deprecated lift") {

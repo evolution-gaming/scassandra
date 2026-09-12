@@ -24,4 +24,6 @@ class CassandraSessionMock extends CassandraSession[IO] {
 
   @deprecated("use stateSnapshot instead", since = "5.6.0")
   def state: CassandraSession.State[IO] = notSupported
+
+  override def stateSnapshot: IO[CassandraSession.StateSnapshot] = notSupported
 }

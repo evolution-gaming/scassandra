@@ -2,9 +2,10 @@ package com.evolutiongaming.scassandra
 
 import com.datastax.driver.core.{ColumnDefinitions, ExecutionInfo, ResultSet, ResultSetFuture, Row}
 import com.evolutiongaming.scassandra.MockSupport.notSupported
+import com.google.common.util.concurrent.ForwardingListenableFuture.SimpleForwardingListenableFuture
 import com.google.common.util.concurrent.{Futures, ListenableFuture}
 
-import java.lang.reflect.{InvocationHandler, Method, Proxy}
+import java.util.concurrent.TimeUnit
 import java.util.{Iterator as IteratorJ, List as ListJ}
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
@@ -79,22 +80,11 @@ object RowMock {
 object ResultSetFutureMock {
 
   def apply(resultSet: ResultSet): ResultSetFuture = {
-    val underlying = Futures.immediateFuture(resultSet)
-    val handler = new InvocationHandler {
-      override def invoke(proxy: AnyRef, method: Method, args: Array[AnyRef]): AnyRef = {
-        if (method.getDeclaringClass.isInstance(underlying)) {
-          method.invoke(underlying, Option(args).getOrElse(Array.empty[AnyRef])*)
-        } else {
-          sys.error(s"ResultSetFuture.${ method.getName } is not supported")
-        }
-      }
+    new SimpleForwardingListenableFuture[ResultSet](Futures.immediateFuture(resultSet)) with ResultSetFuture {
+
+      override def getUninterruptibly(): ResultSet = resultSet
+
+      override def getUninterruptibly(timeout: Long, unit: TimeUnit): ResultSet = resultSet
     }
-    Proxy
-      .newProxyInstance(
-        classOf[ResultSetFuture].getClassLoader,
-        Array[Class[?]](classOf[ResultSetFuture]),
-        handler,
-      )
-      .asInstanceOf[ResultSetFuture]
   }
 }

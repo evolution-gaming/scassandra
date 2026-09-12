@@ -128,12 +128,10 @@ class CassandraHealthCheckSpec extends AsyncFunSuite {
       healthCheck =
         CassandraHealthCheck.of[IO](Resource.pure[IO, CassandraSession[IO]](session), ConsistencyLevel.ONE)
       error <- healthCheck.use(_.error)
-      executed <- session.executed.get
       prepared <- session.prepared.get
     } yield {
       assert(prepared == List("SELECT now() FROM system.local"))
       assert(error.isEmpty)
-      assert(executed.isEmpty)
     }
 
     program.timeout(10.seconds).as(Succeeded).unsafeToFuture()

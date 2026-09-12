@@ -14,16 +14,16 @@ object ProxyMock {
     val invocationHandler = new InvocationHandler {
       override def invoke(proxy: AnyRef, method: Method, args: Array[AnyRef]): AnyRef = {
         val arguments = Option(args).fold(List.empty[AnyRef])(_.toList)
-        val call = (method.getName, arguments)
-        if (handler.isDefinedAt(call)) handler(call)
-        else {
-          method.getName match {
-            case "toString" => s"${ clazz.getSimpleName }Mock"
-            case "hashCode" => Int.box(System.identityHashCode(proxy))
-            case "equals" => Boolean.box(arguments.head eq proxy)
-            case name => sys.error(s"${ clazz.getSimpleName }.$name is not supported")
-          }
-        }
+        handler.applyOrElse(
+          (method.getName, arguments),
+          (_: (String, List[AnyRef])) =>
+            method.getName match {
+              case "toString" => s"${ clazz.getSimpleName }Mock"
+              case "hashCode" => Int.box(System.identityHashCode(proxy))
+              case "equals" => Boolean.box(arguments.head eq proxy)
+              case name => sys.error(s"${ clazz.getSimpleName }.$name is not supported")
+            },
+        )
       }
     }
     Proxy.newProxyInstance(clazz.getClassLoader, Array[Class[?]](clazz), invocationHandler).asInstanceOf[A]
