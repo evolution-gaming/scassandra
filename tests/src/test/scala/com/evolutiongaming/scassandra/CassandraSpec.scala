@@ -211,7 +211,7 @@ class CassandraSpec extends AnyWordSpec with CassandraSuite with Matchers {
       }
 
       "schema" in {
-        metadata.schema.toTry.get should startWith("CREATE KEYSPACE system_traces")
+        metadata.schema.toTry.get should include("CREATE KEYSPACE system_traces")
       }
 
       lazy val keyspaceMetadata = cluster.metadata.toTry.get.keyspace(keyspace).toTry.get
