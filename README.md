@@ -7,6 +7,11 @@
 
 ### Cassandra client in scala - wrapper over java client
 
+| branch       | version | java driver                                         | notes                                   |
+|--------------|---------|-----------------------------------------------------|-----------------------------------------|
+| `master`     | 6.x     | `org.apache.cassandra:java-driver-core` 4.x         | active development                      |
+| `series/5.x` | 5.x     | `com.datastax.cassandra:cassandra-driver-core` 3.x  | bug fixes and dependency updates only   |
+
 ## Example
 
 ```scala
