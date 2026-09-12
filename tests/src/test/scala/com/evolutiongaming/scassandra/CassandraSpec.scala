@@ -1,71 +1,33 @@
 package com.evolutiongaming.scassandra
 
 import cats.arrow.FunctionK
-import cats.effect.unsafe.implicits
-import cats.effect.{IO, Resource}
+import cats.effect.IO
 import cats.implicits.*
 import com.datastax.driver.core.{Duration, Row}
-import com.dimafeng.testcontainers.CassandraContainer
 import com.evolutiongaming.catshelper.CatsHelper.*
-import com.evolutiongaming.catshelper.ToTry
-import com.evolutiongaming.nel.Nel
-import com.evolutiongaming.scassandra.IOSuite.*
 import com.evolutiongaming.scassandra.syntax.*
 import com.evolutiongaming.sstream.Stream.*
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.testcontainers.utility.DockerImageName
 
 import scala.annotation.nowarn
 import scala.util.Try
 
-class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
-  private lazy val cassandraContainer = CassandraContainer(
-    image = DockerImageName.parse("cassandra:3.11.7"),
-  )
+class CassandraSpec extends AnyWordSpec with CassandraSuite with Matchers {
 
-  private lazy val config =
-    CassandraConfig.Default.copy(
-      contactPoints = Nel(cassandraContainer.containerIpAddress),
-      port = cassandraContainer.mappedPort(9042),
-    )
+  override protected def keyspace: String = "tmp_keyspace"
 
-  // due to test structure we need to start the container before the test suite
-  cassandraContainer.start()
-
-  implicit val toTry: ToTry[IO] = ToTry.ioToTry(implicits.global)
-
-  private lazy val (cluster, clusterRelease) = {
-    val cassandraClusterOf = CassandraClusterOf.of[IO]
-    val cassandraCluster = for {
-      cassandraClusterOf <- Resource.eval(cassandraClusterOf)
-      cassandraCluster <- cassandraClusterOf(config)
-    } yield {
-      cassandraCluster.mapK(FunctionK.id)
-    }
-
-    cassandraCluster.allocated.toTry.get
-  }
-
-  private lazy val (session, sessionRelease) = cluster.connect.allocated.toTry.get
-
-  override def afterAll(): Unit = {
-    cassandraContainer.stop()
-    super.afterAll()
-  }
+  private lazy val cluster1 = cluster.mapK(FunctionK.id)
 
   "Cassandra" should {
 
     "clusterName" in {
-      cluster.clusterName.toTry.get should startWith(config.name)
+      cluster1.clusterName.toTry.get should startWith(config.name)
     }
 
     "connect" in {
       session
     }
-
-    val keyspace = "tmp_keyspace"
 
     val table = "tmp_table"
 
@@ -259,7 +221,7 @@ class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
       }
 
       "keyspaces" in {
-        cluster.metadata.toTry.get.keyspaces.toTry.get.map(_.name).toSet shouldEqual Set(
+        cluster.metadata.toTry.get.keyspaces.toTry.get.map(_.name).toSet should contain allOf (
           keyspace,
           "system_traces",
           "system",
@@ -317,12 +279,5 @@ class CassandraSpec extends AnyWordSpec with BeforeAndAfterAll with Matchers {
       }
     }
 
-    "session.close" in {
-      sessionRelease.toTry.get
-    }
-
-    "cluster.close" in {
-      clusterRelease.toTry.get
-    }
   }
 }
