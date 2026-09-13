@@ -8,8 +8,9 @@ import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters.*
 
 /**
- * Translates [[CassandraConfig]] into the driver configuration, options not covered by
- * [[CassandraConfig]] keep the driver defaults.
+ * Translates [[CassandraConfig]] into the driver configuration. Options covered by
+ * [[CassandraConfig]] always win over `datastax-java-driver` settings in
+ * `application.conf`, the rest keep the driver defaults.
  */
 object CreateDriverConfigLoader {
 
@@ -97,9 +98,10 @@ object CreateDriverConfigLoader {
   private def logQueries(builder: Builder): Builder = {
     builder
       .withStringList(REQUEST_TRACKER_CLASSES, List("RequestLogger").asJava)
-      .withBoolean(REQUEST_LOGGER_SUCCESS_ENABLED, true)
+      .withBoolean(REQUEST_LOGGER_SUCCESS_ENABLED, false)
       .withBoolean(REQUEST_LOGGER_SLOW_ENABLED, true)
       .withBoolean(REQUEST_LOGGER_ERROR_ENABLED, true)
+      .withBoolean(REQUEST_LOGGER_VALUES, false)
   }
 
   private def duration(value: FiniteDuration): DurationJ = DurationJ.ofNanos(value.toNanos)

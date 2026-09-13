@@ -1,5 +1,6 @@
 package com.evolutiongaming.scassandra
 
+import com.datastax.dse.driver.api.core.DseProtocolVersion
 import com.datastax.oss.driver.api.core.{DefaultProtocolVersion, ProtocolVersion}
 import com.evolutiongaming.config.ConfigHelper.*
 import com.evolutiongaming.nel.Nel
@@ -37,7 +38,9 @@ object CassandraConfig {
   val Default: CassandraConfig = CassandraConfig()
 
   implicit val configReaderProtocolVersion: ConfigReader[ProtocolVersion] = {
-    ConfigReaderFromEnum(DefaultProtocolVersion.values()).map[ProtocolVersion](identity)
+    ConfigReaderFromEnum(DefaultProtocolVersion.values())
+      .map[ProtocolVersion](identity)
+      .orElse(ConfigReaderFromEnum(DseProtocolVersion.values()).map[ProtocolVersion](identity))
   }
 
   implicit val configReaderCassandraConfig: ConfigReader[CassandraConfig] = (cursor: ConfigCursor) => {

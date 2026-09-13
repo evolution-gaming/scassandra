@@ -1,6 +1,7 @@
 package com.evolutiongaming.scassandra
 
 import cats.implicits.*
+import com.datastax.dse.driver.api.core.DseProtocolVersion
 import com.datastax.oss.driver.api.core.DefaultProtocolVersion
 import com.evolutiongaming.nel.Nel
 import com.typesafe.config.ConfigFactory
@@ -33,6 +34,12 @@ class CassandraConfigSpec extends AnyFunSuite with Matchers {
       logQueries = true,
     )
     ConfigSource.fromConfig(config).load[CassandraConfig] shouldEqual expected.asRight
+  }
+
+  test("apply from config with DSE protocol version") {
+    val config = ConfigFactory.parseString("protocol-version = dse_v2")
+    ConfigSource.fromConfig(config).load[CassandraConfig].map(_.protocolVersion) shouldEqual
+      Some(DseProtocolVersion.DSE_V2).asRight
   }
 
   test("apply from config with contactPoints as string") {

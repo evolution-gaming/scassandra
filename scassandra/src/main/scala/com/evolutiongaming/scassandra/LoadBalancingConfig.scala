@@ -9,7 +9,7 @@ import pureconfig.ConfigSource
  * @param localDc
  *   the local datacenter, when empty it is inferred from the contact points
  */
-final case class LoadBalancingConfig(localDc: String = "localDc")
+final case class LoadBalancingConfig(localDc: String = "")
 
 object LoadBalancingConfig extends LoadBalancingConfigImplicits {
 

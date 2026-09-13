@@ -57,8 +57,12 @@ libraryDependencies += "com.evolutiongaming" %% "scassandra" % "6.0.0"
   `ProtocolOptions.Compression.LZ4` becomes `Compression.Lz4`
 - `com.datastax.driver.core.Duration` becomes `CqlDuration`, `com.datastax.driver.core.LocalDate` is replaced by
   `java.time.LocalDate`
-- `CassandraCluster` holds no connection anymore, `clusterName` and `metadata` moved to `CassandraSession`,
-  `newSession`, `init`, `state` and `stateSnapshot` are gone, node state is available via `Metadata.nodes`
+- `CassandraCluster` holds no connection anymore, `metadata` moved to `CassandraSession`, `newSession`, `init`,
+  `state` and `stateSnapshot` are gone, node state is available via `Metadata.nodes`
+- `CassandraCluster.clusterName` is gone, `Metadata.clusterName` returns the name reported by the server, not
+  the configured one
+- `Metadata.keyspace` and `Metadata.keyspaces` no longer include `system*` keyspaces, the driver does not
+  refresh them by default
 - `CassandraClusterOf.addClusterJObserveHook` is replaced by `CassandraClusterOf.of(configure)`, which
   receives the driver `CqlSessionBuilder`
 - `FromGFuture`, `NextHostRetryPolicy`, `ToJava`, `ToScala` and `ToCql.Ops` are removed
@@ -66,5 +70,11 @@ libraryDependencies += "com.evolutiongaming" %% "scassandra" % "6.0.0"
   `heartbeat-interval`), `jmx-reporting`, `metrics`, `query.refresh-node-interval`,
   `query.max-pending-refresh-node-requests` and `load-balancing.allow-remote-dcs-for-local-consistency-level`
   are gone, unknown keys are ignored so old config files still load
-- when `load-balancing.local-dc` is not set the local datacenter is inferred from the contact points
+- `LoadBalancingConfig.localDc` defaults to empty, when it is not set the local datacenter is inferred from the
+  contact points
+- `socket.read-timeout` maps to the driver request timeout, which covers the whole request including retries and
+  speculative executions instead of a single node read
+- `log-queries` logs slow and failed requests without bound values via the driver `RequestLogger`
+- options covered by `CassandraConfig` always win over `datastax-java-driver` settings in `application.conf`,
+  use `CassandraClusterOf.of(configure)` to tweak the session builder for the rest
 - compression needs `org.lz4:lz4-java` or `org.xerial.snappy:snappy-java` on the classpath

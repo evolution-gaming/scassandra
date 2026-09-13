@@ -153,11 +153,12 @@ class CreateDriverConfigLoaderSpec extends AnyFunSuite with Matchers {
   test("log queries") {
     val options = profile(CassandraConfig(logQueries = true))
     options.getStringList(REQUEST_TRACKER_CLASSES) shouldEqual List("RequestLogger").asJava
-    List[DriverOption](
+    val flags = List[DriverOption](
       REQUEST_LOGGER_SUCCESS_ENABLED,
       REQUEST_LOGGER_SLOW_ENABLED,
       REQUEST_LOGGER_ERROR_ENABLED,
+      REQUEST_LOGGER_VALUES,
     )
-      .map(options.getBoolean) shouldEqual List(true, true, true)
+    flags.map(options.getBoolean) shouldEqual List(false, true, true, false)
   }
 }
