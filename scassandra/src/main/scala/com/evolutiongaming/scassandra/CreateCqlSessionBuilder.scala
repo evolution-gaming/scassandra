@@ -8,10 +8,10 @@ import scala.jdk.CollectionConverters.*
 
 object CreateCqlSessionBuilder {
 
-  def apply(config: CassandraConfig, clusterId: Int): CqlSessionBuilder = {
+  def apply(config: CassandraConfig, sessionName: String): CqlSessionBuilder = {
     val builder = CqlSession
       .builder()
-      .withConfigLoader(CreateDriverConfigLoader(config, s"${ config.name }-$clusterId"))
+      .withConfigLoader(CreateDriverConfigLoader(config, sessionName))
 
     config.cloudSecureConnectBundle match {
       case Some(CloudSecureConnectBundleConfig.File(path)) =>

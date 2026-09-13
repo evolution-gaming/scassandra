@@ -81,6 +81,16 @@ class ResultSetStreamSpec extends AnyWordSpec with Matchers {
     }
   }
 
+  "ResultSet.stream" should {
+
+    "be reusable" in {
+      val resultSet = ResultSetMock(ResultSetMock.rows(1, 2), ResultSetMock.rows(3))
+      val stream = resultSet.stream[IO]
+      ids(stream.toList.unsafeRunSync()) shouldEqual List(1, 2, 3)
+      ids(stream.toList.unsafeRunSync()) shouldEqual List(1, 2, 3)
+    }
+  }
+
   "executeStream(query)" should {
 
     "wrap the query into a SimpleStatement" in {

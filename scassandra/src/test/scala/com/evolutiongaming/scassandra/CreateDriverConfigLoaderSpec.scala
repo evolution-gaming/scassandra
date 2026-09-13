@@ -39,7 +39,7 @@ class CreateDriverConfigLoaderSpec extends AnyFunSuite with Matchers {
     defaults.getBoolean(SOCKET_TCP_NODELAY) shouldEqual true
     defaults.isDefined(SOCKET_KEEP_ALIVE) shouldEqual false
     defaults.isDefined(PROTOCOL_VERSION) shouldEqual false
-    defaults.isDefined(PROTOCOL_COMPRESSION) shouldEqual false
+    defaults.getString(PROTOCOL_COMPRESSION) shouldEqual "none"
     defaults.isDefined(AUTH_PROVIDER_CLASS) shouldEqual false
     defaults.getString(LOAD_BALANCING_POLICY_CLASS) shouldEqual "DcInferringLoadBalancingPolicy"
     defaults.isDefined(LOAD_BALANCING_LOCAL_DATACENTER) shouldEqual false
@@ -158,7 +158,9 @@ class CreateDriverConfigLoaderSpec extends AnyFunSuite with Matchers {
       REQUEST_LOGGER_SLOW_ENABLED,
       REQUEST_LOGGER_ERROR_ENABLED,
       REQUEST_LOGGER_VALUES,
+      REQUEST_LOGGER_STACK_TRACES,
     )
-    flags.map(options.getBoolean) shouldEqual List(false, true, true, false)
+    flags.map(options.getBoolean) shouldEqual List(false, true, true, false, false)
+    options.getDuration(REQUEST_LOGGER_SLOW_THRESHOLD) shouldEqual Duration.ofSeconds(5)
   }
 }

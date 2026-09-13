@@ -1,8 +1,7 @@
 package com.evolutiongaming.scassandra
 
 import cats.Functor
-import com.datastax.oss.driver.api.core.data.{CqlDuration, GettableByIndex}
-import com.evolutiongaming.scassandra.util.Bytes
+import com.datastax.oss.driver.api.core.data.{ByteUtils, CqlDuration, GettableByIndex}
 
 import java.time.{Instant, LocalDate}
 import scala.jdk.CollectionConverters.*
@@ -72,7 +71,7 @@ object DecodeByIdx {
   }
 
   implicit val bytesDecodeByIdx: DecodeByIdx[Array[Byte]] = (data: GettableByIndex, idx: Int) => {
-    Bytes.toArray(data.getByteBuffer(idx))
+    ByteUtils.getArray(data.getByteBuffer(idx))
   }
 
   implicit val durationDecodeByIdx: DecodeByIdx[CqlDuration] = (data: GettableByIndex, idx: Int) => {

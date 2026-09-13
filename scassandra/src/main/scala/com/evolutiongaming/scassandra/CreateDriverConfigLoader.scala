@@ -4,8 +4,8 @@ import com.datastax.oss.driver.api.core.config.DefaultDriverOption.*
 import com.datastax.oss.driver.api.core.config.{DriverConfigLoader, ProgrammaticDriverConfigLoaderBuilder}
 
 import java.time.Duration as DurationJ
-import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters.*
+import scala.jdk.DurationConverters.*
 
 /**
  * Translates [[CassandraConfig]] into the driver configuration. Options covered by
@@ -16,14 +16,13 @@ object CreateDriverConfigLoader {
 
   private type Builder = ProgrammaticDriverConfigLoaderBuilder
 
+  private def toJava(value: scala.concurrent.duration.FiniteDuration): DurationJ = value.toJava
+
   def apply(config: CassandraConfig, sessionName: String): DriverConfigLoader = {
     val steps = List(
       base(config, sessionName),
       socket(config.socket),
       opt(config.protocolVersion)((builder, version) => builder.withString(PROTOCOL_VERSION, version.name)),
-      when(config.compression != Compression.None) {
-        _.withString(PROTOCOL_COMPRESSION, config.compression.name)
-      },
       opt(config.authentication)(authentication),
       loadBalancing(config.loadBalancing),
       opt(config.speculativeExecution)(speculativeExecution),
@@ -38,25 +37,26 @@ object CreateDriverConfigLoader {
     val reconnection = config.reconnection
     builder
       .withString(SESSION_NAME, sessionName)
+      .withString(PROTOCOL_COMPRESSION, config.compression.name)
       .withString(REQUEST_CONSISTENCY, query.consistency.name)
       .withString(REQUEST_SERIAL_CONSISTENCY, query.serialConsistency.name)
       .withInt(REQUEST_PAGE_SIZE, query.fetchSize)
       .withBoolean(REQUEST_DEFAULT_IDEMPOTENCE, query.defaultIdempotence)
       .withBoolean(METADATA_SCHEMA_ENABLED, query.metadata)
       .withBoolean(METADATA_TOKEN_MAP_ENABLED, query.metadata)
-      .withDuration(METADATA_SCHEMA_WINDOW, duration(query.refreshSchemaInterval))
+      .withDuration(METADATA_SCHEMA_WINDOW, toJava(query.refreshSchemaInterval))
       .withInt(METADATA_SCHEMA_MAX_EVENTS, query.maxPendingRefreshSchemaRequests)
-      .withDuration(METADATA_TOPOLOGY_WINDOW, duration(query.refreshNodeListInterval))
+      .withDuration(METADATA_TOPOLOGY_WINDOW, toJava(query.refreshNodeListInterval))
       .withInt(METADATA_TOPOLOGY_MAX_EVENTS, query.maxPendingRefreshNodeListRequests)
       .withBoolean(REPREPARE_ENABLED, query.rePrepareOnUp)
       .withBoolean(PREPARE_ON_ALL_NODES, query.prepareOnAllHosts)
       .withString(RECONNECTION_POLICY_CLASS, "ExponentialReconnectionPolicy")
-      .withDuration(RECONNECTION_BASE_DELAY, duration(reconnection.minDelay))
-      .withDuration(RECONNECTION_MAX_DELAY, duration(reconnection.maxDelay))
+      .withDuration(RECONNECTION_BASE_DELAY, toJava(reconnection.minDelay))
+      .withDuration(RECONNECTION_MAX_DELAY, toJava(reconnection.maxDelay))
       .withInt(CONNECTION_POOL_LOCAL_SIZE, pooling.localSize)
       .withInt(CONNECTION_POOL_REMOTE_SIZE, pooling.remoteSize)
       .withInt(CONNECTION_MAX_REQUESTS, pooling.maxRequestsPerConnection)
-      .withDuration(HEARTBEAT_INTERVAL, duration(pooling.heartbeatInterval))
+      .withDuration(HEARTBEAT_INTERVAL, toJava(pooling.heartbeatInterval))
   }
 
   private def socket(config: SocketConfig): Builder => Builder = { builder =>
@@ -69,8 +69,8 @@ object CreateDriverConfigLoader {
       opt(config.sendBufferSize)(_.withInt(SOCKET_SEND_BUFFER_SIZE, _)),
     )
     val base = builder
-      .withDuration(CONNECTION_CONNECT_TIMEOUT, duration(config.connectTimeout))
-      .withDuration(REQUEST_TIMEOUT, duration(config.readTimeout))
+      .withDuration(CONNECTION_CONNECT_TIMEOUT, toJava(config.connectTimeout))
+      .withDuration(REQUEST_TIMEOUT, toJava(config.readTimeout))
     steps.foldLeft(base) { (builder, step) => step(builder) }
   }
 
@@ -91,7 +91,7 @@ object CreateDriverConfigLoader {
   private def speculativeExecution(builder: Builder, config: SpeculativeExecutionConfig): Builder = {
     builder
       .withString(SPECULATIVE_EXECUTION_POLICY_CLASS, "ConstantSpeculativeExecutionPolicy")
-      .withDuration(SPECULATIVE_EXECUTION_DELAY, duration(config.delay))
+      .withDuration(SPECULATIVE_EXECUTION_DELAY, toJava(config.delay))
       .withInt(SPECULATIVE_EXECUTION_MAX, config.maxExecutions + 1)
   }
 
@@ -102,9 +102,9 @@ object CreateDriverConfigLoader {
       .withBoolean(REQUEST_LOGGER_SLOW_ENABLED, true)
       .withBoolean(REQUEST_LOGGER_ERROR_ENABLED, true)
       .withBoolean(REQUEST_LOGGER_VALUES, false)
+      .withBoolean(REQUEST_LOGGER_STACK_TRACES, false)
+      .withDuration(REQUEST_LOGGER_SLOW_THRESHOLD, DurationJ.ofSeconds(5))
   }
-
-  private def duration(value: FiniteDuration): DurationJ = DurationJ.ofNanos(value.toNanos)
 
   private def opt[A](value: Option[A])(f: (Builder, A) => Builder): Builder => Builder = { builder =>
     value.fold(builder)(f(builder, _))

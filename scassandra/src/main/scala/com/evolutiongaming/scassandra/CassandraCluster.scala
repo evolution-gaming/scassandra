@@ -1,6 +1,6 @@
 package com.evolutiongaming.scassandra
 
-import cats.effect.{Async, MonadCancel, Resource, Sync}
+import cats.effect.{Async, MonadCancel, Ref, Resource, Sync}
 import cats.implicits.*
 import cats.~>
 import com.datastax.oss.driver.api.core.CqlSessionBuilder
@@ -10,7 +10,8 @@ import com.evolutiongaming.scassandra.util.FromCompletionStage
  * Session factory for a Cassandra cluster.
  *
  * The driver has no cluster object anymore, nothing is connected until [[connect]] is
- * called and every call opens a separate session with its own connection pools.
+ * called and every call opens a separate session with its own connection pools, named
+ * `<config.name>-<clusterId>-<n>` where `n` counts the sessions of this cluster.
  */
 trait CassandraCluster[F[_]] {
 
@@ -43,8 +44,16 @@ object CassandraCluster {
     clusterId: Int,
     configure: CqlSessionBuilder => CqlSessionBuilder,
   ): Resource[F, CassandraCluster[F]] = {
-    val builder = Sync[F].delay { configure(CreateCqlSessionBuilder(config, clusterId)) }
-    Resource.pure(new Impl(builder))
+    for {
+      sessionId <- Resource.eval(Ref[F].of(0))
+    } yield {
+      val builder = for {
+        sessionId <- sessionId.updateAndGet(_ + 1)
+        builder <-
+          Sync[F].delay { CreateCqlSessionBuilder(config, s"${ config.name }-$clusterId-$sessionId") }
+      } yield configure(builder)
+      new Impl(builder)
+    }
   }
 
   private final class Impl[F[_]: Async](builder: F[CqlSessionBuilder]) extends CassandraCluster[F] {

@@ -34,28 +34,32 @@ object StreamingCassandraSession {
 
   /**
    * Streams the rows of all the pages, the next page is fetched while the current one is
-   * being processed.
+   * being processed. The first page is read from `resultSet` once and kept, so the stream
+   * can be run more than once.
    */
   private[scassandra] def toStream[F[_]: Async](resultSet: AsyncResultSet): Stream[F, Row] = {
     new Stream[F, Row] {
+
+      private lazy val firstPage = rowsOf(resultSet)
+
       def foldWhileM[L, R](l: L)(f: (L, Row) => F[Either[L, R]]): F[Either[L, R]] = {
-        (l, resultSet).tailRecM[F, Either[L, R]] { case (l, resultSet) =>
-          val rows = Async[F].delay { resultSet.currentPage().asScala.toList }
-          val fold = rows.flatMap(_.foldWhileM(l)(f))
-          Async[F].delay(resultSet.hasMorePages).flatMap { hasMorePages =>
-            if (hasMorePages) {
-              FromCompletionStage { resultSet.fetchNextPage() }.background.use { next =>
-                fold.flatMap {
-                  case Left(l) => next.flatMap(_.embedNever).map { next => (l, next).asLeft[Either[L, R]] }
-                  case result => result.asRight[(L, AsyncResultSet)].pure[F]
-                }
+        (l, firstPage, resultSet).tailRecM[F, Either[L, R]] { case (l, rows, resultSet) =>
+          val fold = rows.foldWhileM(l)(f)
+          if (resultSet.hasMorePages) {
+            FromCompletionStage { resultSet.fetchNextPage() }.background.use { next =>
+              fold.flatMap {
+                case Left(l) =>
+                  next.flatMap(_.embedNever).map { next => (l, rowsOf(next), next).asLeft[Either[L, R]] }
+                case result => result.asRight[(L, List[Row], AsyncResultSet)].pure[F]
               }
-            } else {
-              fold.map(_.asRight[(L, AsyncResultSet)])
             }
+          } else {
+            fold.map(_.asRight[(L, List[Row], AsyncResultSet)])
           }
         }
       }
     }
   }
+
+  private def rowsOf(resultSet: AsyncResultSet): List[Row] = resultSet.currentPage().asScala.toList
 }

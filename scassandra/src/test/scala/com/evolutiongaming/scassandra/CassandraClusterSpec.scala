@@ -35,10 +35,10 @@ class CassandraClusterSpec extends AnyWordSpec with Matchers {
 
     "reject malformed contact points" in {
       val error = the[IllegalArgumentException] thrownBy
-        CreateCqlSessionBuilder(CassandraConfig(contactPoints = Nel("a:b:c")), 1)
+        CreateCqlSessionBuilder(CassandraConfig(contactPoints = Nel("a:b:c")), "name")
       error.getMessage should include("a:b:c")
       a[NumberFormatException] should be thrownBy
-        CreateCqlSessionBuilder(CassandraConfig(contactPoints = Nel("127.0.0.1:port")), 1)
+        CreateCqlSessionBuilder(CassandraConfig(contactPoints = Nel("127.0.0.1:port")), "name")
     }
 
     "build a session builder for a cloud secure connect bundle" in {
@@ -46,8 +46,8 @@ class CassandraClusterSpec extends AnyWordSpec with Matchers {
         CassandraConfig(cloudSecureConnectBundle = Some(CloudSecureConnectBundleConfig.File("/bundle")))
       val url =
         CassandraConfig(cloudSecureConnectBundle = Some(CloudSecureConnectBundleConfig.Url("http://ws")))
-      CreateCqlSessionBuilder(file, 1) should not be null
-      CreateCqlSessionBuilder(url, 1) should not be null
+      CreateCqlSessionBuilder(file, "name") should not be null
+      CreateCqlSessionBuilder(url, "name") should not be null
     }
   }
 

@@ -71,10 +71,13 @@ libraryDependencies += "com.evolutiongaming" %% "scassandra" % "6.0.0"
   `query.max-pending-refresh-node-requests` and `load-balancing.allow-remote-dcs-for-local-consistency-level`
   are gone, unknown keys are ignored so old config files still load
 - `LoadBalancingConfig.localDc` defaults to empty, when it is not set the local datacenter is inferred from the
-  contact points
+  contact points and connecting fails if they span several datacenters, set `load-balancing.local-dc` then
+- `protocol-version` accepts `V3` and up plus `DSE_V1`/`DSE_V2`, other values are ignored and the version is
+  negotiated
 - `socket.read-timeout` maps to the driver request timeout, which covers the whole request including retries and
   speculative executions instead of a single node read
-- `log-queries` logs slow and failed requests without bound values via the driver `RequestLogger`
+- `log-queries` logs requests slower than 5 seconds and failed requests, without bound values, via the driver
+  `RequestLogger` at INFO and ERROR
 - options covered by `CassandraConfig` always win over `datastax-java-driver` settings in `application.conf`,
   use `CassandraClusterOf.of(configure)` to tweak the session builder for the rest
 - compression needs `org.lz4:lz4-java` or `org.xerial.snappy:snappy-java` on the classpath
