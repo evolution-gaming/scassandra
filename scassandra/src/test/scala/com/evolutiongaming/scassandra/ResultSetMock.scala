@@ -28,6 +28,7 @@ final class ResultSetMock private (pages: List[List[Row]], fetches: AtomicIntege
   override def hasMorePages: Boolean = pages.drop(1).nonEmpty
 
   override def fetchNextPage(): CompletionStage[AsyncResultSet] = {
+    if (!hasMorePages) throw new IllegalStateException("No next page")
     fetches.incrementAndGet()
     CompletableFuture.completedFuture(new ResultSetMock(pages.drop(1), fetches))
   }

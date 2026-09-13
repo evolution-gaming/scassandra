@@ -22,14 +22,24 @@ object CreateCqlSessionBuilder {
     }
   }
 
+  private val Ipv6 = """\[([^\]]+)\](?::(.+))?""".r
+  private val HostPort = """([^:]+)(?::(.+))?""".r
+
   def contactPoints(config: CassandraConfig): List[InetSocketAddress] = {
     config.contactPoints.toList.map { contactPoint =>
-      contactPoint.split(":").map(_.trim) match {
-        case Array(host, port) => new InetSocketAddress(host, port.toInt)
-        case Array(host) => new InetSocketAddress(host, config.port)
-        case _ =>
-          val msg = s"A contact point should be in form of [host:port] or [host], but is $contactPoint"
-          throw new IllegalArgumentException(msg)
+      def invalid = {
+        val msg =
+          s"A contact point should be in form of host, host:port, [ipv6] or [ipv6]:port, but is $contactPoint"
+        throw new IllegalArgumentException(msg)
+      }
+      def address(host: String, port: String) = {
+        val value = Option(port).fold(Option(config.port))(_.trim.toIntOption).getOrElse(invalid)
+        new InetSocketAddress(host.trim, value)
+      }
+      contactPoint.trim match {
+        case Ipv6(host, port) => address(host, port)
+        case HostPort(host, port) => address(host, port)
+        case _ => invalid
       }
     }
   }

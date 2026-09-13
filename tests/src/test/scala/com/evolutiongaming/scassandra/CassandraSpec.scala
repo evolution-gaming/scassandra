@@ -135,7 +135,7 @@ class CassandraSpec extends AnyWordSpec with CassandraSuite with Matchers {
       }
 
       "nodes" in {
-        metadata.nodes.toTry.get.map(_.getOpenConnections) should not be empty
+        metadata.nodes.toTry.get.exists(_.getOpenConnections > 0) shouldEqual true
       }
 
       lazy val keyspaceMetadata = session.metadata.toTry.get.keyspace(keyspace).toTry.get

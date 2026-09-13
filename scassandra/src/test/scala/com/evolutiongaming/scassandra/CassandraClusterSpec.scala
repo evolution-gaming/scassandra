@@ -33,12 +33,20 @@ class CassandraClusterSpec extends AnyWordSpec with Matchers {
       )
     }
 
+    "accept bracketed ipv6 contact points" in {
+      val config = CassandraConfig(port = 9043, contactPoints = Nel("[2001:db8::1]:9044", " [::1] "))
+      CreateCqlSessionBuilder.contactPoints(config) shouldEqual List(
+        new InetSocketAddress("2001:db8::1", 9044),
+        new InetSocketAddress("::1", 9043),
+      )
+    }
+
     "reject malformed contact points" in {
-      val error = the[IllegalArgumentException] thrownBy
-        CreateCqlSessionBuilder(CassandraConfig(contactPoints = Nel("a:b:c")), "name")
-      error.getMessage should include("a:b:c")
-      a[NumberFormatException] should be thrownBy
-        CreateCqlSessionBuilder(CassandraConfig(contactPoints = Nel("127.0.0.1:port")), "name")
+      for (contactPoint <- List("a:b:c", "127.0.0.1:port", "node:", "[::1]:", "[::1", "")) {
+        val error = the[IllegalArgumentException] thrownBy
+          CreateCqlSessionBuilder(CassandraConfig(contactPoints = Nel(contactPoint)), "name")
+        error.getMessage should include(contactPoint)
+      }
     }
 
     "build a session builder for a cloud secure connect bundle" in {
