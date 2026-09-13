@@ -1,23 +1,18 @@
 package com.evolutiongaming.scassandra
 
-import com.datastax.driver.core.policies.{ExponentialReconnectionPolicy, ReconnectionPolicy}
 import com.typesafe.config.Config
 import pureconfig.ConfigSource
 
 import scala.concurrent.duration.*
 
 /**
- * See [[https://docs.datastax.com/en/developer/java-driver/3.5/manual/reconnection/]]
+ * Exponential reconnection policy, see `advanced.reconnection-policy` in the driver
+ * reference configuration.
  */
 final case class ReconnectionConfig(
   minDelay: FiniteDuration = 1.second,
   maxDelay: FiniteDuration = 10.minutes,
-) {
-
-  def asJava: ReconnectionPolicy = {
-    new ExponentialReconnectionPolicy(minDelay.toMillis, maxDelay.toMillis)
-  }
-}
+)
 
 object ReconnectionConfig extends ReconnectionConfigImplicits {
 

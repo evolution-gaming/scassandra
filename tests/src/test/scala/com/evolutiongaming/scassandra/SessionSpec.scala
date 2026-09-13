@@ -1,8 +1,9 @@
 package com.evolutiongaming.scassandra
 
 import cats.effect.IO
-import com.datastax.driver.core.ConsistencyLevel
-import com.datastax.driver.core.exceptions.{CodecNotFoundException, InvalidQueryException, SyntaxError}
+import com.datastax.oss.driver.api.core.DefaultConsistencyLevel
+import com.datastax.oss.driver.api.core.`type`.codec.CodecNotFoundException
+import com.datastax.oss.driver.api.core.servererrors.{InvalidQueryException, SyntaxError}
 import com.evolutiongaming.catshelper.CatsHelper.*
 import com.evolutiongaming.scassandra.syntax.*
 import org.scalatest.EitherValues
@@ -63,6 +64,6 @@ class SessionSpec extends AnyFunSuite with CassandraSuite with Matchers with Eit
   }
 
   test("health check statement runs against the server") {
-    CassandraHealthCheck.Statement.of[IO](session, ConsistencyLevel.ONE).flatten.toTry.get
+    CassandraHealthCheck.Statement.of[IO](session, DefaultConsistencyLevel.ONE).flatten.toTry.get
   }
 }

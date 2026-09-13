@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cassandra: [ 'cassandra:4.1', 'cassandra:5.0' ]
+        cassandra: [ 'cassandra:3.11', 'cassandra:5.0' ]
 
     steps:
       - name: checkout

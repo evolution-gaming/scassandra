@@ -1,22 +1,23 @@
 package com.evolutiongaming.scassandra
 
-import cats.effect.{MonadCancel, Resource, Sync}
+import cats.effect.{Async, MonadCancel, Ref, Resource, Sync}
 import cats.implicits.*
 import cats.~>
-import com.datastax.driver.core.Cluster as ClusterJ
-import com.evolutiongaming.scassandra.util.FromGFuture
+import com.datastax.oss.driver.api.core.CqlSessionBuilder
+import com.evolutiongaming.scassandra.util.FromCompletionStage
 
+/**
+ * Session factory for a Cassandra cluster.
+ *
+ * The driver has no cluster object anymore, nothing is connected until [[connect]] is
+ * called and every call opens a separate session with its own connection pools, named
+ * `<config.name>-<clusterId>-<n>` where `n` counts the sessions of this cluster.
+ */
 trait CassandraCluster[F[_]] {
 
   def connect: Resource[F, CassandraSession[F]]
 
   def connect(keyspace: String): Resource[F, CassandraSession[F]]
-
-  def clusterName: F[String]
-
-  def newSession: Resource[F, CassandraSession[F]]
-
-  def metadata: F[Metadata[F]]
 }
 
 object CassandraCluster {
@@ -26,44 +27,50 @@ object CassandraCluster {
     F: CassandraCluster[F],
   ): CassandraCluster[F] = F
 
-  def apply[F[_]: Sync: FromGFuture](cluster: ClusterJ): CassandraCluster[F] = {
-
-    new CassandraCluster[F] {
-
-      override val connect: Resource[F, CassandraSession[F]] = CassandraSession.of {
-        FromGFuture[F].apply { cluster.connectAsync() }
-      }
-
-      override def connect(keyspace: String): Resource[F, CassandraSession[F]] = CassandraSession.of {
-        FromGFuture[F].apply { cluster.connectAsync(keyspace) }
-      }
-
-      override val clusterName: F[String] = Sync[F].delay { cluster.getClusterName }
-
-      override val newSession: Resource[F, CassandraSession[F]] = CassandraSession.of {
-        Sync[F].delay { cluster.newSession() }
-      }
-
-      override val metadata: F[Metadata[F]] = Sync[F].delay { Metadata(cluster.getMetadata) }
-    }
-  }
-
-  def of[F[_]: Sync: FromGFuture](
+  def of[F[_]: Async](
     config: CassandraConfig,
     clusterId: Int,
   ): Resource[F, CassandraCluster[F]] = {
-    val clusterJ = Sync[F].delay { CreateClusterJ(config, clusterId) }
-    of(clusterJ)
+    of(config, clusterId, identity)
   }
 
-  def of[F[_]: Sync: FromGFuture](cluster: F[ClusterJ]): Resource[F, CassandraCluster[F]] = {
-    val result = for {
-      cluster <- cluster
+  /**
+   * @param configure
+   *   applied to the session builder of every [[CassandraCluster#connect]] call, i.e. to
+   *   register listeners or to override driver options
+   */
+  def of[F[_]: Async](
+    config: CassandraConfig,
+    clusterId: Int,
+    configure: CqlSessionBuilder => CqlSessionBuilder,
+  ): Resource[F, CassandraCluster[F]] = {
+    for {
+      sessionId <- Resource.eval(Ref[F].of(0))
     } yield {
-      val release = FromGFuture[F].apply { cluster.closeAsync() }.void
-      (CassandraCluster(cluster), release)
+      val builder = for {
+        sessionId <- sessionId.updateAndGet(_ + 1)
+        builder <-
+          Sync[F].delay { CreateCqlSessionBuilder(config, s"${ config.name }-$clusterId-$sessionId") }
+      } yield configure(builder)
+      new Impl(builder)
     }
-    Resource(result)
+  }
+
+  private final class Impl[F[_]: Async](builder: F[CqlSessionBuilder]) extends CassandraCluster[F] {
+
+    private def session(keyspace: Option[String]): Resource[F, CassandraSession[F]] = {
+      CassandraSession.of {
+        for {
+          builder <- builder
+          builder <- Sync[F].delay { keyspace.fold(builder) { keyspace => builder.withKeyspace(keyspace) } }
+          session <- FromCompletionStage { builder.buildAsync() }
+        } yield session
+      }
+    }
+
+    override val connect: Resource[F, CassandraSession[F]] = session(None)
+
+    override def connect(keyspace: String): Resource[F, CassandraSession[F]] = session(Some(keyspace))
   }
 
   implicit class CassandraClusterOps[F[_]](val self: CassandraCluster[F]) extends AnyVal {
@@ -75,39 +82,10 @@ object CassandraCluster {
       G: MonadCancel[G, ?],
     ): CassandraCluster[G] = new CassandraCluster[G] {
 
-      override def connect: Resource[G, CassandraSession[G]] = {
-        for {
-          a <- self.connect.mapK(f)
-        } yield {
-          a.mapK(f)
-        }
-      }
+      override def connect: Resource[G, CassandraSession[G]] = self.connect.mapK(f).map(_.mapK(f))
 
-      override def connect(keyspace: String): Resource[G, CassandraSession[G]] = {
-        for {
-          a <- self.connect(keyspace).mapK(f)
-        } yield {
-          a.mapK(f)
-        }
-      }
-
-      override def clusterName: G[String] = f(self.clusterName)
-
-      override def newSession: Resource[G, CassandraSession[G]] = {
-        for {
-          a <- self.newSession.mapK(f)
-        } yield {
-          a.mapK(f)
-        }
-      }
-
-      override def metadata: G[Metadata[G]] = {
-        for {
-          a <- f(self.metadata)
-        } yield {
-          a.mapK(f)
-        }
-      }
+      override def connect(keyspace: String): Resource[G, CassandraSession[G]] =
+        self.connect(keyspace).mapK(f).map(_.mapK(f))
     }
   }
 }

@@ -4,8 +4,6 @@ import cats.Contravariant
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.annotation.nowarn
-
 class ToCqlSpec extends AnyWordSpec with Matchers {
 
   private implicit val toCqlInt: ToCql[Int] = (a: Int) => a.toString
@@ -34,12 +32,5 @@ class ToCqlSpec extends AnyWordSpec with Matchers {
       syntax.toCqlOps("value").toCql shouldEqual "value"
       syntax.toCqlOps(2).toCql shouldEqual "2"
     }
-
-    "provide toCql via deprecated Ops" in {
-      viaDeprecatedOps("value") shouldEqual "value"
-    }
   }
-
-  @nowarn("cat=deprecation")
-  private def viaDeprecatedOps(a: String): String = new ToCql.Ops.IdOps(a).toCql
 }

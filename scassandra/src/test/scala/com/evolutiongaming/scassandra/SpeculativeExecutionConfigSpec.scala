@@ -1,7 +1,6 @@
 package com.evolutiongaming.scassandra
 
 import cats.implicits.*
-import com.datastax.driver.core.policies.ConstantSpeculativeExecutionPolicy
 import com.typesafe.config.ConfigFactory
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
@@ -25,11 +24,6 @@ class SpeculativeExecutionConfigSpec extends AnyFunSuite with Matchers {
       maxExecutions = 3,
     )
     ConfigSource.fromConfig(config).load[SpeculativeExecutionConfig] shouldEqual expected.asRight
-  }
-
-  test("asJava") {
-    SpeculativeExecutionConfig(delay = 1.second, maxExecutions = 3).asJava shouldBe
-      a[ConstantSpeculativeExecutionPolicy]
   }
 
   test("fromConfig falls back to default on invalid config") {

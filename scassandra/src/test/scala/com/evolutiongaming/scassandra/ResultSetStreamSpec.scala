@@ -2,7 +2,7 @@ package com.evolutiongaming.scassandra
 
 import cats.effect.unsafe.implicits.global
 import cats.effect.{IO, Ref}
-import com.datastax.driver.core.{ResultSet, Row, SimpleStatement, Statement}
+import com.datastax.oss.driver.api.core.cql.{AsyncResultSet, Row, SimpleStatement, Statement}
 import com.evolutiongaming.scassandra.StreamingCassandraSession.*
 import com.evolutiongaming.scassandra.syntax.*
 import com.evolutiongaming.sstream.Stream
@@ -15,11 +15,11 @@ class ResultSetStreamSpec extends AnyWordSpec with Matchers {
   private val query = "SELECT 1"
 
   private def session(
-    resultSet: ResultSet,
-    executed: Ref[IO, List[Statement]] = Ref.unsafe[IO, List[Statement]](Nil),
+    resultSet: AsyncResultSet,
+    executed: Ref[IO, List[Statement[?]]] = Ref.unsafe[IO, List[Statement[?]]](Nil),
   ): CassandraSession[IO] = {
     new CassandraSessionMock {
-      override def execute(statement: Statement): IO[ResultSet] =
+      override def execute(statement: Statement[?]): IO[AsyncResultSet] =
         executed.update(_ :+ statement).as(resultSet)
     }
   }
@@ -30,7 +30,7 @@ class ResultSetStreamSpec extends AnyWordSpec with Matchers {
     ("ResultSet.stream", resultSet => resultSet.stream[IO]),
     (
       "executeStream(statement)",
-      resultSet => session(resultSet).executeStream(new SimpleStatement(query)),
+      resultSet => session(resultSet).executeStream(SimpleStatement.newInstance(query)),
     ),
     ("executeStream(query)", resultSet => session(resultSet).executeStream(query)),
   )
@@ -81,14 +81,24 @@ class ResultSetStreamSpec extends AnyWordSpec with Matchers {
     }
   }
 
+  "ResultSet.stream" should {
+
+    "be reusable" in {
+      val resultSet = ResultSetMock(ResultSetMock.rows(1, 2), ResultSetMock.rows(3))
+      val stream = resultSet.stream[IO]
+      ids(stream.toList.unsafeRunSync()) shouldEqual List(1, 2, 3)
+      ids(stream.toList.unsafeRunSync()) shouldEqual List(1, 2, 3)
+    }
+  }
+
   "executeStream(query)" should {
 
     "wrap the query into a SimpleStatement" in {
       val program = for {
-        executed <- Ref[IO].of(List.empty[Statement])
+        executed <- Ref[IO].of(List.empty[Statement[?]])
         _ <- session(ResultSetMock(), executed).executeStream(query).toList
         executed <- executed.get
-      } yield executed.map(_.asInstanceOf[SimpleStatement].getQueryString)
+      } yield executed.map(_.asInstanceOf[SimpleStatement].getQuery)
       program.unsafeRunSync() shouldEqual List(query)
     }
   }
@@ -96,9 +106,9 @@ class ResultSetStreamSpec extends AnyWordSpec with Matchers {
   "executeStream(statement)" should {
 
     "execute the statement as is" in {
-      val statement = new SimpleStatement(query)
+      val statement = SimpleStatement.newInstance(query)
       val program = for {
-        executed <- Ref[IO].of(List.empty[Statement])
+        executed <- Ref[IO].of(List.empty[Statement[?]])
         _ <- session(ResultSetMock(), executed).executeStream(statement).toList
         executed <- executed.get
       } yield executed.map(_ eq statement)

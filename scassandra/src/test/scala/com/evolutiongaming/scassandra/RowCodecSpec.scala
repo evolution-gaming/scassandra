@@ -1,7 +1,8 @@
 package com.evolutiongaming.scassandra
 
 import cats.{Contravariant, Functor}
-import com.datastax.driver.core.{GettableByNameData, SettableData, SimpleStatement}
+import com.datastax.oss.driver.api.core.cql.SimpleStatement
+import com.datastax.oss.driver.api.core.data.{GettableByName, SettableByName}
 import com.evolutiongaming.scassandra.RowCodecSpec.*
 import com.evolutiongaming.scassandra.syntax.*
 import org.scalatest.matchers.should.Matchers
@@ -27,7 +28,7 @@ class RowCodecSpec extends AnyWordSpec with Matchers {
 
     "be summoned and used via Ops" in {
       EncodeRow[User].apply(DataMock(), User("name", 1)).byName shouldEqual user
-      new EncodeRow.Ops.SettableDataOps(DataMock()).encode(User("name", 1)).byName shouldEqual user
+      new EncodeRow.Ops.SettableByNameOps(DataMock()).encode(User("name", 1)).byName shouldEqual user
     }
   }
 
@@ -49,7 +50,7 @@ class RowCodecSpec extends AnyWordSpec with Matchers {
     "be summoned and used via Ops" in {
       val data = DataMock(byName = user)
       DecodeRow[User].apply(data) shouldEqual User("name", 1)
-      new DecodeRow.Ops.GettableByNameDataOps(data).decode[User] shouldEqual User("name", 1)
+      new DecodeRow.Ops.GettableByNameOps(data).decode[User] shouldEqual User("name", 1)
     }
   }
 
@@ -106,8 +107,8 @@ class RowCodecSpec extends AnyWordSpec with Matchers {
     }
 
     "toggle statement tracing" in {
-      new SimpleStatement("SELECT 1").trace(enable = true).isTracing shouldEqual true
-      new SimpleStatement("SELECT 1").trace(enable = false).isTracing shouldEqual false
+      SimpleStatement.newInstance("SELECT 1").trace(enable = true).isTracing shouldEqual true
+      SimpleStatement.newInstance("SELECT 1").trace(enable = false).isTracing shouldEqual false
     }
   }
 }
@@ -119,14 +120,14 @@ object RowCodecSpec {
   val user: Map[String, Any] = Map("name" -> "name", "age" -> 1)
 
   implicit val encodeRowUser: EncodeRow[User] = new EncodeRow[User] {
-    def apply[B <: SettableData[B]](data: B, user: User): B = {
+    def apply[B <: SettableByName[B]](data: B, user: User): B = {
       data
         .encode("name", user.name)
         .encode("age", user.age)
     }
   }
 
-  implicit val decodeRowUser: DecodeRow[User] = (data: GettableByNameData) => {
+  implicit val decodeRowUser: DecodeRow[User] = (data: GettableByName) => {
     User(data.decode[String]("name"), data.decode[Int]("age"))
   }
 }

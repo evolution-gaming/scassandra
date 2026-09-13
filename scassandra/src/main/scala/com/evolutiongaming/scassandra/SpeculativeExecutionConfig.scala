@@ -1,24 +1,21 @@
 package com.evolutiongaming.scassandra
 
-import com.datastax.driver.core.policies.{ConstantSpeculativeExecutionPolicy, SpeculativeExecutionPolicy}
 import com.typesafe.config.Config
 import pureconfig.ConfigSource
 
 import scala.concurrent.duration.*
 
 /**
- * See
- * [[https://docs.datastax.com/en/developer/java-driver/3.5/manual/speculative_execution/]]
+ * Constant speculative execution policy, see `advanced.speculative-execution-policy` in
+ * the driver reference configuration.
+ *
+ * @param maxExecutions
+ *   number of speculative executions in addition to the initial one
  */
 final case class SpeculativeExecutionConfig(
   delay: FiniteDuration = 500.millis,
   maxExecutions: Int = 2,
-) {
-
-  def asJava: SpeculativeExecutionPolicy = {
-    new ConstantSpeculativeExecutionPolicy(delay.toMillis, maxExecutions)
-  }
-}
+)
 
 object SpeculativeExecutionConfig extends SpeculativeConfigImplicits {
 

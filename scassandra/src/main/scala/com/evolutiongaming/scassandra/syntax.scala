@@ -1,65 +1,35 @@
 package com.evolutiongaming.scassandra
 
-import cats.effect.implicits.*
-import cats.effect.{Async, Sync}
-import cats.syntax.all.*
-import com.datastax.driver.core.*
-import com.evolutiongaming.scassandra.util.FromGFuture
-import com.evolutiongaming.sstream.FoldWhile.*
+import cats.effect.Async
+import com.datastax.oss.driver.api.core.cql.{AsyncResultSet, Row, Statement}
+import com.datastax.oss.driver.api.core.data.{
+  GettableByIndex,
+  GettableByName,
+  SettableByIndex,
+  SettableByName,
+}
 import com.evolutiongaming.sstream.Stream
-
-import scala.annotation.nowarn
 
 object syntax {
 
-  implicit class ResultSetOps(val self: ResultSet) extends AnyVal {
+  implicit class ResultSetOps(val self: AsyncResultSet) extends AnyVal {
 
-    def stream[F[_]: Async: FromGFuture]: Stream[F, Row] = {
-      val iterator = self.iterator()
-      val fetch = FromGFuture[F].apply { self.fetchMoreResults() }.void
-      val fetched = Sync[F].delay { self.isFullyFetched }
-      val next = Sync[F].delay {
-        List.fill(self.getAvailableWithoutFetching)(iterator.next())
-      }
+    def stream[F[_]: Async]: Stream[F, Row] = StreamingCassandraSession.toStream(self)
+  }
 
-      new Stream[F, Row] {
+  implicit class ScassandraSettableByIdxOps[A <: SettableByIndex[A]](val self: A) extends AnyVal {
 
-        def foldWhileM[L, R](l: L)(f: (L, Row) => F[Either[L, R]]): F[Either[L, R]] = {
-
-          l.tailRecM[F, Either[L, R]] { l =>
-            def apply(rows: List[Row]): F[Either[L, Either[L, R]]] = {
-              for {
-                result <- rows.foldWhileM(l)(f)
-              } yield {
-                result.asRight[L]
-              }
-            }
-
-            def fetchAndApply(rows: List[Row]): F[Either[L, Either[L, R]]] = {
-              for {
-                fetching <- fetch.start
-                result <- rows.foldWhileM(l)(f)
-                result <- result match {
-                  case l: Left[L, R] =>
-                    fetching.join as l.rightCast[Either[L, R]]
-                  case r: Right[L, R] => r.leftCast[L].asRight[L].pure[F]
-                }
-              } yield result
-            }
-
-            for {
-              fetched <- fetched
-              rows <- next
-              result <- if (fetched) apply(rows) else fetchAndApply(rows)
-            } yield result
-          }
-        }
-      }
+    def encodeAt[B](
+      idx: Int,
+      value: B,
+    )(implicit
+      encode: EncodeByIdx[B],
+    ): A = {
+      encode(self, idx, value)
     }
   }
 
-  implicit class ScassandraSettableDataOps[A <: SettableData[A]](val self: A)
-  extends AnyVal {
+  implicit class ScassandraSettableByNameOps[A <: SettableByName[A]](val self: A) extends AnyVal {
 
     def encode[B](
       name: String,
@@ -76,15 +46,6 @@ object syntax {
       encode: EncodeRow[B],
     ): A = {
       encode(self, value)
-    }
-
-    def encodeAt[B](
-      idx: Int,
-      value: B,
-    )(implicit
-      encode: EncodeByIdx[B],
-    ): A = {
-      encode(self, idx, value)
     }
 
     def encodeSome[B](
@@ -105,9 +66,7 @@ object syntax {
     }
   }
 
-  implicit class ScassandraGettableByNameDataOps(
-    val self: GettableByNameData,
-  ) extends AnyVal {
+  implicit class ScassandraGettableByNameOps(val self: GettableByName) extends AnyVal {
 
     def decode[A](
       name: String,
@@ -125,9 +84,7 @@ object syntax {
     }
   }
 
-  implicit class ScassandraGettableByIdxDataOps(
-    val self: GettableByIndexData,
-  ) extends AnyVal {
+  implicit class ScassandraGettableByIdxOps(val self: GettableByIndex) extends AnyVal {
 
     def decodeAt[A](
       idx: Int,
@@ -138,35 +95,14 @@ object syntax {
     }
   }
 
-  /*
-  TODO: sort this out
-  
-  migesok:
-  ToCql.Ops & ToCql.Ops.IdOps deprecated in "improve ToCql Yaroslav Klymko 2019-10-28, 00:53"
-  but still used in syntax.toCqlOps which is not deprecated.
-  Replaced with ToCql.implicits.* which is not used in any of our code.
-  
-  Scala 2.13 for some reason doesn't generate deprecation warning for syntax.toCqlOps
-  but Scala 3 does.
+  implicit def toCqlOps[A](a: A): ToCql.implicits.IdOpsToCql[A] = new ToCql.implicits.IdOpsToCql(a)
 
-  All the production code still uses com.evolutiongaming.scassandra.syntax.*.
+  implicit class ScassandraStatementOps[S <: Statement[S]](val self: S) extends AnyVal {
 
-  For better ergonomics and following existing usage, it is proposed to keep toCql syntax in
-  com.evolutiongaming.scassandra.syntax.*, undeprecate related classes
-  and deprecate the unused alternative (com.evolutiongaming.scassandra.ToCql.implicits.*).
-   */
-  @nowarn("cat=deprecation")
-  implicit def toCqlOps[A](a: A): ToCql.Ops.IdOps[A] = new ToCql.Ops.IdOps(a)
-
-  implicit class ScassandraStatementOps(val self: Statement) extends AnyVal {
-
-    def trace(enable: Boolean): Statement = {
-      if (enable) self.enableTracing()
-      else self.disableTracing()
-    }
+    def trace(enable: Boolean): S = self.setTracing(enable)
   }
 
-  implicit class ScassandraUpdateSyntax[D <: GettableData & SettableData[D]](val data: D) extends AnyVal {
+  implicit class ScassandraUpdateSyntax[D <: GettableByName & SettableByName[D]](val data: D) extends AnyVal {
 
     def update[A](
       value: A,
@@ -193,6 +129,5 @@ object syntax {
     ): D = {
       update(data, idx, value)
     }
-
   }
 }

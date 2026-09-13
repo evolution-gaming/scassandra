@@ -1,7 +1,7 @@
 package com.evolutiongaming.scassandra
 
 import cats.Functor
-import com.datastax.driver.core.GettableByNameData
+import com.datastax.oss.driver.api.core.data.GettableByName
 
 /**
  * Reconstructs `A` from a row received from Cassandra.
@@ -29,7 +29,7 @@ trait DecodeRow[A] {
    * Note, that the method might throw an exception if the required fields are not found
    * in the row passed as `data` argument.
    */
-  def apply(data: GettableByNameData): A
+  def apply(data: GettableByName): A
 }
 
 object DecodeRow {
@@ -47,11 +47,11 @@ object DecodeRow {
     name: String,
   )(implicit
     decode: DecodeByName[A],
-  ): DecodeRow[A] = (data: GettableByNameData) => decode(data, name)
+  ): DecodeRow[A] = (data: GettableByName) => decode(data, name)
 
   object Ops {
 
-    implicit class GettableByNameDataOps(val self: GettableByNameData) extends AnyVal {
+    implicit class GettableByNameOps(val self: GettableByName) extends AnyVal {
 
       def decode[A](
         implicit
@@ -62,6 +62,6 @@ object DecodeRow {
 
   implicit class DecodeRowOps[A](val self: DecodeRow[A]) extends AnyVal {
 
-    def map[B](f: A => B): DecodeRow[B] = (data: GettableByNameData) => f(self(data))
+    def map[B](f: A => B): DecodeRow[B] = (data: GettableByName) => f(self(data))
   }
 }

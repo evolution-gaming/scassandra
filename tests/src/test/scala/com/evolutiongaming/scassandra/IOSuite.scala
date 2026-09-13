@@ -2,7 +2,6 @@ package com.evolutiongaming.scassandra
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import com.evolutiongaming.scassandra.util.FromGFuture
 import org.scalatest.Succeeded
 
 import scala.concurrent.duration.*
@@ -12,7 +11,6 @@ object IOSuite {
   val Timeout: FiniteDuration = 10.seconds
 
   implicit val executor: ExecutionContextExecutor = ExecutionContext.global
-  implicit val fromGFutureIO: FromGFuture[IO] = FromGFuture.lift1[IO]
 
   def runIO[A](io: IO[A], timeout: FiniteDuration = Timeout): Future[Succeeded.type] = {
     io.timeout(timeout).as(Succeeded).unsafeToFuture()

@@ -3,7 +3,8 @@ package com.evolutiongaming.scassandra
 import cats.effect.unsafe.implicits.global
 import cats.effect.{IO, Ref, Resource}
 import cats.syntax.all.*
-import com.datastax.driver.core.*
+import com.datastax.oss.driver.api.core.cql.{AsyncResultSet, BoundStatement, PreparedStatement, Statement}
+import com.datastax.oss.driver.api.core.{ConsistencyLevel, DefaultConsistencyLevel}
 import com.evolutiongaming.catshelper.{Log, LogOf}
 import org.scalatest.Succeeded
 import org.scalatest.funsuite.AsyncFunSuite
@@ -105,14 +106,14 @@ class CassandraHealthCheckSpec extends AsyncFunSuite {
 
     val program = for {
       session <- IO(new SessionMock)
-      statement <- CassandraHealthCheck.Statement.of[IO](session, ConsistencyLevel.LOCAL_QUORUM)
+      statement <- CassandraHealthCheck.Statement.of[IO](session, DefaultConsistencyLevel.LOCAL_QUORUM)
       _ <- statement
       executed <- session.executed.get
       prepared <- session.prepared.get
     } yield {
       assert(prepared == List("SELECT now() FROM system.local"))
-      assert(executed.map(_.getConsistencyLevel) == List(ConsistencyLevel.LOCAL_QUORUM))
-      assert(executed.map(_.asInstanceOf[BoundStatement].preparedStatement()) ==
+      assert(executed.map(_.getConsistencyLevel) == List(DefaultConsistencyLevel.LOCAL_QUORUM))
+      assert(executed.map(_.asInstanceOf[BoundStatement].getPreparedStatement) ==
         List(session.preparedStatement))
     }
 
@@ -126,7 +127,10 @@ class CassandraHealthCheckSpec extends AsyncFunSuite {
     val program = for {
       session <- IO(new SessionMock)
       healthCheck =
-        CassandraHealthCheck.of[IO](Resource.pure[IO, CassandraSession[IO]](session), ConsistencyLevel.ONE)
+        CassandraHealthCheck.of[IO](
+          Resource.pure[IO, CassandraSession[IO]](session),
+          DefaultConsistencyLevel.ONE,
+        )
       error <- healthCheck.use(_.error)
       prepared <- session.prepared.get
     } yield {
@@ -141,27 +145,23 @@ class CassandraHealthCheckSpec extends AsyncFunSuite {
 
     val prepared: Ref[IO, List[String]] = Ref.unsafe[IO, List[String]](Nil)
 
-    val executed: Ref[IO, List[Statement]] = Ref.unsafe[IO, List[Statement]](Nil)
+    val executed: Ref[IO, List[Statement[?]]] = Ref.unsafe[IO, List[Statement[?]]](Nil)
 
     lazy val preparedStatement: PreparedStatement = ProxyMock[PreparedStatement] {
-      case ("getVariables", Nil) => ColumnDefinitionsMock.empty
-      case ("getPreparedId", Nil) => PreparedIdMock.empty
-      case ("getConsistencyLevel", Nil) => null
-      case ("getSerialConsistencyLevel", Nil) => null
-      case ("isTracing", Nil) => Boolean.box(false)
-      case ("getRetryPolicy", Nil) => null
-      case ("getOutgoingPayload", Nil) => null
-      case ("getIncomingPayload", Nil) => null
-      case ("getCodecRegistry", Nil) => CodecRegistry.DEFAULT_INSTANCE
-      case ("isIdempotent", Nil) => null
-      case ("bind", Nil) => new BoundStatement(preparedStatement)
+      case ("bind", _) => bound(null)
+    }
+
+    private def bound(consistencyLevel: ConsistencyLevel): BoundStatement = ProxyMock[BoundStatement] {
+      case ("setConsistencyLevel", List(consistencyLevel: ConsistencyLevel)) => bound(consistencyLevel)
+      case ("getConsistencyLevel", Nil) => consistencyLevel
+      case ("getPreparedStatement", Nil) => preparedStatement
     }
 
     override def prepare(query: String): IO[PreparedStatement] = {
       prepared.update(_ :+ query).as(preparedStatement)
     }
 
-    override def execute(statement: Statement): IO[ResultSet] = {
+    override def execute(statement: Statement[?]): IO[AsyncResultSet] = {
       executed.update(_ :+ statement).as(ResultSetMock())
     }
   }

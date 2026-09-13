@@ -1,7 +1,7 @@
 import Dependencies.*
 
 ThisBuild / versionScheme := Some("early-semver")
-ThisBuild / versionPolicyIntention := Compatibility.BinaryCompatible
+ThisBuild / versionPolicyIntention := Compatibility.None
 
 def crossSettings[T](scalaVersion: String, if3: Seq[T], if2: Seq[T]): Seq[T] =
   CrossVersion.partialVersion(scalaVersion) match {
@@ -82,18 +82,8 @@ lazy val scassandra = (project in file("scassandra"))
       nel,
       `cassandra-driver`,
       jffi,
-      Netty.common,
-      Netty.codec,
-      Netty.handler,
-      Jackson.core,
-      Jackson.databind,
-      guava,
-      `executor-tools`,
       Pureconfig.cats,
     ),
-    // Guava major bump is a security fix. The only Guava type in the public API is
-    // `ListenableFuture`, which is unchanged since 19.0.
-    versionPolicyIgnored += "com.google.guava" % "guava",
   )
   .settings(
     libraryDependencies ++= crossSettings(
