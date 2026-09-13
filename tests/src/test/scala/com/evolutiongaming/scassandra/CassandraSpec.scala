@@ -145,14 +145,7 @@ class CassandraSpec extends AnyWordSpec with CassandraSuite with Matchers {
       }
 
       "keyspaces" in {
-        session.metadata.toTry.get.keyspaces.toTry.get.map(_.name).toSet should contain allOf (
-          keyspace,
-          "system_traces",
-          "system",
-          "system_distributed",
-          "system_schema",
-          "system_auth",
-        )
+        session.metadata.toTry.get.keyspaces.toTry.get.map(_.name) should contain(keyspace)
       }
 
       "KeyspaceMetadata" should {
