@@ -26,14 +26,31 @@ object syntax {
      * The next page is fetched in the background, while the rows of the current page are
      * processed.
      *
-     * Note, that the pages of [[AsyncResultSet]] can be iterated only once, so the stream
-     * should be consumed once as well.
+     * WARNING: do not reuse the result set, i.e. consume the stream only once, and do not
+     * create several streams from the same result set or read its rows otherwise.
+     *
+     * The rows of the current page can be read only once, as
+     * [[AsyncResultSet.currentPage]] returns the same iterator each time, while the
+     * following pages are fetched from the server again on each consumption. So a
+     * repeated consumption silently skips the rows of the current page already read, and
+     * returns the following pages in full, i.e. it returns no rows at all for a
+     * single-page result. The same applies to the rows read before creating the stream,
+     * e.g. with `one()`.
+     *
+     * Use `executeStream` of [[CassandraSession]] for a stream, which can be consumed
+     * many times, as it executes the statement on each consumption.
      */
     def stream[F[_]: Async]: Stream[F, Row] = AsyncResultSetStream(self)
   }
 
   implicit class ScassandraSessionStreamOps[F[_]](val self: CassandraSession[F]) extends AnyVal {
 
+    /**
+     * Executes the statement and streams the rows of all the pages.
+     *
+     * The statement is executed on each consumption of the stream, so the stream can be
+     * consumed many times, unlike the stream of an [[AsyncResultSet]].
+     */
     def executeStream(
       statement: Statement[?],
     )(implicit
@@ -45,6 +62,9 @@ object syntax {
       } yield row
     }
 
+    /**
+     * Same as `executeStream` for a statement, for a plain query.
+     */
     def executeStream(
       query: String,
     )(implicit
@@ -202,20 +222,23 @@ object syntax {
       } yield result
     }
 
+    // fetches the next page in the background while the current one is folded; the fetch is
+    // tied to a resource, so it is cancelled whenever it is not needed: on early stop, on
+    // failure of the fold, or on cancellation, otherwise the driver request would be left running
     private def foldAndFetchNext[F[_]: Async, L, R](
       resultSet: AsyncResultSet,
       rows: List[Row],
       state: L,
       step: Step[F, L, R],
     ): F[Iteration[L, R]] = {
-      for {
-        fetching <- FromCompletionStage { resultSet.fetchNextPage() }.start
-        result <- rows.foldWhileM(state)(step)
-        iteration <- result match {
-          case Left(state) => fetching.joinWithNever.map { next => (next, state).asLeft[Either[L, R]] }
-          case Right(result) => fetching.cancel.as(result.asRight[L].asRight[(AsyncResultSet, L)])
+      FromCompletionStage { resultSet.fetchNextPage() }.background.use { fetching =>
+        rows.foldWhileM(state)(step).flatMap {
+          case Left(state) =>
+            fetching.flatMap(_.embedNever).map { next => (next, state).asLeft[Either[L, R]] }
+          case Right(result) =>
+            result.asRight[L].asRight[(AsyncResultSet, L)].pure[F]
         }
-      } yield iteration
+      }
     }
   }
 }

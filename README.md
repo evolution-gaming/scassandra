@@ -128,7 +128,9 @@ mind the following differences:
   configuration loader, instead of `CassandraClusterOf.addClusterJObserveHook`.
 * **The keyspace of a session is fixed**, set it with `basic.session-keyspace` instead of `connect(keyspace)`.
 * **Results are paged asynchronously.** `execute` returns the driver `AsyncResultSet`, use `stream` or
-  `executeStream` to read all the pages.
+  `executeStream` to read all the pages. Do not reuse an `AsyncResultSet`: the rows of its current page can be
+  read only once, so a second stream of it silently misses them, while `executeStream` executes the statement
+  again on each consumption.
 * **The driver types are used directly**, e.g. `ConsistencyLevel`, `Metadata`, `CqlDuration`,
   `java.time.LocalDate`, `CqlIdentifier`. The codecs of the driver could be used with `DecodeByName.fromCodec`,
   `fromClass` and `fromGenericType`, and similar methods of the other type classes.
