@@ -35,3 +35,110 @@ addSbtPlugin("com.evolution" % "sbt-artifactory-plugin" % "0.0.2")
 
 libraryDependencies += "com.evolutiongaming" %% "scassandra" % "3.2.1"
 ```
+
+## scassandra-v4
+
+`scassandra-v4` is a thin wrapper over the [Java driver 4](https://github.com/apache/cassandra-java-driver).
+It is published separately, under a new organization and package, so both versions could be used in the same
+application during the migration.
+
+```scala
+libraryDependencies += "com.evolution" %% "scassandra-v4" % "<version>"
+
+// translation of the configuration of scassandra for the Java driver 3, depends on both versions
+libraryDependencies += "com.evolution" %% "scassandra-v4-compat" % "<version>"
+```
+
+### Example
+
+```scala
+import cats.effect.IO
+import com.evolution.scassandra._
+import com.evolution.scassandra.syntax._
+import com.evolutiongaming.catshelper.LogOf
+import com.typesafe.config.ConfigFactory
+
+implicit val logOf: LogOf[IO] = LogOf.empty[IO]
+
+val config = CassandraConfig.fromConfig(ConfigFactory.load(), "my-service.cassandra").fold(
+  failures => throw new IllegalArgumentException(failures.prettyPrint()),
+  identity,
+)
+
+val names = CassandraSession.make[IO](config).use { session =>
+  session.executeStream("SELECT name FROM users").map(_.decode[String]("name")).toList
+}
+```
+
+### Configuration
+
+The configuration is the configuration of the Java driver 4
+([reference](https://docs.datastax.com/en/developer/java-driver/4.17/manual/core/configuration/reference/)),
+which could be read from any path, so an application could have several sessions with different
+configurations:
+
+```hocon
+my-service.cassandra {
+  basic.contact-points = ["host1:9042", "host2:9042"]
+  basic.load-balancing-policy.local-datacenter = "dc1"
+}
+```
+
+* `CassandraConfig.fromConfig(config)` reads the default path of the driver, `datastax-java-driver`;
+* `CassandraConfig.fromConfig(config, "my-service.cassandra")` reads the given path;
+* `ConfigReader[CassandraConfig]` reads it with pureconfig.
+
+The configuration of scassandra for the Java driver 3 could be kept as is, and moved to the configuration of the
+driver 4 gradually, under the `driver` key:
+
+```hocon
+my-service.cassandra {
+  contact-points = ["host1", "host2"]
+  query.consistency = "LOCAL_QUORUM"
+
+  driver {
+    basic.request.timeout = 3 seconds
+  }
+}
+```
+
+`scassandra-v4-compat` reads and translates it, using the reader of scassandra for the Java driver 3, so the
+values are interpreted exactly as before:
+* `CassandraConfigCompat.fromLegacyConfig(config, "my-service.cassandra")` reads it;
+* `CassandraConfigCompat.legacyConfigReader` reads it with pureconfig;
+* `CassandraConfigCompat.fromV3(config, driverOverrides)` translates the case class of scassandra for the Java
+  driver 3.
+
+See [the translation of the legacy configuration](docs/legacy-config-translation.md) for the details on how
+each key is translated, and which keys have no equivalent.
+
+### Migrating from scassandra
+
+Most of the API is kept: `CassandraSession`, `DecodeByName`, `DecodeByIdx`, `DecodeRow`, `EncodeByName`,
+`EncodeByIdx`, `EncodeRow`, `UpdateByName`, `UpdateByIdx`, `UpdateRow`, `ToCql`, `TableName`,
+`ReplicationStrategyConfig`, `CreateKeyspaceIfNotExists`, `CassandraHealthCheck`, `NextHostRetryPolicy` and the
+`syntax` object. Replace `com.evolutiongaming.scassandra` with `com.evolution.scassandra` in the imports, and
+mind the following differences:
+
+* **Statements are immutable.** `bind().encode("id", id)` returns a new statement, which should be executed,
+  while the original one stays unchanged. Code ignoring the returned statement compiles, but loses the values.
+* **There is no cluster.** A session of the driver 4 holds the connections and the metadata of the whole
+  cluster, so `CassandraCluster` and `CassandraClusterOf` are replaced with `CassandraSession.make`. Use
+  `CassandraSession.make(builder)` to customize the session, e.g. to register listeners, codecs or a custom
+  configuration loader, instead of `CassandraClusterOf.addClusterJObserveHook`.
+* **The keyspace of a session is fixed**, set it with `basic.session-keyspace` instead of `connect(keyspace)`.
+* **Results are paged asynchronously.** `execute` returns the driver `AsyncResultSet`, use `stream` or
+  `executeStream` to read all the pages.
+* **The driver types are used directly**, e.g. `ConsistencyLevel`, `Metadata`, `CqlDuration`,
+  `java.time.LocalDate`, `CqlIdentifier`. The codecs of the driver could be used with `DecodeByName.fromCodec`,
+  `fromClass` and `fromGenericType`, and similar methods of the other type classes.
+* **The request timeout** applies to the whole request, including retries and speculative executions.
+* Resources are created with `make` instead of `of`, i.e. `CassandraSession.make`, `CassandraHealthCheck.make`.
+* Removed:
+  * `init`, `newSession` and `state`/`stateSnapshot` of the session, use `session.unwrap` for the driver features
+    not covered by the wrapper, e.g. `getMetadata.getNodes` and `Node.getOpenConnections`;
+  * the metadata wrappers, use the driver `Metadata` returned by `session.metadata`;
+  * `execute(query, values*)`, use `SimpleStatement.newInstance(query, values*)`;
+  * `trace`, use `setTracing` of the statement;
+  * `FromGFuture`, the driver 4 uses `CompletionStage`;
+  * the configuration case classes, e.g. `PoolingConfig` and `QueryConfig`, use the configuration of the driver.

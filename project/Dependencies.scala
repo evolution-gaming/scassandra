@@ -3,12 +3,15 @@ import sbt.*
 object Dependencies {
 
   val `cassandra-driver` = "com.datastax.cassandra" % "cassandra-driver-core" % "3.11.5"
-  // Override the version coming with the Cassandra driver to the version,
+
+  // Java driver 4, used by scassandra-v4
+  val `java-driver-core` = "org.apache.cassandra" % "java-driver-core" % "4.19.4"
+  // Override the version coming with the Cassandra driver (both 3 and 4, via jnr-posix) to the version,
   // which doesn't use JDK's `Unsafe`:
   // https://github.com/jnr/jffi/issues/165#issuecomment-3444932263
   //
-  // when updating, make sure it is compatible with the driver version used
-  // TODO: remove explicit dependency when driver 3 support dropped
+  // when updating, make sure it is compatible with the driver versions used
+  // TODO: remove explicit dependency when both drivers come with a version not using `Unsafe`
   val jffi = "com.github.jnr" % "jffi" % "1.3.14"
 
   // The Cassandra driver 3 pulls in outdated Netty, Jackson and Guava versions with known CVEs.
