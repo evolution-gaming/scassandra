@@ -88,6 +88,9 @@ my-service.cassandra {
 * `CassandraConfig.fromConfig(config, "my-service.cassandra")` reads the given path;
 * `ConfigReader[CassandraConfig]` reads it with pureconfig.
 
+The missing options get the defaults of the Java driver 4, which differ from the defaults of scassandra for the
+Java driver 3, e.g. a 2s request timeout instead of 12s.
+
 The configuration of scassandra for the Java driver 3 could be kept as is, and moved to the configuration of the
 driver 4 gradually, under the `driver` key:
 
@@ -103,11 +106,17 @@ my-service.cassandra {
 ```
 
 `scassandra-v4-compat` reads and translates it, using the reader of scassandra for the Java driver 3, so the
-values are interpreted exactly as before:
+values are interpreted exactly as before, and the missing keys get the defaults of scassandra for the Java
+driver 3, not of the Java driver 4:
 * `CassandraConfigCompat.fromLegacyConfig(config, "my-service.cassandra")` reads it;
 * `CassandraConfigCompat.legacyConfigReader` reads it with pureconfig;
 * `CassandraConfigCompat.fromV3(config, driverOverrides)` translates the case class of scassandra for the Java
   driver 3.
+
+Once all the keys are moved to `driver`, read it with `CassandraConfig.fromConfig(config, "my-service.cassandra.driver")`
+and drop `scassandra-v4-compat`. Mind that the options missing under `driver` then get the defaults of the Java
+driver 4 instead of the defaults of scassandra for the Java driver 3, so set every option which should keep its
+previous value, e.g. `basic.request.timeout = 12 seconds`.
 
 See [the translation of the legacy configuration](docs/legacy-config-translation.md) for the details on how
 each key is translated, and which keys have no equivalent.

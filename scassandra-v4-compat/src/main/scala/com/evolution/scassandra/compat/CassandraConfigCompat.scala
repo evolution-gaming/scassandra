@@ -25,6 +25,11 @@ object CassandraConfigCompat {
   /**
    * Translates the configuration of scassandra for the Java driver 3.
    *
+   * The fields keep their values, including the defaults of scassandra for the Java
+   * driver 3, which differ from the defaults of the Java driver 4, e.g. a 12s request
+   * timeout instead of 2s. Only the options not covered by the translation get the
+   * defaults of the Java driver 4.
+   *
    * @param config
    *   configuration of scassandra for the Java driver 3
    * @param driverOverrides
@@ -43,11 +48,16 @@ object CassandraConfigCompat {
    * translated one.
    *
    * The configuration of scassandra for the Java driver 3 is read by its own reader, so
-   * the values are interpreted exactly as before.
+   * the values are interpreted exactly as before, and the missing keys get the defaults
+   * of scassandra for the Java driver 3, e.g. a 12s request timeout instead of the 2s
+   * default of the Java driver 4.
    *
    * Allows keeping the existing configuration as is, while moving to the configuration of
    * the driver 4 gradually. Once the migration is complete, read the configuration with
-   * `com.evolution.scassandra.CassandraConfig.fromConfig(config, "<path>.driver")`.
+   * `com.evolution.scassandra.CassandraConfig.fromConfig(config, "<path>.driver")`. Note,
+   * that it applies the defaults of the Java driver 4 to the options missing under
+   * `<path>.driver`, so set every option which should keep the value it had with
+   * scassandra for the Java driver 3.
    */
   def fromLegacyConfig(config: Config, path: String): Either[ConfigReaderFailures, CassandraConfig] = {
     for {
@@ -58,7 +68,7 @@ object CassandraConfigCompat {
 
   /**
    * Same as [[fromLegacyConfig]], for reading the configuration with pureconfig at any
-   * path.
+   * path, with the defaults of scassandra for the Java driver 3 as well.
    */
   val legacyConfigReader: ConfigReader[CassandraConfig] = ConfigReader.fromCursor { cursor =>
     for {

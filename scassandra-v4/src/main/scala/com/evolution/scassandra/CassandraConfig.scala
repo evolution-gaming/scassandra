@@ -49,7 +49,10 @@ object CassandraConfig {
   val DefaultPath: String = DefaultDriverConfigLoader.DEFAULT_ROOT_PATH
 
   /**
-   * The defaults of the driver
+   * The defaults of the Java driver 4, i.e. its `reference.conf`.
+   *
+   * These differ from the defaults of scassandra for the Java driver 3, e.g. a 2s request
+   * timeout instead of 12s, see `docs/legacy-config-translation.md`.
    */
   val Default: CassandraConfig = CassandraConfig(ConfigFactory.empty())
 
@@ -62,6 +65,10 @@ object CassandraConfig {
   /**
    * Reads the configuration of the driver, the cursor should point to the
    * `datastax-java-driver` section or its equivalent.
+   *
+   * The missing options get the defaults of the Java driver 4, see [[Default]]. Use
+   * `scassandra-v4-compat` to read the configuration of scassandra for the Java driver 3
+   * with its defaults.
    */
   implicit val configReaderCassandraConfig: ConfigReader[CassandraConfig] = {
     ConfigReader[Config].map { driver => CassandraConfig(driver) }
@@ -69,6 +76,10 @@ object CassandraConfig {
 
   /**
    * Reads the configuration of the driver from the given path.
+   *
+   * The missing options get the defaults of the Java driver 4, see [[Default]]. Use
+   * `scassandra-v4-compat` to read the configuration of scassandra for the Java driver 3
+   * with its defaults.
    *
    * @param path
    *   path to the configuration of the driver, i.e. `datastax-java-driver` or

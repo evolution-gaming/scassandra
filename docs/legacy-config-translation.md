@@ -38,7 +38,9 @@ scassandra for the driver 3 in both cases.
   ```
   Once all the keys are moved to `driver`, read it directly with
   `CassandraConfig.fromConfig(config, "my-service.cassandra.driver")` from `scassandra-v4`, and drop the
-  `scassandra-v4-compat` dependency.
+  `scassandra-v4-compat` dependency. Mind that `fromConfig` applies the defaults of the driver 4 to the options
+  missing under `driver`, rather than the defaults of scassandra for the driver 3 (next point): set every option
+  which should keep its previous value, e.g. `basic.request.timeout = 12 seconds`.
 * **The defaults of scassandra for the driver 3 are applied to the missing keys**, so an untouched configuration
   behaves as before, not as the plain driver 4. For example, the request timeout is 12 seconds rather than the
   2 seconds default of the driver 4. Use `CassandraConfig.fromConfig` for a configuration of the driver 4 only,
