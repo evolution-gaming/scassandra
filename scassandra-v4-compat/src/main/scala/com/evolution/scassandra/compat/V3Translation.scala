@@ -383,7 +383,12 @@ private[compat] object V3Translation {
         case Compression.NONE => List.empty
         case compression => List(DefaultDriverOption.PROTOCOL_COMPRESSION -> compression.name.toLowerCase)
       }
-      (DefaultDriverOption.SESSION_NAME -> config.name) :: compression
+      // the driver 3 named the clusters `<name>-<id>`, so the default name is left to the driver 4,
+      // which names the sessions s0, s1, etc., instead of giving the same name to all of them
+      val name =
+        if (config.name == CassandraConfigV3.Default.name) List.empty
+        else List(DefaultDriverOption.SESSION_NAME -> config.name)
+      name ++ compression
     }
 
     // TODO: discuss if connections-per-host-max is the right value for the fixed pool size

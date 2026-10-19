@@ -2,6 +2,8 @@ package com.evolution.scassandra.compat
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
+import com.datastax.oss.driver.api.core.config.DriverExecutionProfile
+import com.datastax.oss.driver.internal.core.loadbalancing.BasicLoadBalancingPolicy
 import com.dimafeng.testcontainers.CassandraContainer
 import com.evolution.scassandra.CassandraSession
 import com.evolutiongaming.nel.Nel
@@ -70,5 +72,25 @@ class TwoDcSessionSpec extends AnyFunSuite with Matchers with BeforeAndAfterAll 
     }
 
     now.unsafeRunSync() should not be empty
+  }
+
+  test("translated driver 3 config takes the local DC of the first configured contact point") {
+    def localDc(contactPoints: Nel[String]): Option[String] = {
+      val translated = CassandraConfigCompat
+        .fromV3(configV3.copy(contactPoints = contactPoints))
+        .fold(failures => fail(failures.prettyPrint()), identity)
+      val localDc = CassandraSession.make[IO](translated.config).use { session =>
+        IO {
+          session.unwrap.getContext.getLoadBalancingPolicy(DriverExecutionProfile.DEFAULT_NAME) match {
+            case policy: BasicLoadBalancingPolicy => Option(policy.getLocalDatacenter)
+            case _ => None
+          }
+        }
+      }
+      localDc.unsafeRunSync()
+    }
+
+    localDc(Nel(ip(nodes.head), ip(nodes(1)))) shouldEqual Some("dc1")
+    localDc(Nel(ip(nodes(1)), ip(nodes.head))) shouldEqual Some("dc2")
   }
 }

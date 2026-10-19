@@ -24,7 +24,7 @@ class CassandraConfigCompatSpec extends AnyFunSuite with Matchers with EitherVal
     val profile = profileOf(config)
 
     config.warnings shouldEqual List.empty
-    profile.getString(SESSION_NAME) shouldEqual "cluster"
+    profile.isDefined(SESSION_NAME) shouldEqual false
     profile.getStringList(CONTACT_POINTS).asScala shouldEqual List("127.0.0.1:9042")
     profile.isDefined(PROTOCOL_VERSION) shouldEqual false
     profile.isDefined(PROTOCOL_COMPRESSION) shouldEqual false

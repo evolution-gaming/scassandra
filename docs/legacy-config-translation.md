@@ -70,7 +70,7 @@ Status:
 
 | Legacy key | Legacy default | Driver 4 option | Status | Notes |
 |---|---|---|---|---|
-| `name` | `cluster` | `basic.session-name` | Approximated | Used as a prefix of the driver logs and metrics. scassandra for the driver 3 used `<name>-<id>` as the cluster name, the cluster name is now read from the server: `session.metadata.map(_.getClusterName)`. |
+| `name` | `cluster` | `basic.session-name` | Approximated | Used as a prefix of the driver logs and metrics. scassandra for the driver 3 used `<name>-<id>` as the cluster name, so the default name is not translated, and the driver 4 names the sessions `s0`, `s1`, etc. Give the sessions of one application different names. The cluster name is now read from the server: `session.metadata.map(_.getClusterName)`. |
 | `port` | `9042` | `basic.contact-points` | Exact | Appended to the contact points without a port. |
 | `contact-points` | `["127.0.0.1"]` | `basic.contact-points` | Exact | A list or a string, separated by `,` or `;`. Not set if a cloud secure connect bundle is configured, either in the legacy or in the driver configuration. |
 | `cloud-secure-connect-bundle.file` | not set | `basic.cloud.secure-connect-bundle` | Exact | An empty value is treated as not set. Preferred over `url`. |
