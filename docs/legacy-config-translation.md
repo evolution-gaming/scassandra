@@ -102,8 +102,8 @@ Status:
 | `query.metadata` | `true` | `advanced.metadata.schema.enabled`, `advanced.metadata.token-map.enabled` | Approximated | Enables or disables both, as in the driver 3. Token-aware routing requires the token map. |
 | `query.re-prepare-on-up` | `true` | `advanced.prepared-statements.reprepare-on-up.enabled` | Exact | |
 | `query.prepare-on-all-hosts` | `true` | `advanced.prepared-statements.prepare-on-all-nodes` | Exact | |
-| `reconnection.min-delay` | `1s` | `advanced.reconnection-policy.base-delay` | Exact | With `ExponentialReconnectionPolicy`. |
-| `reconnection.max-delay` | `10min` | `advanced.reconnection-policy.max-delay` | Exact | The default of the driver 4 is `60s`. |
+| `reconnection.min-delay` | `1s` | `advanced.reconnection-policy.base-delay` | Exact | With `ExponentialReconnectionPolicy`, the only policy scassandra for the driver 3 used. The driver 4 adds a random jitter of +/-15% to each delay, and uses the policy for the control connection as well. Another policy can be set under `driver`, e.g. `advanced.reconnection-policy { class = ConstantReconnectionPolicy, base-delay = 5 seconds }`: set `base-delay` along with the class, otherwise the translated `min-delay` is used, as `ConstantReconnectionPolicy` only uses `base-delay`. |
+| `reconnection.max-delay` | `10min` | `advanced.reconnection-policy.max-delay` | Exact | The default of the driver 4 is `60s`. Ignored by `ConstantReconnectionPolicy`, see `reconnection.min-delay`. |
 | `socket.connect-timeout` | `5s` | `advanced.connection.connect-timeout` | Exact | |
 | `socket.read-timeout` | `12s` | `basic.request.timeout` | Approximated | The read timeout of the driver 3 applied to a single attempt on a single node, the request timeout of the driver 4 applies to the whole request, including retries and speculative executions. The default of the driver 4 is `2s`. |
 | `socket.keep-alive` | not set | `advanced.socket.keep-alive` | Exact | |

@@ -390,6 +390,45 @@ class CassandraConfigCompatSpec extends AnyFunSuite with Matchers with EitherVal
     profile.getStringList(CONTACT_POINTS).asScala shouldEqual List("host1:9042")
   }
 
+  test("reconnection policy can be replaced in the driver configuration") {
+    val profile = profileOf(
+      legacy(
+        """
+          |reconnection { min-delay = 2s, max-delay = 3min }
+          |driver.advanced.reconnection-policy {
+          |  class = ConstantReconnectionPolicy
+          |  base-delay = 5s
+          |}
+          |""".stripMargin,
+      ),
+    )
+
+    profile.getString(RECONNECTION_POLICY_CLASS) shouldEqual "ConstantReconnectionPolicy"
+    profile.getDuration(RECONNECTION_BASE_DELAY) shouldEqual Duration.ofSeconds(5)
+    // the driver configuration is merged key by key, so the translated keys it does not set stay
+    profile.getDuration(RECONNECTION_MAX_DELAY) shouldEqual Duration.ofMinutes(3)
+  }
+
+  test("replacing only the reconnection policy class keeps the translated delay") {
+    val profile = profileOf(
+      legacy("""reconnection.min-delay = 2s, driver.advanced.reconnection-policy.class = ConstantReconnectionPolicy"""),
+    )
+
+    profile.getString(RECONNECTION_POLICY_CLASS) shouldEqual "ConstantReconnectionPolicy"
+    profile.getDuration(RECONNECTION_BASE_DELAY) shouldEqual Duration.ofSeconds(2)
+  }
+
+  test("fromV3 can replace the reconnection policy with the driver overrides") {
+    val overrides = ConfigFactory.parseString(
+      "advanced.reconnection-policy { class = ConstantReconnectionPolicy, base-delay = 5s }",
+    )
+    val profile = profileOf(CassandraConfigCompat.fromV3(CassandraConfigV3.Default, overrides).value)
+
+    profile.getString(RECONNECTION_POLICY_CLASS) shouldEqual "ConstantReconnectionPolicy"
+    profile.getDuration(RECONNECTION_BASE_DELAY) shouldEqual Duration.ofSeconds(5)
+    profile.getDuration(RECONNECTION_MAX_DELAY) shouldEqual Duration.ofMinutes(10)
+  }
+
   test("fromV3 failures have relative paths") {
     val config = CassandraConfigV3.Default.copy(protocolVersion = Some(ProtocolVersion.V1))
 

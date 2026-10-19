@@ -3,6 +3,7 @@ package com.evolution.scassandra.compat
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption
+import com.datastax.oss.driver.internal.core.connection.ConstantReconnectionPolicy
 import com.dimafeng.testcontainers.CassandraContainer
 import com.evolution.scassandra.CassandraSession
 import com.evolutiongaming.nel.Nel
@@ -87,5 +88,35 @@ class CompatSessionSpec extends AnyFunSuite with Matchers with BeforeAndAfterAll
 
     translated.warnings.size shouldEqual 1
     program.unsafeRunSync() shouldEqual ((true, 4, Duration.ofSeconds(5), true))
+  }
+
+  test("session uses the reconnection policy set in the driver configuration") {
+    val hocon = ConfigFactory.parseString(
+      s"""
+         |cassandra {
+         |  contact-points = ["${ container.containerIpAddress }"]
+         |  port = ${ container.mappedPort(9042) }
+         |  driver.advanced.reconnection-policy {
+         |    class = ConstantReconnectionPolicy
+         |    base-delay = 5s
+         |  }
+         |}
+         |""".stripMargin,
+    )
+    val translated = CassandraConfigCompat.fromLegacyConfig(hocon, "cassandra").fold(
+      failures => fail(failures.prettyPrint()),
+      identity,
+    )
+    val program = CassandraSession.make[IO](translated.config).use { session =>
+      IO {
+        val policy = session.unwrap.getContext.getReconnectionPolicy
+        val node = session.unwrap.getMetadata.getNodes.values().iterator().next()
+        (policy, policy.newNodeSchedule(node).nextDelay())
+      }
+    }
+
+    val (policy, delay) = program.unsafeRunSync()
+    policy shouldBe a[ConstantReconnectionPolicy]
+    delay shouldEqual Duration.ofSeconds(5)
   }
 }
