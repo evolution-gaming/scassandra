@@ -2,7 +2,7 @@ package com.evolution.scassandra
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import com.datastax.oss.driver.api.core.cql.{Row, SimpleStatement}
+import com.datastax.oss.driver.api.core.cql.{PreparedStatement, Row, SimpleStatement}
 import com.datastax.oss.driver.api.core.data.{CqlDuration, SettableByName}
 import com.evolution.scassandra.CodecsIntegrationSpec.*
 import com.evolution.scassandra.syntax.*
@@ -185,6 +185,31 @@ class CodecsIntegrationSpec extends AnyFunSuite with CassandraSuite with Matcher
     program.unsafeRunSync()
   }
 
+  test("None encoded as unset keeps the stored value, None encoded as null removes it") {
+    val program = for {
+      prepared <- session.prepare(s"INSERT INTO $table (id, v_str) VALUES (?, ?)")
+      _ <- insertStr(prepared, UnsetRowId, Some(str))
+      _ <- insertStr(prepared, UnsetRowId, None)(EncodeByName.noneAsUnset)
+      _ <- insertStr(prepared, RemovedRowId, Some(str))
+      _ <- insertStr(prepared, RemovedRowId, None)
+      unset <- select(UnsetRowId)
+      _ = unset.decode[Option[String]]("v_str") shouldEqual Some(str)
+      removed <- select(RemovedRowId)
+      _ = removed.decode[Option[String]]("v_str") shouldEqual None
+    } yield ()
+    program.unsafeRunSync()
+  }
+
+  private def insertStr(
+    prepared: PreparedStatement,
+    id: Int,
+    value: Option[String],
+  )(implicit
+    encode: EncodeByName[Option[String]],
+  ): IO[Unit] = {
+    session.execute(prepared.bind().encode("id", id).encode("v_str", value)).void
+  }
+
   private def insertItem: String = s"INSERT INTO $table (id, v_str, v_int, v_strs) VALUES (?, ?, ?, ?)"
 }
 
@@ -196,6 +221,8 @@ object CodecsIntegrationSpec {
   val ItemRowId = 4
   val UpdatedItemRowId = 5
   val DiscardedItemRowId = 6
+  val UnsetRowId = 7
+  val RemovedRowId = 8
 
   val bool = true
   val str = "str"

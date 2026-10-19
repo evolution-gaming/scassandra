@@ -1,6 +1,7 @@
 package com.evolution.scassandra
 
 import cats.syntax.all.*
+import cats.{Contravariant, Functor}
 import com.datastax.oss.driver.api.core.`type`.codec.TypeCodecs
 import com.datastax.oss.driver.api.core.`type`.reflect.GenericType
 import com.datastax.oss.driver.api.core.`type`.{DataType, DataTypes}
@@ -11,7 +12,9 @@ import com.evolution.scassandra.syntax.*
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
+import java.nio.ByteBuffer
 import java.time.{Instant, LocalDate}
+import java.util.List as JavaList
 import scala.jdk.CollectionConverters.*
 
 class CodecsSpec extends AnyFunSuite with Matchers {
@@ -89,69 +92,157 @@ class CodecsSpec extends AnyFunSuite with Matchers {
   }
 
   test("noneAsUnset leaves the value as is") {
-    val encode = EncodeByName.noneAsUnset[String]
-    val data = encode(udtValue().encode("v_str", "str"), "v_str", None)
+    val byName = EncodeByName.noneAsUnset[String].apply(udtValue().encode("v_str", "str"), "v_str", None)
+    val byIdx = EncodeByIdx.noneAsUnset[String].apply(tupleValue().encodeAt(1, "str"), 1, None)
 
-    data.decode[String]("v_str") shouldEqual "str"
+    byName.decode[String]("v_str") shouldEqual "str"
+    byIdx.decodeAt[String](1) shouldEqual "str"
   }
 
-  test("encodeSome skips None") {
-    val data = udtValue().encode("v_str", "str").encodeSome("v_str", Option.empty[String])
+  test("encodeSome encodes Some and skips None") {
+    def data = udtValue().encode("v_str", "str").encode("v_int", 1)
 
-    data.decode[String]("v_str") shouldEqual "str"
+    data.encodeSome("v_str", "str2".some).decode[String]("v_str") shouldEqual "str2"
+    data.encodeSome("v_str", Option.empty[String]).decode[String]("v_str") shouldEqual "str"
+    data.encodeSome(Pair("str2", 2).some).decode[Pair] shouldEqual Pair("str2", 2)
+    data.encodeSome(Option.empty[Pair]).decode[Pair] shouldEqual Pair("str", 1)
+  }
+
+  test("null is decoded as returned by the driver, unless decoded as Option") {
+    val byName = udtValue()
+    val byIdx = tupleValue()
+
+    Option(byName.decode[String]("v_str")) shouldEqual None
+    Option(byName.decode[Instant]("v_instant")) shouldEqual None
+    Option(byName.decode[CqlDuration]("v_duration")) shouldEqual None
+    Option(byName.decode[LocalDate]("v_date")) shouldEqual None
+    byName.decode[Boolean]("v_bool") shouldEqual false
+    byName.decode[Int]("v_int") shouldEqual 0
+    byName.decode[Double]("v_double") shouldEqual 0.0
+    byName.decode[Set[String]]("v_strs") shouldEqual Set.empty
+    an[IllegalArgumentException] should be thrownBy byName.decode[BigDecimal]("v_decimal")
+    a[NullPointerException] should be thrownBy byName.decode[Array[Byte]]("v_bytes")
+    Option(byIdx.decodeAt[String](1)) shouldEqual None
+    byIdx.decodeAt[Int](3) shouldEqual 0
   }
 
   test("decoding bytes copies the remaining bytes only") {
-    val data = udtValue().encode("v_bytes", bytes)
-    val buffer = data.getByteBuffer("v_bytes")
-    buffer.get()
+    val byName = udtValue().encode("v_bytes", bytes)
+    val byIdx = tupleValue().encodeAt(10, bytes)
+    val bufferByName = skipFirstByte(byName.getByteBuffer("v_bytes"))
+    val bufferByIdx = skipFirstByte(byIdx.getByteBuffer(10))
 
-    DecodeByName[Array[Byte]].apply(data.setByteBuffer("v_bytes", buffer), "v_bytes").toList shouldEqual
+    DecodeByName[Array[Byte]].apply(
+      byName.setByteBuffer("v_bytes", bufferByName),
+      "v_bytes",
+    ).toList shouldEqual
+      bytes.toList.drop(1)
+    DecodeByIdx[Array[Byte]].apply(byIdx.setByteBuffer(10, bufferByIdx), 10).toList shouldEqual
       bytes.toList.drop(1)
   }
 
-  test("codecs from the driver") {
-    val decodeInt = DecodeByName.fromCodec(TypeCodecs.INT)
-    val encodeInt = EncodeByName.fromCodec(TypeCodecs.INT)
-    val decodeStr = DecodeByIdx.fromClass(classOf[String])
-    val encodeStr = EncodeByIdx.fromClass(classOf[String])
-    val listOfStr = GenericType.listOf(classOf[String])
-    val list = List("a", "b").asJava
+  test("codecs from the driver by name") {
+    val decodedInt = DecodeByName.fromCodec(TypeCodecs.INT)
+      .apply(EncodeByName.fromCodec(TypeCodecs.INT).apply(udtValue(), "v_int", Int.box(1)), "v_int")
+    val decodedStr = DecodeByName.fromClass(classOf[String])
+      .apply(EncodeByName.fromClass(classOf[String]).apply(udtValue(), "v_str", "str"), "v_str")
+    val decodedList = DecodeByName.fromGenericType(listOfStr)
+      .apply(EncodeByName.fromGenericType(listOfStr).apply(udtValue(), "v_list", strList), "v_list")
 
-    decodeInt(encodeInt(udtValue(), "v_int", Int.box(1)), "v_int") shouldEqual 1
-    decodeStr(encodeStr(tupleValue(), 1, "str"), 1) shouldEqual "str"
-    DecodeByName.fromGenericType(listOfStr)(
-      EncodeByName.fromGenericType(listOfStr)(udtValue(), "v_list", list),
-      "v_list",
-    ) shouldEqual list
+    decodedInt shouldEqual 1
+    decodedStr shouldEqual "str"
+    decodedList shouldEqual strList
+  }
+
+  test("codecs from the driver by index") {
+    val decodedInt = DecodeByIdx.fromCodec(TypeCodecs.INT)
+      .apply(EncodeByIdx.fromCodec(TypeCodecs.INT).apply(tupleValue(), 3, Int.box(1)), 3)
+    val decodedStr = DecodeByIdx.fromClass(classOf[String])
+      .apply(EncodeByIdx.fromClass(classOf[String]).apply(tupleValue(), 1, "str"), 1)
+    val decodedList = DecodeByIdx.fromGenericType(listOfStr)
+      .apply(EncodeByIdx.fromGenericType(listOfStr).apply(tupleValue(), 13, strList), 13)
+
+    decodedInt shouldEqual 1
+    decodedStr shouldEqual "str"
+    decodedList shouldEqual strList
   }
 
   test("DecodeRow and EncodeRow") {
-    implicit val encodeRow: EncodeRow[Pair] = new EncodeRow[Pair] {
-      override def apply[B <: SettableByName[B]](data: B, pair: Pair): B = {
-        data.encode("v_str", pair.str).encode("v_int", pair.int)
-      }
-    }
-    implicit val decodeRow: DecodeRow[Pair] = { data =>
-      Pair(data.decode[String]("v_str"), data.decode[Int]("v_int"))
-    }
-
     udtValue().encode(Pair("str", 1)).decode[Pair] shouldEqual Pair("str", 1)
+    DecodeRow[Int]("v_int").apply(udtValue().encode("v_int", 1)) shouldEqual 1
+    EncodeRow[Int]("v_int").apply(udtValue(), 1).decode[Int]("v_int") shouldEqual 1
+  }
+
+  test("map and contramap") {
+    DecodeByName[Int].map(_ + 1).apply(udtValue().encode("v_int", 1), "v_int") shouldEqual 2
+    DecodeByIdx[Int].map(_ + 1).apply(tupleValue().encodeAt(3, 1), 3) shouldEqual 2
     DecodeRow[Int]("v_int").map(_ + 1).apply(udtValue().encode("v_int", 1)) shouldEqual 2
-    EncodeRow[Int]("v_int").contramap[String](_.toInt).apply(udtValue(), "3").decode[Int]("v_int") shouldEqual
-      3
+    EncodeByName[Int].contramap[String](_.toInt).apply(
+      udtValue(),
+      "v_int",
+      "2",
+    ).decode[Int]("v_int") shouldEqual 2
+    EncodeByIdx[Int].contramap[String](_.toInt).apply(tupleValue(), 3, "2").decodeAt[Int](3) shouldEqual 2
+    EncodeRow[Int]("v_int").contramap[String](_.toInt).apply(udtValue(), "2").decode[Int]("v_int") shouldEqual
+      2
+    UpdateByName[Int].contramap[String](_.toInt).apply(
+      udtValue(),
+      "v_int",
+      "2",
+    ).decode[Int]("v_int") shouldEqual 2
+    UpdateByIdx[Int].contramap[String](_.toInt).apply(tupleValue(), 3, "2").decodeAt[Int](3) shouldEqual 2
+    UpdateRow[Pair].contramap[String](Pair(_, 1)).apply(udtValue(), "str").decode[Pair] shouldEqual
+      Pair("str", 1)
+  }
+
+  test("cats instances") {
+    val decodeByName = Functor[DecodeByName].map(DecodeByName[Int])(_ + 1)
+    val decodeByIdx = Functor[DecodeByIdx].map(DecodeByIdx[Int])(_ + 1)
+    val decodeRow = Functor[DecodeRow].map(DecodeRow[Int]("v_int"))(_ + 1)
+    val encodeByName = Contravariant[EncodeByName].contramap(EncodeByName[Int])((_: String).toInt)
+    val encodeByIdx = Contravariant[EncodeByIdx].contramap(EncodeByIdx[Int])((_: String).toInt)
+    val encodeRow = Contravariant[EncodeRow].contramap(EncodeRow[Int]("v_int"))((_: String).toInt)
+
+    decodeByName(udtValue().encode("v_int", 1), "v_int") shouldEqual 2
+    decodeByIdx(tupleValue().encodeAt(3, 1), 3) shouldEqual 2
+    decodeRow(udtValue().encode("v_int", 1)) shouldEqual 2
+    encodeByName(udtValue(), "v_int", "2").decode[Int]("v_int") shouldEqual 2
+    encodeByIdx(tupleValue(), 3, "2").decodeAt[Int](3) shouldEqual 2
+    encodeRow(udtValue(), "2").decode[Int]("v_int") shouldEqual 2
   }
 
   test("update syntax") {
     udtValue().update("v_int", 1).decode[Int]("v_int") shouldEqual 1
     tupleValue().updateAt(3, 1).decodeAt[Int](3) shouldEqual 1
-    UpdateByName[Int].contramap[String](_.toInt)(udtValue(), "v_int", "2").decode[Int]("v_int") shouldEqual 2
+    udtValue().update(Pair("str", 1)).decode[Pair] shouldEqual Pair("str", 1)
   }
 }
 
 object CodecsSpec {
 
   final case class Pair(str: String, int: Int)
+
+  object Pair {
+
+    implicit val encodeRowPair: EncodeRow[Pair] = new EncodeRow[Pair] {
+      override def apply[B <: SettableByName[B]](data: B, pair: Pair): B = {
+        data.encode("v_str", pair.str).encode("v_int", pair.int)
+      }
+    }
+
+    implicit val decodeRowPair: DecodeRow[Pair] = { data =>
+      Pair(data.decode[String]("v_str"), data.decode[Int]("v_int"))
+    }
+  }
+
+  private val listOfStr: GenericType[JavaList[String]] = GenericType.listOf(classOf[String])
+
+  private val strList: JavaList[String] = List("a", "b").asJava
+
+  private def skipFirstByte(buffer: ByteBuffer): ByteBuffer = {
+    val _ = buffer.get()
+    buffer
+  }
 
   private val columns: List[(String, DataType)] = List(
     "v_bool" -> DataTypes.BOOLEAN,

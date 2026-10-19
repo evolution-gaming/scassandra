@@ -11,6 +11,10 @@ import scala.jdk.CollectionConverters.*
 /**
  * Reconstruct `A` data type from a column stored in [[GettableByIndex]] at the given
  * index.
+ *
+ * Note, that a null value is decoded as returned by the driver, i.e. `null` for objects,
+ * zero or `false` for primitives and an empty set, while `BigDecimal` and `Array[Byte]`
+ * fail. Decode nullable columns as `Option[A]`.
  */
 trait DecodeByIdx[A] {
 
