@@ -15,13 +15,15 @@ import scala.jdk.OptionConverters.*
  * Load balancing policy of the configurations translated from scassandra for the Java
  * driver 3.
  *
- * The local DC is `basic.load-balancing-policy.local-datacenter` if set, otherwise the DC of
- * the first contact point, as chosen by `DCAwareRoundRobinPolicy` of the Java driver 3. If
- * the contact points are in different DCs, a warning is logged, while
+ * The local DC is `basic.load-balancing-policy.local-datacenter` if set, otherwise the DC
+ * of the first contact point, as chosen by `DCAwareRoundRobinPolicy` of the Java driver 3.
+ * If the contact points are in different DCs, a warning is logged, while
  * `DcInferringLoadBalancingPolicy` of the Java driver 4 fails.
  */
 class FirstContactPointDcLoadBalancingPolicy(driverContext: DriverContext, profileName: String)
 extends DefaultLoadBalancingPolicy(driverContext, profileName) {
+
+  import FirstContactPointDcLoadBalancingPolicy.*
 
   override protected def discoverLocalDc(nodes: JavaMap[UUID, Node]): Optional[String] = {
     new OptionalLocalDcHelper(context, profile, logPrefix)
@@ -40,22 +42,24 @@ extends DefaultLoadBalancingPolicy(driverContext, profileName) {
     }
     val otherDcs = contactPoints.filterNot { node => Option(node.getDatacenter).contains(localDc) }
     if (otherDcs.isEmpty) {
-      FirstContactPointDcLoadBalancingPolicy.log.info(s"[$logPrefix] Inferred local DC from contact points: $localDc")
+      log.info(s"[$logPrefix] Inferred local DC from contact points: $localDc")
     } else {
-      FirstContactPointDcLoadBalancingPolicy.log.warn(
+      log.warn(
         s"[$logPrefix] No local DC was set, using the DC of the first contact point: $localDc, " +
-          s"contact points in other DCs: ${ otherDcs.map(describe).mkString(", ") }; set $LocalDcOption explicitly",
+          s"contact points in other DCs: ${ otherDcs.map(describe).mkString(", ") }; set ${ LocalDcOption } explicitly",
       )
     }
     Some(localDc)
   }
 
-  private def describe(node: Node): String = s"${ node.getEndPoint } (${ Option(node.getDatacenter).getOrElse("unknown") })"
+  private def describe(node: Node): String =
+    s"${ node.getEndPoint } (${ Option(node.getDatacenter).getOrElse("unknown") })"
 
-  private def LocalDcOption: String = DefaultDriverOption.LOAD_BALANCING_LOCAL_DATACENTER.getPath
 }
 
 object FirstContactPointDcLoadBalancingPolicy {
 
   private val log: Logger = LoggerFactory.getLogger(classOf[FirstContactPointDcLoadBalancingPolicy])
+
+  private val LocalDcOption: String = DefaultDriverOption.LOAD_BALANCING_LOCAL_DATACENTER.getPath
 }
