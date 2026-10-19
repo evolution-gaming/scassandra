@@ -73,25 +73,50 @@ private[compat] object V3Translation {
       Key("pooling.remote.connections-per-host-max", Approximated, "becomes a fixed pool size"),
       Key("pooling.local.max-requests-per-connection", Approximated, "applies to all the connections"),
       Key("pooling.heartbeat-interval", Exact),
-      Key("pooling.local.connections-per-host-min", Ignored, "the pool has a fixed size"),
-      Key("pooling.remote.connections-per-host-min", Ignored, "the pool has a fixed size"),
+      Key(
+        "pooling.local.connections-per-host-min",
+        Ignored,
+        "the pool has a fixed size, set from `pooling.local.connections-per-host-max`; remove the key",
+      ),
+      Key(
+        "pooling.remote.connections-per-host-min",
+        Ignored,
+        "the pool has a fixed size, set from `pooling.remote.connections-per-host-max`; remove the key",
+      ),
       Key(
         "pooling.remote.max-requests-per-connection",
         Ignored,
-        "`pooling.local.max-requests-per-connection` applies to all the connections",
+        "`pooling.local.max-requests-per-connection` applies to all the connections; remove the key, or set " +
+          "`advanced.connection.max-requests-per-connection` under `driver`",
       ),
-      Key("pooling.local.new-connection-threshold", Ignored, "the pool has a fixed size"),
-      Key("pooling.remote.new-connection-threshold", Ignored, "the pool has a fixed size"),
+      Key(
+        "pooling.local.new-connection-threshold",
+        Ignored,
+        "the pool has a fixed size and does not grow; remove the key",
+      ),
+      Key(
+        "pooling.remote.new-connection-threshold",
+        Ignored,
+        "the pool has a fixed size and does not grow; remove the key",
+      ),
       Key(
         "pooling.pool-timeout",
         Ignored,
-        "requests are not queued by the pool, use `advanced.throttler` to limit the concurrency",
+        "requests do not wait for a busy or connecting node, the driver moves to the next node right away; " +
+          "the key is safe to remove, set `advanced.throttler` under `driver` only to limit the concurrency of " +
+          "the whole session",
       ),
-      Key("pooling.idle-timeout", Ignored, "idle connections are checked with heartbeats"),
+      Key(
+        "pooling.idle-timeout",
+        Ignored,
+        "idle connections are checked with heartbeats, see `pooling.heartbeat-interval`; remove the key",
+      ),
       Key(
         "pooling.max-queue-size",
         Ignored,
-        "requests are not queued by the pool, use `advanced.throttler` to limit the concurrency",
+        "requests are not queued for a busy or connecting node, the driver moves to the next node right away; " +
+          "the key is safe to remove, set `advanced.throttler` under `driver` only to limit the concurrency of " +
+          "the whole session",
       ),
       Key("query.consistency", Exact),
       Key("query.serial-consistency", Exact),
@@ -102,12 +127,12 @@ private[compat] object V3Translation {
       Key(
         "query.refresh-node-interval",
         Ignored,
-        "`query.refresh-node-list-interval` applies to all the topology events",
+        "`query.refresh-node-list-interval` applies to all the topology events; remove the key",
       ),
       Key(
         "query.max-pending-refresh-node-requests",
         Ignored,
-        "`query.max-pending-refresh-node-list-requests` applies to all the topology events",
+        "`query.max-pending-refresh-node-list-requests` applies to all the topology events; remove the key",
       ),
       Key("query.refresh-schema-interval", Exact),
       Key("query.max-pending-refresh-schema-requests", Exact),
@@ -138,12 +163,17 @@ private[compat] object V3Translation {
       ),
       Key("speculative-execution.delay", Exact),
       Key("speculative-execution.max-executions", Approximated, "the initial execution is counted as well"),
-      Key("log-queries", Approximated, "enables the request logger of the driver"),
+      Key(
+        "log-queries",
+        Approximated,
+        "enables the request logger of the driver for slow and failed requests",
+      ),
       Key("metrics", Approximated, "enables a fixed list of the driver metrics"),
       Key(
         "jmx-reporting",
         Ignored,
-        "the driver does not report metrics to JMX, use the metrics registry of the session instead",
+        "the driver does not report metrics to JMX; remove the key, and export the metrics registry of the " +
+          "session instead",
       ),
     )
   }
@@ -457,7 +487,8 @@ private[compat] object V3Translation {
       if (config.logQueries) {
         List(
           DefaultDriverOption.REQUEST_TRACKER_CLASSES -> List("RequestLogger").asJava,
-          DefaultDriverOption.REQUEST_LOGGER_SUCCESS_ENABLED -> Boolean.box(true),
+          // the driver 3 logged all the queries at DEBUG, while the driver 4 logs them at INFO
+          DefaultDriverOption.REQUEST_LOGGER_SUCCESS_ENABLED -> Boolean.box(false),
           DefaultDriverOption.REQUEST_LOGGER_SLOW_ENABLED -> Boolean.box(true),
           // the default threshold of the driver 3
           DefaultDriverOption.REQUEST_LOGGER_SLOW_THRESHOLD -> duration(5.seconds),

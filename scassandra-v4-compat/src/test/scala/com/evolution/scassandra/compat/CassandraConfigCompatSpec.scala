@@ -86,7 +86,7 @@ class CassandraConfigCompatSpec extends AnyFunSuite with Matchers with EitherVal
     profile.getDuration(SPECULATIVE_EXECUTION_DELAY) shouldEqual Duration.ofMillis(500)
     profile.getInt(SPECULATIVE_EXECUTION_MAX) shouldEqual 3
     profile.getStringList(REQUEST_TRACKER_CLASSES).asScala shouldEqual List("RequestLogger")
-    profile.getBoolean(REQUEST_LOGGER_SUCCESS_ENABLED) shouldEqual true
+    profile.getBoolean(REQUEST_LOGGER_SUCCESS_ENABLED) shouldEqual false
     profile.getBoolean(REQUEST_LOGGER_SLOW_ENABLED) shouldEqual true
     profile.getDuration(REQUEST_LOGGER_SLOW_THRESHOLD) shouldEqual Duration.ofSeconds(5)
     profile.getBoolean(REQUEST_LOGGER_ERROR_ENABLED) shouldEqual true
