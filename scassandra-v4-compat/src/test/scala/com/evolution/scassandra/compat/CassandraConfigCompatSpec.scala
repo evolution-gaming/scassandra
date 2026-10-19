@@ -524,6 +524,7 @@ object CassandraConfigCompatSpec {
       |}
       |""".stripMargin
 
+  // translates a v3 config given as HOCON, failing the test if the translation fails
   def legacy(hocon: String): TranslatedConfig = {
     legacyResult(ConfigFactory.parseString(hocon)).fold(
       failures => throw new AssertionError(failures.prettyPrint()),
@@ -531,28 +532,35 @@ object CassandraConfigCompatSpec {
     )
   }
 
+  // translates a v3 config given as HOCON, expecting the translation to fail
   def legacyFailure(hocon: String): ConfigReaderFailures = {
     legacyResult(ConfigFactory.parseString(hocon)).fold(identity, config => throw new AssertionError(config))
   }
 
+  // reads a fixture copied from the test resources of scassandra for the driver 3
   def fixtureConfig(name: String): Config = {
     ConfigFactory.parseResources(classOf[CassandraConfigCompatSpec], name)
   }
 
+  // translates a fixture; a fixture of one v3 section (e.g. `pooling.conf`) holds only the section contents,
+  // so `key` names the section to wrap them under with `atKey` (it does not read from the file at `key`)
   def legacyResource(name: String, key: String = ""): TranslatedConfig = {
     val config = fixtureConfig(name)
     val section = if (key.isEmpty) config else config.atKey(key)
     legacyResult(section).fold(failures => throw new AssertionError(failures.prettyPrint()), identity)
   }
 
+  // places the v3 config under `cassandra` and reads it from there, as a service would read it at its own path
   private def legacyResult(section: Config): Either[ConfigReaderFailures, TranslatedConfig] = {
     CassandraConfigCompat.fromLegacyConfig(section.atKey("cassandra"), "cassandra")
   }
 
+  // the driver 4 settings as the driver sees them, with its `reference.conf` defaults applied
   def profileOf(translated: TranslatedConfig): DriverExecutionProfile = {
     translated.config.configLoader.getInitialConfig.getDefaultProfile
   }
 
+  // the config paths the failures point at
   def failurePaths(failures: ConfigReaderFailures): List[String] = {
     failures.toList.flatMap {
       case failure: ConvertFailure => List(failure.path)
@@ -560,6 +568,7 @@ object CassandraConfigCompatSpec {
     }
   }
 
+  // the keys the warnings are about, quoted in backticks at the start of each warning
   def warnedKeys(config: TranslatedConfig): Set[String] = {
     config.warnings.map { warning => warning.drop(1).takeWhile(_ != '`') }.toSet
   }
