@@ -60,9 +60,38 @@ class CassandraConfigSpec extends AnyFunSuite with Matchers with EitherValues {
     CassandraConfig.Default.configLoader.supportsReloading() shouldEqual false
   }
 
-  test("toString does not expose the configuration") {
-    val config = ConfigFactory.parseString("advanced.auth-provider.password = secret")
+  test("toString masks the secrets of the driver") {
+    val config = ConfigFactory.parseString(
+      """
+        |advanced.auth-provider.password = value1
+        |advanced.ssl-engine-factory.keystore-password = value2
+        |advanced.ssl-engine-factory.truststore-password = value3
+        |profiles.custom.advanced.auth-provider.password = value4
+        |""".stripMargin,
+    )
+    val string = CassandraConfig(config).toString
 
-    CassandraConfig(config).toString should not include "secret"
+    List("value1", "value2", "value3", "value4").foreach { value => string should not include value }
+    string should include("\"password\":\"***\"")
+  }
+
+  test("toString masks the keys looking like secrets") {
+    val config =
+      ConfigFactory.parseString("custom { api-token = value1, client-secret = value2, credentials = value3 }")
+    val string = CassandraConfig(config).toString
+
+    List("value1", "value2", "value3").foreach { value => string should not include value }
+  }
+
+  test("toString prints the other options") {
+    val config = ConfigFactory.parseString(
+      """
+        |basic.request.timeout = 5s
+        |advanced.auth-provider.username = user
+        |""".stripMargin,
+    )
+
+    CassandraConfig(config).toString shouldEqual
+      """CassandraConfig(driver = {"advanced":{"auth-provider":{"username":"user"}},"basic":{"request":{"timeout":"5s"}}})"""
   }
 }

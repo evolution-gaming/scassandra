@@ -165,4 +165,6 @@ mind the following differences:
   * `execute(query, values*)`, use `SimpleStatement.newInstance(query, values*)`;
   * `trace`, use `setTracing` of the statement;
   * `FromGFuture`, the driver 4 uses `CompletionStage`;
+  * `Masked`, `CassandraConfig.toString` masks the values of the keys like `password`, `secret`, `token` and
+    `credential`;
   * the configuration case classes, e.g. `PoolingConfig` and `QueryConfig`, use the configuration of the driver.

@@ -3,9 +3,11 @@ package com.evolution.scassandra
 import com.datastax.oss.driver.api.core.CqlSession
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader
 import com.datastax.oss.driver.internal.core.config.typesafe.DefaultDriverConfigLoader
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{Config, ConfigFactory, ConfigRenderOptions, ConfigUtil, ConfigValueFactory}
 import pureconfig.error.ConfigReaderFailures
 import pureconfig.{ConfigReader, ConfigSource}
+
+import scala.jdk.CollectionConverters.*
 
 /**
  * Configuration of the Java driver 4, i.e. the contents of the `datastax-java-driver`
@@ -33,8 +35,13 @@ final case class CassandraConfig(driver: Config) {
     new DefaultDriverConfigLoader(() => config, false)
   }
 
-  // the configuration might contain credentials
-  override def toString: String = "CassandraConfig(driver = ***)"
+  /**
+   * Prints the configuration with the values of the keys looking like secrets masked,
+   * e.g. `advanced.auth-provider.password`
+   */
+  override def toString: String = {
+    s"CassandraConfig(driver = ${ CassandraConfig.masked(driver).root.render(ConfigRenderOptions.concise) })"
+  }
 }
 
 object CassandraConfig {
@@ -51,6 +58,19 @@ object CassandraConfig {
    * timeout instead of 12s, see `docs/legacy-config-translation.md`.
    */
   val Default: CassandraConfig = CassandraConfig(ConfigFactory.empty())
+
+  private val SecretKeyParts: List[String] = List("password", "secret", "token", "credential")
+
+  private def masked(config: Config): Config = {
+    config.entrySet.asScala.map(_.getKey).filter(isSecret).foldLeft(config) { (config, path) =>
+      config.withValue(path, ConfigValueFactory.fromAnyRef("***"))
+    }
+  }
+
+  private def isSecret(path: String): Boolean = {
+    val key = ConfigUtil.splitPath(path).asScala.lastOption.getOrElse(path).toLowerCase
+    SecretKeyParts.exists(key.contains)
+  }
 
   private lazy val reference: Config = {
     ConfigFactory
