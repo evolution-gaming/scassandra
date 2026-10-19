@@ -4,6 +4,7 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.datastax.oss.driver.api.core.`type`.codec.CodecNotFoundException
 import com.datastax.oss.driver.api.core.config.DriverExecutionProfile
+import com.datastax.oss.driver.api.core.cql.SimpleStatement
 import com.datastax.oss.driver.api.core.servererrors.{InvalidQueryException, SyntaxError}
 import com.datastax.oss.driver.api.core.{CqlIdentifier, DefaultConsistencyLevel}
 import com.evolution.scassandra.syntax.*
@@ -103,5 +104,38 @@ class SessionSpec extends AnyFunSuite with CassandraSuite with Matchers with Eit
         _ = policy shouldBe a[NextHostRetryPolicy]
       } yield ()
     }
+  }
+
+  test("NextHostRetryPolicy is created for an execution profile only") {
+    val retryPolicy =
+      """
+        |profiles.journal.advanced.retry-policy {
+        |  class = com.evolution.scassandra.NextHostRetryPolicy
+        |  max-retries = 1
+        |}
+        |""".stripMargin
+    withSession(retryPolicy) { session =>
+      val statement = SimpleStatement
+        .newInstance(s"SELECT value FROM $keyspace.$table WHERE id = 1")
+        .setExecutionProfileName("journal")
+      for {
+        resultSet <- session.execute(statement)
+        _ = resultSet.one().decode[String]("value") shouldEqual "value"
+        context <- IO { session.unwrap.getContext }
+        _ = context.getRetryPolicy("journal") shouldBe a[NextHostRetryPolicy]
+        _ = context.getRetryPolicy(DriverExecutionProfile.DEFAULT_NAME) should not be a[NextHostRetryPolicy]
+      } yield ()
+    }
+  }
+
+  test("NextHostRetryPolicy without max-retries fails the session creation") {
+    val retryPolicy = "advanced.retry-policy.class = com.evolution.scassandra.NextHostRetryPolicy"
+    val error = the[Throwable] thrownBy withSession(retryPolicy) { _ => IO.unit }
+
+    causes(error).map(_.getMessage).mkString("\n") should include("max-retries")
+  }
+
+  private def causes(error: Throwable): List[Throwable] = {
+    error :: Option(error.getCause).filterNot(_ eq error).toList.flatMap(causes)
   }
 }

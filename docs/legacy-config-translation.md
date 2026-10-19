@@ -129,4 +129,5 @@ Status:
   set them in the `driver` block.
 * The keyspace of a session of the driver 4 is fixed when the session is created, set it with
   `basic.session-keyspace` in the `driver` block.
-* `NextHostRetryPolicy` is configured in the `driver` block as well, see its Scaladoc.
+* `NextHostRetryPolicy` is configured in the `driver` block as well, for the whole session or for an execution
+  profile, see [Migrating from scassandra](../README.md#migrating-from-scassandra).

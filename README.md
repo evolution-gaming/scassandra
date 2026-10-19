@@ -144,6 +144,17 @@ mind the following differences:
   `java.time.LocalDate`, `CqlIdentifier`. The codecs of the driver could be used with `DecodeByName.fromCodec`,
   `fromClass` and `fromGenericType`, and similar methods of the other type classes.
 * **The request timeout** applies to the whole request, including retries and speculative executions.
+* **Policies are set in the configuration.** The driver 4 creates them itself, so `NextHostRetryPolicy` cannot
+  be set on a statement. Set it in the configuration, with the required `max-retries`:
+  ```hocon
+  advanced.retry-policy {
+    class = com.evolution.scassandra.NextHostRetryPolicy
+    max-retries = 3
+  }
+  ```
+  To apply it to some statements only, set it in an execution profile, e.g. `profiles.journal.advanced.retry-policy`,
+  and select the profile with `statement.setExecutionProfileName("journal")`. The driver 4 has no
+  `LoggingRetryPolicy`.
 * Resources are created with `make` instead of `of`, i.e. `CassandraSession.make`, `CassandraHealthCheck.make`.
 * Removed:
   * `init`, `newSession` and `state`/`stateSnapshot` of the session, use `session.unwrap` for the driver features
