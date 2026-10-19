@@ -56,6 +56,20 @@ class CassandraConfigSpec extends AnyFunSuite with Matchers with EitherValues {
     profileOf(result).getDuration(REQUEST_TIMEOUT) shouldEqual Duration.ofSeconds(3)
   }
 
+  test("configLoader resolves the substitutions, also referring to the defaults of the driver") {
+    val config = ConfigFactory.parseString(
+      """
+        |basic.request.page-size = 7
+        |basic.request.page-size = ${?SCASSANDRA_UNDEFINED_VARIABLE}
+        |advanced.connection.connect-timeout = ${basic.request.timeout}
+        |""".stripMargin,
+    )
+    val profile = profileOf(CassandraConfig(config))
+
+    profile.getInt(REQUEST_PAGE_SIZE) shouldEqual 7
+    profile.getDuration(CONNECTION_CONNECT_TIMEOUT) shouldEqual Duration.ofSeconds(2)
+  }
+
   test("configLoader does not support reloading") {
     CassandraConfig.Default.configLoader.supportsReloading() shouldEqual false
   }

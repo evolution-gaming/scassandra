@@ -27,11 +27,13 @@ final case class CassandraConfig(driver: Config) {
   /**
    * Creates a new loader of this configuration for a session.
    *
-   * Reloading is disabled as the configuration is fixed. Pass a session builder with a
-   * custom loader to `CassandraSession.make` if reloading is required.
+   * The substitutions are resolved together with the defaults of the driver, as the
+   * default loader of the driver does. Reloading is disabled as the configuration is
+   * fixed. Pass a session builder with a custom loader to `CassandraSession.make` if
+   * reloading is required.
    */
   def configLoader: DriverConfigLoader = {
-    val config = driver.withFallback(CassandraConfig.reference)
+    val config = driver.withFallback(CassandraConfig.reference).resolve()
     new DefaultDriverConfigLoader(() => config, false)
   }
 
