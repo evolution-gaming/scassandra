@@ -382,6 +382,34 @@ class CassandraConfigCompatSpec extends AnyFunSuite with Matchers with EitherVal
     )
   }
 
+  test("legacy keys of the options set in the driver configuration are not checked") {
+    val profile = profileOf(legacy(
+      """
+        |protocol-version = V2
+        |pooling.local.max-requests-per-connection = 0
+        |contact-points = ["host:port"]
+        |driver {
+        |  advanced.protocol.version = V4
+        |  advanced.connection.max-requests-per-connection = 1024
+        |  basic.contact-points = ["host:9042"]
+        |}
+        |""".stripMargin,
+    ))
+
+    profile.getString(PROTOCOL_VERSION) shouldEqual "V4"
+    profile.getInt(CONNECTION_MAX_REQUESTS) shouldEqual 1024
+    profile.getStringList(CONTACT_POINTS).asScala shouldEqual List("host:9042")
+  }
+
+  test("fromV3 with unresolved driver overrides returns the result instead of throwing") {
+    val overrides =
+      ConfigFactory.parseString("basic.cloud.secure-connect-bundle = ${?SCASSANDRA_UNDEFINED_BUNDLE}")
+    val profile = profileOf(CassandraConfigCompat.fromV3(CassandraConfigV3.Default, overrides).value)
+
+    profile.isDefined(CLOUD_SECURE_CONNECT_BUNDLE) shouldEqual false
+    profile.getStringList(CONTACT_POINTS).asScala shouldEqual List("127.0.0.1:9042")
+  }
+
   test("fromV3 applies the driver overrides on top of the translated config") {
     val config = CassandraConfigV3.Default.copy(contactPoints = Nel("host1"))
     val overrides = ConfigFactory.parseString("basic.request.timeout = 3s")

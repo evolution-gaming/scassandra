@@ -11,11 +11,12 @@ import com.evolutiongaming.scassandra.{
   PoolingConfig,
   QueryConfig,
 }
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{Config, ConfigFactory, ConfigResolveOptions}
 import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure, FailureReason}
 
 import scala.concurrent.duration.*
 import scala.jdk.CollectionConverters.*
+import scala.util.Try
 
 /**
  * Translates the configuration of scassandra for the Java driver 3
@@ -277,6 +278,17 @@ private[compat] object V3Translation {
       ConfigReaderFailures(ConvertFailure(reason, origin = None, path = fullPath(key)))
     }
 
+    // resolves the environment variables, the references to other options are left to the config loader
+    private val resolvedOverrides: Config = {
+      Try(overrides.resolve(ConfigResolveOptions.defaults.setAllowUnresolved(true))).getOrElse(overrides)
+    }
+
+    // the options set in the driver configuration replace the translated ones, so their legacy keys
+    // are not checked, the options still not resolved are considered set
+    private def overridden(option: DriverOption): Boolean = {
+      Try(resolvedOverrides.hasPath(option.getPath)).getOrElse(true)
+    }
+
     def translate: Result[Translated] = {
       (contactPointsOrBundle, protocolVersion, maxRequestsPerConnection).parMapN {
         (contactPointsOrBundle, protocolVersion, maxRequestsPerConnection) =>
@@ -309,13 +321,13 @@ private[compat] object V3Translation {
     }
 
     private def contactPointsOrBundle: Result[Entries] = {
-      val bundleInOverrides = overrides.hasPath(DefaultDriverOption.CLOUD_SECURE_CONNECT_BUNDLE.getPath)
+      val bundleInOverrides = overridden(DefaultDriverOption.CLOUD_SECURE_CONNECT_BUNDLE)
       config.cloudSecureConnectBundle match {
         case Some(CloudSecureConnectBundleConfig.File(file)) =>
           List(DefaultDriverOption.CLOUD_SECURE_CONNECT_BUNDLE -> file).asRight
         case Some(CloudSecureConnectBundleConfig.Url(url)) =>
           List(DefaultDriverOption.CLOUD_SECURE_CONNECT_BUNDLE -> url).asRight
-        case None if bundleInOverrides =>
+        case None if bundleInOverrides || overridden(DefaultDriverOption.CONTACT_POINTS) =>
           List.empty.asRight
         case None =>
           config.contactPoints.toList
@@ -348,7 +360,8 @@ private[compat] object V3Translation {
 
     private def protocolVersion: Result[Entries] = {
       val supported = DefaultProtocolVersion.values().toList.map(_.name)
-      config.protocolVersion.toList.parTraverse { version =>
+      val version = if (overridden(DefaultDriverOption.PROTOCOL_VERSION)) None else config.protocolVersion
+      version.toList.parTraverse { version =>
         supported
           .find(_ == version.name)
           .map { version => DefaultDriverOption.PROTOCOL_VERSION -> version }
@@ -365,7 +378,9 @@ private[compat] object V3Translation {
 
     private def maxRequestsPerConnection: Result[Entries] = {
       val maxRequests = config.pooling.local.maxRequestsPerConnection
-      if (maxRequests >= 1 && maxRequests <= MaxRequestsPerConnectionV3) {
+      if (overridden(DefaultDriverOption.CONNECTION_MAX_REQUESTS)) {
+        List.empty.asRight
+      } else if (maxRequests >= 1 && maxRequests <= MaxRequestsPerConnectionV3) {
         val limited = maxRequests.min(MaxRequestsPerConnectionLimit)
         List(DefaultDriverOption.CONNECTION_MAX_REQUESTS -> Int.box(limited)).asRight
       } else {
