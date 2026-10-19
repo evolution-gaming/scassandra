@@ -34,6 +34,25 @@ class ReplicationStrategyConfigSpec extends AnyFunSuite with Matchers {
       expected.asRight
   }
 
+  test("network topology replication factors as a string, separated by , or ;") {
+    val expected = NetworkTopology(NonEmptyList.of(DcFactor("dc1", 2), DcFactor("dc2", 3)))
+    List("dc1:2,dc2:3", " dc1 : 2 ; dc2 : 3 ", "dc1:2,dc2:3,").foreach { factors =>
+      val config = ConfigFactory.parseString(
+        s"""replication-strategy = "NetworkTopology", network-topology.replication-factors = "$factors"""",
+      )
+      ConfigSource.fromConfig(config).load[ReplicationStrategyConfig] shouldEqual expected.asRight
+    }
+  }
+
+  test("invalid or empty replication factors as a string fail") {
+    List("dc1:a,dc2:3", "", " , ").foreach { factors =>
+      val config = ConfigFactory.parseString(
+        s"""replication-strategy = "NetworkTopology", network-topology.replication-factors = "$factors"""",
+      )
+      ConfigSource.fromConfig(config).load[ReplicationStrategyConfig].isLeft shouldEqual true
+    }
+  }
+
   test("network topology without the block is the default") {
     val config = ConfigFactory.parseString("""replication-strategy = "NetworkTopology"""")
     ConfigSource.fromConfig(config).load[ReplicationStrategyConfig] shouldEqual

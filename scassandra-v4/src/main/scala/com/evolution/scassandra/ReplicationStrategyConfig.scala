@@ -2,7 +2,8 @@ package com.evolution.scassandra
 
 import cats.data.NonEmptyList
 import cats.syntax.all.*
-import pureconfig.error.CannotConvert
+import com.typesafe.config.ConfigValueType
+import pureconfig.error.{CannotConvert, FailureReason}
 import pureconfig.module.cats.*
 import pureconfig.{ConfigObjectCursor, ConfigReader}
 
@@ -17,7 +18,7 @@ import pureconfig.{ConfigObjectCursor, ConfigReader}
  *   replication-factor = 2
  * }
  * network-topology {
- *   replication-factors = ["dc1:2", "dc2:3"]
+ *   replication-factors = ["dc1:2", "dc2:3"] # or "dc1:2,dc2:3", or "dc1:2;dc2:3"
  * }
  * }}}
  */
@@ -92,15 +93,38 @@ object ReplicationStrategyConfig {
         for {
           objectCursor <- cursor.asObjectCursor
           factorsCursor <- objectCursor.atKey("replication-factors")
-          replicationFactors <- ConfigReader[NonEmptyList[DcFactor]].from(factorsCursor)
+          replicationFactors <- replicationFactorsReader.from(factorsCursor)
         } yield NetworkTopology(replicationFactors = replicationFactors)
+    }
+
+    // a list, or a string with the factors separated by `,` or `;`, as read by scassandra for the Java driver 3
+    private val replicationFactorsReader: ConfigReader[NonEmptyList[DcFactor]] = ConfigReader.fromCursor {
+      cursor =>
+        cursor.valueOpt.map(_.valueType) match {
+          case Some(ConfigValueType.STRING) => ConfigReader[String].emap(parseReplicationFactors).from(cursor)
+          case _ => ConfigReader[NonEmptyList[DcFactor]].from(cursor)
+        }
+    }
+
+    private def parseReplicationFactors(value: String): Either[FailureReason, NonEmptyList[DcFactor]] = {
+      val factors = List(",", ";")
+        .map { separator => value.split(separator).map(_.trim).filter(_.nonEmpty).toList }
+        .maxBy(_.length)
+      for {
+        factors <- factors.traverse(DcFactor.parse)
+        factors <- NonEmptyList
+          .fromList(factors)
+          .toRight(CannotConvert(value, "DcFactor", "replication factors should not be empty"))
+      } yield factors
     }
 
     final case class DcFactor(name: String = "localDc", replicationFactor: Int = 1)
 
     object DcFactor {
 
-      implicit val configReaderDcFactor: ConfigReader[DcFactor] = ConfigReader[String].emap { value =>
+      implicit val configReaderDcFactor: ConfigReader[DcFactor] = ConfigReader[String].emap(parse)
+
+      private[NetworkTopology] def parse(value: String): Either[FailureReason, DcFactor] = {
         value.split(":").map(_.trim) match {
           case Array(name, factor) =>
             factor.toIntOption
