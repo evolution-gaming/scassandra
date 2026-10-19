@@ -19,7 +19,7 @@ import scala.jdk.CollectionConverters.*
 
 class TwoDcSessionSpec extends AnyFunSuite with Matchers with BeforeAndAfterAll {
 
-  implicit private val fromGFutureIO: FromGFuture[IO] = FromGFuture.lift1[IO]
+  private implicit val fromGFutureIO: FromGFuture[IO] = FromGFuture.lift1[IO]
 
   private val network = Network.newNetwork()
 
@@ -43,7 +43,8 @@ class TwoDcSessionSpec extends AnyFunSuite with Matchers with BeforeAndAfterAll 
   private def ip(container: CassandraContainer): String =
     container.container.getContainerInfo.getNetworkSettings.getNetworks.asScala.values.head.getIpAddress
 
-  private lazy val configV3 = CassandraConfigV3.Default.copy(contactPoints = Nel.fromListUnsafe(nodes.map(ip)))
+  private lazy val configV3 =
+    CassandraConfigV3.Default.copy(contactPoints = Nel(ip(nodes.head), ip(nodes(1))))
 
   override protected def afterAll(): Unit = {
     nodes.foreach(_.stop())
