@@ -58,7 +58,8 @@ class CassandraConfigCompatSpec extends AnyFunSuite with Matchers with EitherVal
     profile.isDefined(SOCKET_KEEP_ALIVE) shouldEqual false
 
     profile.isDefined(AUTH_PROVIDER_CLASS) shouldEqual false
-    profile.getString(LOAD_BALANCING_POLICY_CLASS) shouldEqual "DcInferringLoadBalancingPolicy"
+    profile.getString(LOAD_BALANCING_POLICY_CLASS) shouldEqual
+      classOf[FirstContactPointDcLoadBalancingPolicy].getName
     profile.isDefined(LOAD_BALANCING_LOCAL_DATACENTER) shouldEqual false
     profile.getString(SPECULATIVE_EXECUTION_POLICY_CLASS) shouldEqual "NoSpeculativeExecutionPolicy"
     profile.getStringList(REQUEST_TRACKER_CLASSES, List.empty[String].asJava).asScala should not contain
@@ -172,7 +173,8 @@ class CassandraConfigCompatSpec extends AnyFunSuite with Matchers with EitherVal
   test("empty local DC infers the local DC from the contact points") {
     val profile = profileOf(legacy("""load-balancing.local-dc = """""))
 
-    profile.getString(LOAD_BALANCING_POLICY_CLASS) shouldEqual "DcInferringLoadBalancingPolicy"
+    profile.getString(LOAD_BALANCING_POLICY_CLASS) shouldEqual
+      classOf[FirstContactPointDcLoadBalancingPolicy].getName
     profile.isDefined(LOAD_BALANCING_LOCAL_DATACENTER) shouldEqual false
   }
 

@@ -465,10 +465,11 @@ private[compat] object V3Translation {
       }
     }
 
-    // the driver 3 inferred the local DC from the contact points, while the default policy of
-    // the driver 4 requires it to be configured explicitly
+    // the driver 3 took the DC of the first contact point, while the default policy of the
+    // driver 4 requires the local DC, and its inferring policy fails if the contact points are in different DCs
     private def inferLocalDc: Entries = List(
-      DefaultDriverOption.LOAD_BALANCING_POLICY_CLASS -> "DcInferringLoadBalancingPolicy",
+      DefaultDriverOption.LOAD_BALANCING_POLICY_CLASS ->
+        classOf[FirstContactPointDcLoadBalancingPolicy].getName,
     )
 
     private def speculativeExecution: Entries = {
