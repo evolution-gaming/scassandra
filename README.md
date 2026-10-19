@@ -155,6 +155,8 @@ mind the following differences:
   To apply it to some statements only, set it in an execution profile, e.g. `profiles.journal.advanced.retry-policy`,
   and select the profile with `statement.setExecutionProfileName("journal")`. The driver 4 has no
   `LoggingRetryPolicy`.
+* **`ReplicationStrategyConfig` fails on an unknown strategy or an invalid value**, where v3 silently used
+  `SimpleStrategy` with a replication factor of 1.
 * Resources are created with `make` instead of `of`, i.e. `CassandraSession.make`, `CassandraHealthCheck.make`.
 * Removed:
   * `init`, `newSession` and `state`/`stateSnapshot` of the session, use `session.unwrap` for the driver features
