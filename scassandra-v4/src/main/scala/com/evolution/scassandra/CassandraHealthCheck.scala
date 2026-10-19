@@ -35,20 +35,16 @@ object CassandraHealthCheck {
    * ```
    *
    * @param session
-   *   Cassandra session to use to perform queries with.
+   *   Cassandra session to check, i.e. the session used by the application. It is not
+   *   closed by the health check.
    * @param consistencyLevel
    *   Read consistency level to use for a query.
    */
   def make[F[_]: Temporal: LogOf](
-    session: Resource[F, CassandraSession[F]],
+    session: CassandraSession[F],
     consistencyLevel: ConsistencyLevel,
   ): Resource[F, CassandraHealthCheck[F]] = {
-
-    val statement = for {
-      session <- session
-      statement <- Resource.eval(Statement.of[F](session, consistencyLevel))
-    } yield statement
-
+    val statement = Resource.eval(Statement.of[F](session, consistencyLevel))
     for {
       log <- Resource.eval(LogOf[F].apply(CassandraHealthCheck.getClass))
       result <- make(initial = 10.seconds, interval = 1.second, statement = statement, log = log)

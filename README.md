@@ -158,6 +158,8 @@ mind the following differences:
 * **`ReplicationStrategyConfig` fails on an unknown strategy or an invalid value**, where v3 silently used
   `SimpleStrategy` with a replication factor of 1.
 * Resources are created with `make` instead of `of`, i.e. `CassandraSession.make`, `CassandraHealthCheck.make`.
+* **`CassandraHealthCheck.make` takes the session of the application**, not a `Resource` of a session, as a
+  session of the driver 4 is heavyweight, and a separate one would not check the session in use.
 * Removed:
   * `init`, `newSession` and `state`/`stateSnapshot` of the session, use `session.unwrap` for the driver features
     not covered by the wrapper, e.g. `getMetadata.getNodes` and `Node.getOpenConnections`;
