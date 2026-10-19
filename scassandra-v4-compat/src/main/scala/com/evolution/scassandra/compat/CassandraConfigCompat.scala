@@ -20,7 +20,7 @@ object CassandraConfigCompat {
    * The key under the legacy configuration, containing the configuration of the driver 4,
    * applied on top of the translated one
    */
-  val LegacyDriverKey: String = "driver"
+  val DriverOverridesKey: String = "driver"
 
   /**
    * Translates the configuration of scassandra for the Java driver 3.
@@ -88,7 +88,7 @@ object CassandraConfigCompat {
     for {
       config <- readV3(source)
       overrides <-
-        if (section.hasPath(LegacyDriverKey)) source.at(LegacyDriverKey).load[Config]
+        if (section.hasPath(DriverOverridesKey)) source.at(DriverOverridesKey).load[Config]
         else ConfigFactory.empty().asRight
       result <- translate(config, overrides, path)
     } yield result
