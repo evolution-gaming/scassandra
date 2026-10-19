@@ -97,6 +97,12 @@ class CodecsSpec extends AnyFunSuite with Matchers {
 
     byName.decode[String]("v_str") shouldEqual "str"
     byIdx.decodeAt[String](1) shouldEqual "str"
+    EncodeByName.noneAsUnset[String].apply(
+      udtValue(),
+      "v_str",
+      Some("str"),
+    ).decode[String]("v_str") shouldEqual "str"
+    EncodeByIdx.noneAsUnset[String].apply(tupleValue(), 1, Some("str")).decodeAt[String](1) shouldEqual "str"
   }
 
   test("encodeSome encodes Some and skips None") {
@@ -169,6 +175,7 @@ class CodecsSpec extends AnyFunSuite with Matchers {
 
   test("DecodeRow and EncodeRow") {
     udtValue().encode(Pair("str", 1)).decode[Pair] shouldEqual Pair("str", 1)
+    DecodeRow[Pair].apply(EncodeRow[Pair].apply(udtValue(), Pair("str", 1))) shouldEqual Pair("str", 1)
     DecodeRow[Int]("v_int").apply(udtValue().encode("v_int", 1)) shouldEqual 1
     EncodeRow[Int]("v_int").apply(udtValue(), 1).decode[Int]("v_int") shouldEqual 1
   }

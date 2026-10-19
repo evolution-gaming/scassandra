@@ -1,13 +1,14 @@
 package com.evolution.scassandra
 
-import cats.effect.IO
 import cats.effect.unsafe.implicits.global
+import cats.effect.{IO, Resource}
 import com.datastax.oss.driver.api.core.`type`.codec.CodecNotFoundException
 import com.datastax.oss.driver.api.core.config.DriverExecutionProfile
 import com.datastax.oss.driver.api.core.cql.SimpleStatement
 import com.datastax.oss.driver.api.core.servererrors.{InvalidQueryException, SyntaxError}
 import com.datastax.oss.driver.api.core.{CqlIdentifier, DefaultConsistencyLevel}
 import com.evolution.scassandra.syntax.*
+import com.evolutiongaming.catshelper.LogOf
 import org.scalatest.EitherValues
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
@@ -86,6 +87,16 @@ class SessionSpec extends AnyFunSuite with CassandraSuite with Matchers with Eit
 
   test("health check statement runs against the server") {
     CassandraHealthCheck.Statement.of[IO](session, DefaultConsistencyLevel.ONE).flatten.unsafeRunSync()
+  }
+
+  test("health check of a session prepares its statement and starts healthy") {
+    implicit val logOf: LogOf[IO] = LogOf.empty[IO]
+    val healthCheck = CassandraHealthCheck.make[IO](
+      Resource.pure[IO, CassandraSession[IO]](session),
+      DefaultConsistencyLevel.ONE,
+    )
+
+    healthCheck.use(_.error).unsafeRunSync() shouldEqual None
   }
 
   test("NextHostRetryPolicy is created by the driver from the configuration") {
