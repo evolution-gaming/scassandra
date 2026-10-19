@@ -98,7 +98,8 @@ object CassandraSession {
    * providers, or a custom configuration loader.
    */
   def make[F[_]: Async](builder: CqlSessionBuilder): Resource[F, CassandraSession[F]] = {
-    // creation of a session is not cancelled to avoid leaking a partially initialized session
+    // not cancelled: the driver aborts only the control connection on cancellation, a session cancelled later
+    // still finishes initializing and is never closed
     val session = Async[F].uncancelable { _ => FromCompletionStage { builder.buildAsync() } }
     Resource
       .make(session) { session => FromCompletionStage { session.closeAsync() }.void }
