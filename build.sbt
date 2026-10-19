@@ -147,6 +147,7 @@ lazy val scassandraV4 = (project in file("scassandra-v4"))
       Pureconfig.core,
       Pureconfig.cats,
       scalatest % Test,
+      Cats.effectTestkit % Test,
     ),
   )
 

@@ -51,7 +51,7 @@ class PagingSpec extends AnyFunSuite with CassandraSuite with Matchers {
     ids(session.executeStream(query).toList.unsafeRunSync()) shouldEqual Ids
   }
 
-  test("stream stops as soon as the fold completes") {
+  test("fold stopped in the middle of a page returns its result, also across pages") {
     val stream = session.executeStream(paged)
     stream.first.unsafeRunSync().map(_ => ()) shouldEqual Some(())
     val taken = stream.foldWhileM(List.empty[Int]) { (seen, row) =>
