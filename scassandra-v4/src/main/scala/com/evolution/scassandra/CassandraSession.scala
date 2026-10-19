@@ -28,7 +28,8 @@ trait CassandraSession[F[_]] {
   def unwrap: CqlSession
 
   /**
-   * The keyspace the session is connected to, set by `basic.session-keyspace`
+   * The current keyspace of the session, set by `basic.session-keyspace` and changed by
+   * `USE` queries
    */
   def keyspace: Option[CqlIdentifier]
 
@@ -60,7 +61,7 @@ object CassandraSession {
 
     override val unwrap: CqlSession = session
 
-    override val keyspace: Option[CqlIdentifier] = session.getKeyspace.toScala
+    override def keyspace: Option[CqlIdentifier] = session.getKeyspace.toScala
 
     override def execute(query: String): F[AsyncResultSet] = {
       FromCompletionStage { session.executeAsync(query) }

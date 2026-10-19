@@ -135,7 +135,9 @@ mind the following differences:
   cluster, so `CassandraCluster` and `CassandraClusterOf` are replaced with `CassandraSession.make`. Use
   `CassandraSession.make(builder)` to customize the session, e.g. to register listeners, codecs or a custom
   configuration loader, instead of `CassandraClusterOf.addClusterJObserveHook`.
-* **The keyspace of a session is fixed**, set it with `basic.session-keyspace` instead of `connect(keyspace)`.
+* **The keyspace of a session is set when it is created**, with `basic.session-keyspace` instead of
+  `connect(keyspace)`. A `USE` query still changes it, which the driver 4 discourages, as it applies to all the
+  requests in flight.
 * **Results are paged asynchronously.** `execute` returns the driver `AsyncResultSet`, use `stream` or
   `executeStream` to read all the pages. Do not reuse an `AsyncResultSet`: the rows of its current page can be
   read only once, so a second stream of it silently misses them, while `executeStream` executes the statement

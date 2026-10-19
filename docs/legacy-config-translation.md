@@ -127,7 +127,7 @@ Status:
 * The configuration of the driver 4 has options the legacy configuration had no equivalent for, e.g. the
   [execution profiles](https://docs.datastax.com/en/developer/java-driver/4.17/manual/core/configuration/#execution-profiles),
   set them in the `driver` block.
-* The keyspace of a session of the driver 4 is fixed when the session is created, set it with
+* The keyspace of a session of the driver 4 is set when the session is created, with
   `basic.session-keyspace` in the `driver` block.
 * `NextHostRetryPolicy` is configured in the `driver` block as well, for the whole session or for an execution
   profile, see [Migrating from scassandra](../README.md#migrating-from-scassandra).

@@ -78,6 +78,17 @@ class SessionSpec extends AnyFunSuite with CassandraSuite with Matchers with Eit
     }
   }
 
+  test("session keyspace follows USE queries") {
+    withSession("advanced.request.warn-if-set-keyspace = false") { session =>
+      for {
+        _ <- session.execute(s"USE $keyspace")
+        _ = session.keyspace shouldEqual Some(CqlIdentifier.fromCql(keyspace))
+        resultSet <- session.execute(s"SELECT value FROM $table WHERE id = 1")
+        _ = resultSet.one().decode[String]("value") shouldEqual "value"
+      } yield ()
+    }
+  }
+
   test("metadata contains the keyspace and the table") {
     val metadata = session.metadata.unsafeRunSync()
     val keyspaceMetadata = metadata.getKeyspace(keyspace).toScala
