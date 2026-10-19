@@ -3,7 +3,7 @@ package com.evolution.scassandra
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.datastax.oss.driver.api.core.cql.{Row, SimpleStatement}
-import com.datastax.oss.driver.api.core.data.CqlDuration
+import com.datastax.oss.driver.api.core.data.{CqlDuration, SettableByName}
 import com.evolution.scassandra.CodecsIntegrationSpec.*
 import com.evolution.scassandra.syntax.*
 import org.scalatest.funsuite.AnyFunSuite
@@ -152,6 +152,40 @@ class CodecsIntegrationSpec extends AnyFunSuite with CassandraSuite with Matcher
     row.decode[Option[String]]("v_str") shouldEqual Some("str")
     row.decode[Option[Int]]("v_int") shouldEqual None
   }
+
+  test("encode and decode a case class") {
+    val program = for {
+      prepared <- session.prepare(insertItem)
+      _ <- session.execute(prepared.bind().encode("id", ItemRowId).encode(item))
+      row <- select(ItemRowId)
+      _ = row.decode[Item] shouldEqual item
+    } yield ()
+    program.unsafeRunSync()
+  }
+
+  test("update a statement with a case class") {
+    val program = for {
+      prepared <- session.prepare(insertItem)
+      _ <- session.execute(prepared.bind().encode("id", UpdatedItemRowId).update(item))
+      row <- select(UpdatedItemRowId)
+      _ = row.decode[Item] shouldEqual item
+    } yield ()
+    program.unsafeRunSync()
+  }
+
+  test("encoder discarding a returned statement loses the value") {
+    // statements are immutable, unlike `UdtValue` used in the offline `CodecsSpec`
+    val program = for {
+      prepared <- session.prepare(insertItem)
+      _ <- session.execute(DiscardingEncodeRow(prepared.bind().encode("id", DiscardedItemRowId), item))
+      row <- select(DiscardedItemRowId)
+      _ = row.decode[Option[String]]("v_str") shouldEqual None
+      _ = row.decode[Option[Int]]("v_int") shouldEqual Some(item.int)
+    } yield ()
+    program.unsafeRunSync()
+  }
+
+  private def insertItem: String = s"INSERT INTO $table (id, v_str, v_int, v_strs) VALUES (?, ?, ?, ?)"
 }
 
 object CodecsIntegrationSpec {
@@ -159,6 +193,9 @@ object CodecsIntegrationSpec {
   val FullRowId = 1
   val NullRowId = 2
   val OptionRowId = 3
+  val ItemRowId = 4
+  val UpdatedItemRowId = 5
+  val DiscardedItemRowId = 6
 
   val bool = true
   val str = "str"
@@ -173,4 +210,27 @@ object CodecsIntegrationSpec {
   val bytes: Array[Byte] = Array[Byte](1, 2, 3)
   val duration: CqlDuration = CqlDuration.newInstance(1, 2, 3)
   val date: LocalDate = LocalDate.of(2020, 1, 2)
+  val item: Item = Item(str, int, strs)
+
+  final case class Item(str: String, int: Int, strs: Set[String])
+
+  object Item {
+
+    implicit val encodeRowItem: EncodeRow[Item] = new EncodeRow[Item] {
+      override def apply[B <: SettableByName[B]](data: B, item: Item): B = {
+        data.encode("v_str", item.str).encode("v_int", item.int).encode("v_strs", item.strs)
+      }
+    }
+
+    implicit val decodeRowItem: DecodeRow[Item] = { data =>
+      Item(data.decode[String]("v_str"), data.decode[Int]("v_int"), data.decode[Set[String]]("v_strs"))
+    }
+  }
+
+  val DiscardingEncodeRow: EncodeRow[Item] = new EncodeRow[Item] {
+    override def apply[B <: SettableByName[B]](data: B, item: Item): B = {
+      val _ = data.encode("v_str", item.str)
+      data.encode("v_int", item.int).encode("v_strs", item.strs)
+    }
+  }
 }
