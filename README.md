@@ -55,10 +55,7 @@ libraryDependencies += "com.evolution" %% "scassandra-v4-compat" % "<version>"
 import cats.effect.IO
 import com.evolution.scassandra._
 import com.evolution.scassandra.syntax._
-import com.evolutiongaming.catshelper.LogOf
 import com.typesafe.config.ConfigFactory
-
-implicit val logOf: LogOf[IO] = LogOf.empty[IO]
 
 val config = CassandraConfig.fromConfig(ConfigFactory.load(), "my-service.cassandra").fold(
   failures => throw new IllegalArgumentException(failures.prettyPrint()),
@@ -112,6 +109,9 @@ driver 3, not of the Java driver 4:
 * `CassandraConfigCompat.legacyConfigReader` reads it with pureconfig;
 * `CassandraConfigCompat.fromV3(config, driverOverrides)` translates the case class of scassandra for the Java
   driver 3.
+
+They return a `TranslatedConfig`: the `config` to create a session with, and the `warnings` about the keys that
+have no equivalent in the Java driver 4 and are ignored. The warnings are not logged, log them yourself.
 
 Once all the keys are moved to `driver`, read it with `CassandraConfig.fromConfig(config, "my-service.cassandra.driver")`
 and drop `scassandra-v4-compat`. Mind that the options missing under `driver` then get the defaults of the Java

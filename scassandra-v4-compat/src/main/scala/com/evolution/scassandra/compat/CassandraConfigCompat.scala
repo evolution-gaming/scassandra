@@ -25,6 +25,9 @@ object CassandraConfigCompat {
   /**
    * Translates the configuration of scassandra for the Java driver 3.
    *
+   * The ignored fields are returned as `TranslatedConfig.warnings`, for the caller to
+   * log.
+   *
    * The fields keep their values, including the defaults of scassandra for the Java
    * driver 3, which differ from the defaults of the Java driver 4, e.g. a 12s request
    * timeout instead of 2s. Only the options not covered by the translation get the
@@ -38,7 +41,7 @@ object CassandraConfigCompat {
   def fromV3(
     config: CassandraConfigV3,
     driverOverrides: Config = ConfigFactory.empty(),
-  ): Either[ConfigReaderFailures, CassandraConfig] = {
+  ): Either[ConfigReaderFailures, TranslatedConfig] = {
     translate(config, driverOverrides, path = None)
   }
 
@@ -59,7 +62,7 @@ object CassandraConfigCompat {
    * `<path>.driver`, so set every option which should keep the value it had with
    * scassandra for the Java driver 3.
    */
-  def fromLegacyConfig(config: Config, path: String): Either[ConfigReaderFailures, CassandraConfig] = {
+  def fromLegacyConfig(config: Config, path: String): Either[ConfigReaderFailures, TranslatedConfig] = {
     for {
       section <- ConfigSource.fromConfig(config).at(path).load[Config]
       result <- fromLegacySection(section, path.some)
@@ -70,7 +73,7 @@ object CassandraConfigCompat {
    * Same as [[fromLegacyConfig]], for reading the configuration with pureconfig at any
    * path, with the defaults of scassandra for the Java driver 3 as well.
    */
-  val legacyConfigReader: ConfigReader[CassandraConfig] = ConfigReader.fromCursor { cursor =>
+  val legacyConfigReader: ConfigReader[TranslatedConfig] = ConfigReader.fromCursor { cursor =>
     for {
       objectCursor <- cursor.asObjectCursor
       result <- fromLegacySection(objectCursor.objValue.toConfig, pathOf(cursor))
@@ -80,7 +83,7 @@ object CassandraConfigCompat {
   private def fromLegacySection(
     section: Config,
     path: Option[String],
-  ): Either[ConfigReaderFailures, CassandraConfig] = {
+  ): Either[ConfigReaderFailures, TranslatedConfig] = {
     val source = ConfigSource.fromConfig(section)
     for {
       config <- readV3(source)
@@ -104,9 +107,9 @@ object CassandraConfigCompat {
     config: CassandraConfigV3,
     overrides: Config,
     path: Option[String],
-  ): Either[ConfigReaderFailures, CassandraConfig] = {
+  ): Either[ConfigReaderFailures, TranslatedConfig] = {
     V3Translation(config, overrides, path).map { translated =>
-      CassandraConfig(overrides.withFallback(translated.driver), translated.warnings)
+      TranslatedConfig(CassandraConfig(overrides.withFallback(translated.driver)), translated.warnings)
     }
   }
 

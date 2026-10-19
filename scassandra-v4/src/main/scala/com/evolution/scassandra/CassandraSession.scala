@@ -7,7 +7,6 @@ import com.datastax.oss.driver.api.core.cql.{AsyncResultSet, PreparedStatement, 
 import com.datastax.oss.driver.api.core.metadata.Metadata
 import com.datastax.oss.driver.api.core.{CqlIdentifier, CqlSession, CqlSessionBuilder}
 import com.evolution.scassandra.util.FromCompletionStage
-import com.evolutiongaming.catshelper.LogOf
 
 import scala.jdk.OptionConverters.*
 
@@ -83,13 +82,10 @@ object CassandraSession {
   }
 
   /**
-   * Creates a session with the given configuration, logging the configuration warnings,
-   * if any.
+   * Creates a session with the given configuration.
    */
-  def make[F[_]: Async: LogOf](config: CassandraConfig): Resource[F, CassandraSession[F]] = {
+  def make[F[_]: Async](config: CassandraConfig): Resource[F, CassandraSession[F]] = {
     for {
-      log <- Resource.eval(LogOf[F].apply(CassandraSession.getClass))
-      _ <- Resource.eval(config.warnings.traverse_ { warning => log.warn(warning) })
       builder <- Resource.eval(Async[F].delay { CqlSession.builder().withConfigLoader(config.configLoader) })
       session <- make(builder)
     } yield session

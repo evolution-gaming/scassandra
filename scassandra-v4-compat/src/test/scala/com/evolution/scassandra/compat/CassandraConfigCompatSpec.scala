@@ -3,7 +3,6 @@ package com.evolution.scassandra.compat
 import com.datastax.driver.core.ProtocolVersion
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption.*
 import com.datastax.oss.driver.api.core.config.DriverExecutionProfile
-import com.evolution.scassandra.CassandraConfig
 import com.evolutiongaming.nel.Nel
 import com.evolutiongaming.scassandra.{CassandraConfig as CassandraConfigV3, PoolingConfig, QueryConfig}
 import com.typesafe.config.{Config, ConfigFactory}
@@ -401,8 +400,11 @@ class CassandraConfigCompatSpec extends AnyFunSuite with Matchers with EitherVal
     val hocon = fixtureConfig("cluster.conf")
     val v3 = ConfigSource.fromConfig(hocon).load[CassandraConfigV3].value
 
-    CassandraConfigCompat.fromLegacyConfig(hocon.atKey("cassandra"), "cassandra").value.driver shouldEqual
-      CassandraConfigCompat.fromV3(v3).value.driver
+    CassandraConfigCompat.fromLegacyConfig(
+      hocon.atKey("cassandra"),
+      "cassandra",
+    ).value.config.driver shouldEqual
+      CassandraConfigCompat.fromV3(v3).value.config.driver
   }
 }
 
@@ -483,7 +485,7 @@ object CassandraConfigCompatSpec {
       |}
       |""".stripMargin
 
-  def legacy(hocon: String): CassandraConfig = {
+  def legacy(hocon: String): TranslatedConfig = {
     legacyResult(ConfigFactory.parseString(hocon)).fold(
       failures => throw new AssertionError(failures.prettyPrint()),
       identity,
@@ -498,18 +500,18 @@ object CassandraConfigCompatSpec {
     ConfigFactory.parseResources(classOf[CassandraConfigCompatSpec], name)
   }
 
-  def legacyResource(name: String, key: String = ""): CassandraConfig = {
+  def legacyResource(name: String, key: String = ""): TranslatedConfig = {
     val config = fixtureConfig(name)
     val section = if (key.isEmpty) config else config.atKey(key)
     legacyResult(section).fold(failures => throw new AssertionError(failures.prettyPrint()), identity)
   }
 
-  private def legacyResult(section: Config): Either[ConfigReaderFailures, CassandraConfig] = {
+  private def legacyResult(section: Config): Either[ConfigReaderFailures, TranslatedConfig] = {
     CassandraConfigCompat.fromLegacyConfig(section.atKey("cassandra"), "cassandra")
   }
 
-  def profileOf(config: CassandraConfig): DriverExecutionProfile = {
-    config.configLoader.getInitialConfig.getDefaultProfile
+  def profileOf(translated: TranslatedConfig): DriverExecutionProfile = {
+    translated.config.configLoader.getInitialConfig.getDefaultProfile
   }
 
   def failurePaths(failures: ConfigReaderFailures): List[String] = {
@@ -519,7 +521,7 @@ object CassandraConfigCompatSpec {
     }
   }
 
-  def warnedKeys(config: CassandraConfig): Set[String] = {
+  def warnedKeys(config: TranslatedConfig): Set[String] = {
     config.warnings.map { warning => warning.drop(1).takeWhile(_ != '`') }.toSet
   }
 }

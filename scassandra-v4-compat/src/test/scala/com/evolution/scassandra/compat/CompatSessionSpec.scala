@@ -5,7 +5,6 @@ import cats.effect.unsafe.implicits.global
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption
 import com.dimafeng.testcontainers.CassandraContainer
 import com.evolution.scassandra.CassandraSession
-import com.evolutiongaming.catshelper.LogOf
 import com.evolutiongaming.nel.Nel
 import com.evolutiongaming.scassandra.CassandraConfig as CassandraConfigV3
 import com.typesafe.config.ConfigFactory
@@ -22,8 +21,6 @@ import scala.jdk.OptionConverters.*
  * Netty
  */
 class CompatSessionSpec extends AnyFunSuite with Matchers with BeforeAndAfterAll {
-
-  private implicit val logOf: LogOf[IO] = LogOf.empty[IO]
 
   private lazy val container: CassandraContainer = {
     val image = sys.env.getOrElse("CASSANDRA_IMAGE", "cassandra:3.11.7")
@@ -43,9 +40,9 @@ class CompatSessionSpec extends AnyFunSuite with Matchers with BeforeAndAfterAll
       contactPoints = Nel(container.containerIpAddress),
       port = container.mappedPort(9042),
     )
-    val config =
+    val translated =
       CassandraConfigCompat.fromV3(configV3).fold(failures => fail(failures.prettyPrint()), identity)
-    val now = CassandraSession.make[IO](config).use { session =>
+    val now = CassandraSession.make[IO](translated.config).use { session =>
       session.execute("SELECT now() FROM system.local").map { resultSet => Option(resultSet.one()) }
     }
 
@@ -69,11 +66,11 @@ class CompatSessionSpec extends AnyFunSuite with Matchers with BeforeAndAfterAll
          |}
          |""".stripMargin,
     )
-    val config = CassandraConfigCompat.fromLegacyConfig(hocon, "cassandra").fold(
+    val translated = CassandraConfigCompat.fromLegacyConfig(hocon, "cassandra").fold(
       failures => fail(failures.prettyPrint()),
       identity,
     )
-    val program = CassandraSession.make[IO](config).use { session =>
+    val program = CassandraSession.make[IO](translated.config).use { session =>
       for {
         resultSet <- session.execute("SELECT now() FROM system.local")
       } yield {
@@ -88,7 +85,7 @@ class CompatSessionSpec extends AnyFunSuite with Matchers with BeforeAndAfterAll
       }
     }
 
-    config.warnings.size shouldEqual 1
+    translated.warnings.size shouldEqual 1
     program.unsafeRunSync() shouldEqual ((true, 4, Duration.ofSeconds(5), true))
   }
 }

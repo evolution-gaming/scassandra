@@ -3,7 +3,6 @@ package com.evolution.scassandra
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.dimafeng.testcontainers.CassandraContainer
-import com.evolutiongaming.catshelper.LogOf
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{BeforeAndAfterAll, Suite}
 import org.testcontainers.utility.DockerImageName
@@ -42,8 +41,6 @@ object CassandraSuite {
 }
 
 trait CassandraSuite extends BeforeAndAfterAll { self: Suite =>
-
-  protected implicit val logOf: LogOf[IO] = LogOf.empty[IO]
 
   protected def keyspace: String = self.getClass.getSimpleName.toLowerCase.filter(_.isLetter)
 

@@ -53,9 +53,10 @@ scassandra for the driver 3 in both cases.
   protocol versions `V1` and `V2`, `pooling.local.max-requests-per-connection` outside of `1..32768`, and
   malformed contact points (the driver 3 failed on them when creating a cluster). The failures of
   `fromLegacyConfig` contain the full path of the key, the failures of `fromV3` contain the key only.
-* **Ignored keys produce warnings**, logged by `CassandraSession.make` and available as
-  `CassandraConfig.warnings`. A warning is produced only if the value differs from the default of scassandra
-  for the driver 3, so an ignored key explicitly set to its default produces no warning.
+* **Ignored keys produce warnings**, returned as `TranslatedConfig.warnings` next to the translated
+  `TranslatedConfig.config`; they are not logged, it is up to the caller. A warning is produced only if the value
+  differs from the default of scassandra for the driver 3, so an ignored key explicitly set to its default produces
+  no warning.
 * **Unknown keys are ignored** without warnings, same as before.
 * **`scassandra-v4-compat` depends on scassandra for the driver 3**, so the driver 3 and the versions of
   Netty, Guava and Jackson pinned by it are on the classpath. The driver 4 is tested to work with them.

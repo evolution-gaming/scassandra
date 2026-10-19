@@ -19,12 +19,8 @@ import pureconfig.{ConfigReader, ConfigSource}
  * @param driver
  *   driver configuration with the `datastax-java-driver` root stripped, the missing
  *   options are taken from the `reference.conf` of the driver
- * @param warnings
- *   issues found when producing the configuration, i.e. the ignored fields of the
- *   configuration of scassandra for the Java driver 3 translated by
- *   `scassandra-v4-compat`, logged when a session is created
  */
-final case class CassandraConfig(driver: Config, warnings: List[String] = List.empty) {
+final case class CassandraConfig(driver: Config) {
 
   /**
    * Creates a new loader of this configuration for a session.
@@ -38,7 +34,7 @@ final case class CassandraConfig(driver: Config, warnings: List[String] = List.e
   }
 
   // the configuration might contain credentials
-  override def toString: String = s"CassandraConfig(driver = ***, warnings = $warnings)"
+  override def toString: String = "CassandraConfig(driver = ***)"
 }
 
 object CassandraConfig {
