@@ -29,7 +29,7 @@ class SessionSpec extends AnyFunSuite with CassandraSuite with Matchers with Eit
   private def failure(io: IO[?]): Throwable = io.attempt.unsafeRunSync().left.value
 
   test("query against a missing table fails with InvalidQueryException") {
-    failure(session.execute(s"SELECT * FROM $keyspace.missing")) shouldBe a[InvalidQueryException]
+    failure(session.execute(s"SELECT id FROM $keyspace.missing")) shouldBe a[InvalidQueryException]
   }
 
   test("malformed query fails with SyntaxError") {
@@ -37,7 +37,7 @@ class SessionSpec extends AnyFunSuite with CassandraSuite with Matchers with Eit
   }
 
   test("prepare of an invalid query fails with InvalidQueryException") {
-    failure(session.prepare(s"SELECT * FROM $keyspace.missing WHERE id = ?")) shouldBe
+    failure(session.prepare(s"SELECT id FROM $keyspace.missing WHERE id = ?")) shouldBe
       a[InvalidQueryException]
   }
 
@@ -67,12 +67,13 @@ class SessionSpec extends AnyFunSuite with CassandraSuite with Matchers with Eit
   }
 
   test("session keyspace resolves unqualified tables") {
-    val result = withSession(s"basic.session-keyspace = $keyspace") { session =>
+    withSession(s"basic.session-keyspace = $keyspace") { session =>
       for {
         resultSet <- session.execute(s"SELECT value FROM $table WHERE id = 1")
-      } yield (session.keyspace, resultSet.one().decode[String]("value"))
+        _ = session.keyspace shouldEqual Some(CqlIdentifier.fromCql(keyspace))
+        _ = resultSet.one().decode[String]("value") shouldEqual "value"
+      } yield ()
     }
-    result shouldEqual ((Some(CqlIdentifier.fromCql(keyspace)), "value"))
   }
 
   test("metadata contains the keyspace and the table") {
@@ -94,14 +95,13 @@ class SessionSpec extends AnyFunSuite with CassandraSuite with Matchers with Eit
         |  max-retries = 1
         |}
         |""".stripMargin
-    val result = withSession(retryPolicy) { session =>
+    withSession(retryPolicy) { session =>
       for {
         resultSet <- session.execute(s"SELECT value FROM $keyspace.$table WHERE id = 1")
-      } yield {
-        val policy = session.unwrap.getContext.getRetryPolicy(DriverExecutionProfile.DEFAULT_NAME)
-        (policy.getClass, resultSet.one().decode[String]("value"))
-      }
+        _ = resultSet.one().decode[String]("value") shouldEqual "value"
+        policy <- IO { session.unwrap.getContext.getRetryPolicy(DriverExecutionProfile.DEFAULT_NAME) }
+        _ = policy shouldBe a[NextHostRetryPolicy]
+      } yield ()
     }
-    result shouldEqual ((classOf[NextHostRetryPolicy], "value"))
   }
 }

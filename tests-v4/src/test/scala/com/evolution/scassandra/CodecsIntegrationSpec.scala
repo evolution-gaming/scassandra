@@ -4,15 +4,14 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.datastax.oss.driver.api.core.cql.{Row, SimpleStatement}
 import com.datastax.oss.driver.api.core.data.CqlDuration
+import com.evolution.scassandra.CodecsIntegrationSpec.*
 import com.evolution.scassandra.syntax.*
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
 import java.time.{Instant, LocalDate}
 
-class CodecsSpec extends AnyFunSuite with CassandraSuite with Matchers {
-
-  import CodecsSpec.*
+class CodecsIntegrationSpec extends AnyFunSuite with CassandraSuite with Matchers {
 
   private lazy val table = s"$keyspace.codecs"
 
@@ -155,7 +154,7 @@ class CodecsSpec extends AnyFunSuite with CassandraSuite with Matchers {
   }
 }
 
-object CodecsSpec {
+object CodecsIntegrationSpec {
 
   val FullRowId = 1
   val NullRowId = 2

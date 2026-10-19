@@ -4,6 +4,7 @@ import cats.effect.unsafe.implicits.global
 import cats.effect.{Deferred, IO}
 import com.datastax.oss.driver.api.core.cql.{AsyncResultSet, ColumnDefinitions, ExecutionInfo, Row}
 import com.datastax.oss.driver.internal.core.cql.{DefaultColumnDefinitions, DefaultRow}
+import com.evolution.scassandra.AsyncResultSetStreamSpec.*
 import com.evolution.scassandra.syntax.*
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
@@ -12,8 +13,6 @@ import java.util.concurrent.{CompletableFuture, CompletionStage, CountDownLatch,
 import scala.jdk.CollectionConverters.*
 
 class AsyncResultSetStreamSpec extends AnyFunSuite with Matchers {
-
-  import AsyncResultSetStreamSpec.*
 
   test("stream reads all the pages") {
     val lastPage = AsyncResultSetStub(rows(2), next = None)

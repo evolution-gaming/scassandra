@@ -74,20 +74,17 @@ class CompatSessionSpec extends AnyFunSuite with Matchers with BeforeAndAfterAll
     val program = CassandraSession.make[IO](translated.config).use { session =>
       for {
         resultSet <- session.execute("SELECT now() FROM system.local")
-      } yield {
-        val profile = session.unwrap.getContext.getConfig.getDefaultProfile
-        val metrics = session.unwrap.getMetrics.toScala.map(_.getRegistry.getNames.size())
-        (
-          Option(resultSet.one()).isDefined,
-          profile.getInt(DefaultDriverOption.REQUEST_PAGE_SIZE),
-          profile.getDuration(DefaultDriverOption.REQUEST_TIMEOUT),
-          metrics.exists(_ > 0),
-        )
-      }
+        _ = Option(resultSet.one()) should not be empty
+        profile <- IO { session.unwrap.getContext.getConfig.getDefaultProfile }
+        _ = profile.getInt(DefaultDriverOption.REQUEST_PAGE_SIZE) shouldEqual 4
+        _ = profile.getDuration(DefaultDriverOption.REQUEST_TIMEOUT) shouldEqual Duration.ofSeconds(5)
+        metricNames <- IO { session.unwrap.getMetrics.toScala.map(_.getRegistry.getNames.size()) }
+        _ = metricNames.getOrElse(0) should be > 0
+      } yield ()
     }
 
     translated.warnings.size shouldEqual 1
-    program.unsafeRunSync() shouldEqual ((true, 4, Duration.ofSeconds(5), true))
+    program.unsafeRunSync()
   }
 
   test("session uses the reconnection policy set in the driver configuration") {
@@ -108,15 +105,14 @@ class CompatSessionSpec extends AnyFunSuite with Matchers with BeforeAndAfterAll
       identity,
     )
     val program = CassandraSession.make[IO](translated.config).use { session =>
-      IO {
-        val policy = session.unwrap.getContext.getReconnectionPolicy
-        val node = session.unwrap.getMetadata.getNodes.values().iterator().next()
-        (policy, policy.newNodeSchedule(node).nextDelay())
-      }
+      for {
+        policy <- IO { session.unwrap.getContext.getReconnectionPolicy }
+        _ = policy shouldBe a[ConstantReconnectionPolicy]
+        node <- IO { session.unwrap.getMetadata.getNodes.values().iterator().next() }
+        _ = policy.newNodeSchedule(node).nextDelay() shouldEqual Duration.ofSeconds(5)
+      } yield ()
     }
 
-    val (policy, delay) = program.unsafeRunSync()
-    policy shouldBe a[ConstantReconnectionPolicy]
-    delay shouldEqual Duration.ofSeconds(5)
+    program.unsafeRunSync()
   }
 }

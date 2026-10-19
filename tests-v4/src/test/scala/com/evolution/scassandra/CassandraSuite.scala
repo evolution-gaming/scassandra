@@ -46,9 +46,10 @@ trait CassandraSuite extends BeforeAndAfterAll { self: Suite =>
 
   protected def config: CassandraConfig = CassandraSuite.config
 
-  private lazy val allocated = CassandraSession.make[IO](config).allocated.unsafeRunSync()
+  private lazy val (allocatedSession, releaseSession) =
+    CassandraSession.make[IO](config).allocated.unsafeRunSync()
 
-  protected lazy val session: CassandraSession[IO] = allocated._1
+  protected lazy val session: CassandraSession[IO] = allocatedSession
 
   /**
    * Creates a session with the given driver configuration on top of the default one
@@ -67,7 +68,7 @@ trait CassandraSuite extends BeforeAndAfterAll { self: Suite =>
   }
 
   override protected def afterAll(): Unit = {
-    allocated._2.unsafeRunSync()
+    releaseSession.unsafeRunSync()
     super.afterAll()
   }
 }

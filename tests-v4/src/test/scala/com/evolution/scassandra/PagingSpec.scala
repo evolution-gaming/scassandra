@@ -4,13 +4,12 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import cats.syntax.all.*
 import com.datastax.oss.driver.api.core.cql.{Row, SimpleStatement}
+import com.evolution.scassandra.PagingSpec.*
 import com.evolution.scassandra.syntax.*
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
 class PagingSpec extends AnyFunSuite with CassandraSuite with Matchers {
-
-  import PagingSpec.*
 
   private lazy val table = s"$keyspace.paging"
 
@@ -63,16 +62,15 @@ class PagingSpec extends AnyFunSuite with CassandraSuite with Matchers {
   }
 
   test("basic.request.page-size applies to every query of the session") {
-    val (remaining, rows) = withSession(s"basic.request.page-size = $PageSize") { session =>
+    withSession(s"basic.request.page-size = $PageSize") { session =>
       for {
         resultSet <- session.execute(query)
-        // the rows are consumed by the stream
-        remaining = resultSet.remaining()
+        // checked before streaming, as the stream consumes the rows
+        _ = resultSet.remaining() shouldEqual PageSize
         rows <- resultSet.stream[IO].toList
-      } yield (remaining, ids(rows))
+        _ = ids(rows) shouldEqual Ids
+      } yield ()
     }
-    remaining shouldEqual PageSize
-    rows shouldEqual Ids
   }
 }
 

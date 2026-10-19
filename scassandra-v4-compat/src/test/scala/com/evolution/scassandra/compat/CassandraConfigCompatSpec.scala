@@ -3,6 +3,7 @@ package com.evolution.scassandra.compat
 import com.datastax.driver.core.ProtocolVersion
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption.*
 import com.datastax.oss.driver.api.core.config.DriverExecutionProfile
+import com.evolution.scassandra.compat.CassandraConfigCompatSpec.*
 import com.evolutiongaming.nel.Nel
 import com.evolutiongaming.scassandra.{CassandraConfig as CassandraConfigV3, PoolingConfig, QueryConfig}
 import com.typesafe.config.{Config, ConfigFactory}
@@ -17,8 +18,6 @@ import scala.concurrent.duration.*
 import scala.jdk.CollectionConverters.*
 
 class CassandraConfigCompatSpec extends AnyFunSuite with Matchers with EitherValues {
-
-  import CassandraConfigCompatSpec.*
 
   test("empty config is translated with the defaults of scassandra for the driver 3") {
     val config = legacy("")
