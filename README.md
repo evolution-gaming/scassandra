@@ -159,6 +159,8 @@ mind the following differences:
   `LoggingRetryPolicy`.
 * **`ReplicationStrategyConfig` fails on an unknown strategy or an invalid value**, where v3 silently used
   `SimpleStrategy` with a replication factor of 1.
+* **`ReplicationStrategyConfig` reads the `simple` block without `replication-strategy`**, where v3 ignored it
+  and used a replication factor of 1. E.g. `simple.replication-factor = 3` alone creates a keyspace with 3 replicas.
 * Resources are created with `make` instead of `of`, i.e. `CassandraSession.make`, `CassandraHealthCheck.make`.
 * **`CassandraHealthCheck.make` takes the session of the application**, not a `Resource` of a session, as a
   session of the driver 4 is heavyweight, and a separate one would not check the session in use.
