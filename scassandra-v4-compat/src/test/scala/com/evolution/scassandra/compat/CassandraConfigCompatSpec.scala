@@ -254,6 +254,15 @@ class CassandraConfigCompatSpec extends AnyFunSuite with Matchers with EitherVal
     profile.isDefined(CONTACT_POINTS) shouldEqual false
   }
 
+  test("contact points in the driver configuration replace the cloud secure connect bundle") {
+    val profile = profileOf(legacy(
+      """cloud-secure-connect-bundle.file = "/my/bundle.zip", driver.basic.contact-points = ["host:9042"]""",
+    ))
+
+    profile.isDefined(CLOUD_SECURE_CONNECT_BUNDLE) shouldEqual false
+    profile.getStringList(CONTACT_POINTS).asScala shouldEqual List("host:9042")
+  }
+
   test("driver configuration is applied on top of the translated one") {
     val config = legacy(
       """

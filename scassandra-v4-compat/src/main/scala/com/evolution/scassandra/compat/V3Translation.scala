@@ -321,20 +321,25 @@ private[compat] object V3Translation {
     }
 
     private def contactPointsOrBundle: Result[Entries] = {
-      val bundleInOverrides = overridden(DefaultDriverOption.CLOUD_SECURE_CONNECT_BUNDLE)
-      config.cloudSecureConnectBundle match {
-        case Some(CloudSecureConnectBundleConfig.File(file)) =>
-          List(DefaultDriverOption.CLOUD_SECURE_CONNECT_BUNDLE -> file).asRight
-        case Some(CloudSecureConnectBundleConfig.Url(url)) =>
-          List(DefaultDriverOption.CLOUD_SECURE_CONNECT_BUNDLE -> url).asRight
-        case None if bundleInOverrides || overridden(DefaultDriverOption.CONTACT_POINTS) =>
-          List.empty.asRight
-        case None =>
-          config.contactPoints.toList
-            .parTraverse { contactPoint =>
-              parseContactPoint(contactPoint).leftMap(failure("contact-points", _))
-            }
-            .map { contactPoints => List(DefaultDriverOption.CONTACT_POINTS -> contactPoints.asJava) }
+      // the driver configuration decides how to connect, as the driver ignores the contact points if a bundle is set
+      val connectionOverridden =
+        overridden(DefaultDriverOption.CLOUD_SECURE_CONNECT_BUNDLE) ||
+          overridden(DefaultDriverOption.CONTACT_POINTS)
+      if (connectionOverridden) {
+        List.empty.asRight
+      } else {
+        config.cloudSecureConnectBundle match {
+          case Some(CloudSecureConnectBundleConfig.File(file)) =>
+            List(DefaultDriverOption.CLOUD_SECURE_CONNECT_BUNDLE -> file).asRight
+          case Some(CloudSecureConnectBundleConfig.Url(url)) =>
+            List(DefaultDriverOption.CLOUD_SECURE_CONNECT_BUNDLE -> url).asRight
+          case None =>
+            config.contactPoints.toList
+              .parTraverse { contactPoint =>
+                parseContactPoint(contactPoint).leftMap(failure("contact-points", _))
+              }
+              .map { contactPoints => List(DefaultDriverOption.CONTACT_POINTS -> contactPoints.asJava) }
+        }
       }
     }
 
