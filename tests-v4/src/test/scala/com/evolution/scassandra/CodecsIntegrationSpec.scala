@@ -1,0 +1,263 @@
+package com.evolution.scassandra
+
+import cats.effect.IO
+import cats.effect.unsafe.implicits.global
+import com.datastax.oss.driver.api.core.cql.{PreparedStatement, Row, SimpleStatement}
+import com.datastax.oss.driver.api.core.data.{CqlDuration, SettableByName}
+import com.evolution.scassandra.CodecsIntegrationSpec.*
+import com.evolution.scassandra.syntax.*
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
+
+import java.time.{Instant, LocalDate}
+
+class CodecsIntegrationSpec extends AnyFunSuite with CassandraSuite with Matchers {
+
+  private lazy val table = s"$keyspace.codecs"
+
+  private lazy val columns = List(
+    "v_bool",
+    "v_str",
+    "v_short",
+    "v_int",
+    "v_long",
+    "v_float",
+    "v_double",
+    "v_instant",
+    "v_decimal",
+    "v_strs",
+    "v_bytes",
+    "v_duration",
+    "v_date",
+  )
+
+  override protected def beforeAll(): Unit = {
+    super.beforeAll()
+    val create = s"""
+      CREATE TABLE IF NOT EXISTS $table (
+        id INT PRIMARY KEY,
+        v_bool BOOLEAN,
+        v_str TEXT,
+        v_short SMALLINT,
+        v_int INT,
+        v_long BIGINT,
+        v_float FLOAT,
+        v_double DOUBLE,
+        v_instant TIMESTAMP,
+        v_decimal DECIMAL,
+        v_strs SET<TEXT>,
+        v_bytes BLOB,
+        v_duration DURATION,
+        v_date DATE
+      )
+    """
+    val program = for {
+      _ <- session.execute(create)
+      prepared <- session.prepare(
+        s"INSERT INTO $table (id, ${ columns.mkString(", ") }) VALUES (?, ${ columns.map(_ => "?").mkString(", ") })",
+      )
+      bound = prepared
+        .bind()
+        .encode("id", FullRowId)
+        .encode("v_bool", bool)
+        .encode("v_str", str)
+        .encode("v_short", short)
+        .encode("v_int", int)
+        .encode("v_long", long)
+        .encode("v_float", float)
+        .encode("v_double", double)
+        .encode("v_instant", instant)
+        .encode("v_decimal", decimal)
+        .encode("v_strs", strs)
+        .encode("v_bytes", bytes)
+        .encode("v_duration", duration)
+        .encode("v_date", date)
+      _ <- session.execute(bound)
+      _ <- session.execute(SimpleStatement.newInstance(
+        s"INSERT INTO $table (id) VALUES (?)",
+        Int.box(NullRowId),
+      ))
+    } yield ()
+    program.unsafeRunSync()
+  }
+
+  private def select(id: Int): IO[Row] = {
+    val statement = SimpleStatement.newInstance(
+      s"SELECT id, ${ columns.mkString(", ") } FROM $table WHERE id = ?",
+      Int.box(id),
+    )
+    session.execute(statement).map(_.one())
+  }
+
+  test("decode by name") {
+    val row = select(FullRowId).unsafeRunSync()
+    row.decode[Boolean]("v_bool") shouldEqual bool
+    row.decode[String]("v_str") shouldEqual str
+    row.decode[Short]("v_short") shouldEqual short
+    row.decode[Int]("v_int") shouldEqual int
+    row.decode[Long]("v_long") shouldEqual long
+    row.decode[Float]("v_float") shouldEqual float
+    row.decode[Double]("v_double") shouldEqual double
+    row.decode[Instant]("v_instant") shouldEqual instant
+    row.decode[BigDecimal]("v_decimal") shouldEqual decimal
+    row.decode[Set[String]]("v_strs") shouldEqual strs
+    row.decode[Array[Byte]]("v_bytes").toList shouldEqual bytes.toList
+    row.decode[CqlDuration]("v_duration") shouldEqual duration
+    row.decode[LocalDate]("v_date") shouldEqual date
+  }
+
+  test("decode by index") {
+    val row = select(FullRowId).unsafeRunSync()
+    row.decodeAt[Int](0) shouldEqual FullRowId
+    row.decodeAt[Boolean](1) shouldEqual bool
+    row.decodeAt[String](2) shouldEqual str
+    row.decodeAt[Short](3) shouldEqual short
+    row.decodeAt[Int](4) shouldEqual int
+    row.decodeAt[Long](5) shouldEqual long
+    row.decodeAt[Float](6) shouldEqual float
+    row.decodeAt[Double](7) shouldEqual double
+    row.decodeAt[Instant](8) shouldEqual instant
+    row.decodeAt[BigDecimal](9) shouldEqual decimal
+    row.decodeAt[Set[String]](10) shouldEqual strs
+    row.decodeAt[Array[Byte]](11).toList shouldEqual bytes.toList
+    row.decodeAt[CqlDuration](12) shouldEqual duration
+    row.decodeAt[LocalDate](13) shouldEqual date
+  }
+
+  test("decode null values as None") {
+    val row = select(NullRowId).unsafeRunSync()
+    row.decode[Option[Boolean]]("v_bool") shouldEqual None
+    row.decode[Option[String]]("v_str") shouldEqual None
+    row.decode[Option[Instant]]("v_instant") shouldEqual None
+    row.decode[Option[BigDecimal]]("v_decimal") shouldEqual None
+    row.decode[Option[Set[String]]]("v_strs") shouldEqual None
+    row.decode[Option[Array[Byte]]]("v_bytes") shouldEqual None
+    row.decode[Option[CqlDuration]]("v_duration") shouldEqual None
+    row.decode[Option[LocalDate]]("v_date") shouldEqual None
+    row.decodeAt[Option[String]](2) shouldEqual None
+  }
+
+  test("encode None as null") {
+    val program = for {
+      prepared <- session.prepare(s"INSERT INTO $table (id, v_str, v_int) VALUES (?, ?, ?)")
+      bound = prepared
+        .bind()
+        .encode("id", OptionRowId)
+        .encode("v_str", Option("str"))
+        .encode("v_int", Option.empty[Int])
+      _ <- session.execute(bound)
+      row <- select(OptionRowId)
+    } yield row
+    val row = program.unsafeRunSync()
+    row.decode[Option[String]]("v_str") shouldEqual Some("str")
+    row.decode[Option[Int]]("v_int") shouldEqual None
+  }
+
+  test("encode and decode a case class") {
+    val program = for {
+      prepared <- session.prepare(insertItem)
+      _ <- session.execute(prepared.bind().encode("id", ItemRowId).encode(item))
+      row <- select(ItemRowId)
+      _ = row.decode[Item] shouldEqual item
+    } yield ()
+    program.unsafeRunSync()
+  }
+
+  test("update a statement with a case class") {
+    val program = for {
+      prepared <- session.prepare(insertItem)
+      _ <- session.execute(prepared.bind().encode("id", UpdatedItemRowId).update(item))
+      row <- select(UpdatedItemRowId)
+      _ = row.decode[Item] shouldEqual item
+    } yield ()
+    program.unsafeRunSync()
+  }
+
+  test("encoder discarding a returned statement loses the value") {
+    // statements are immutable, unlike `UdtValue` used in the offline `CodecsSpec`
+    val program = for {
+      prepared <- session.prepare(insertItem)
+      _ <- session.execute(DiscardingEncodeRow(prepared.bind().encode("id", DiscardedItemRowId), item))
+      row <- select(DiscardedItemRowId)
+      _ = row.decode[Option[String]]("v_str") shouldEqual None
+      _ = row.decode[Option[Int]]("v_int") shouldEqual Some(item.int)
+    } yield ()
+    program.unsafeRunSync()
+  }
+
+  test("None encoded as unset keeps the stored value, None encoded as null removes it") {
+    val program = for {
+      prepared <- session.prepare(s"INSERT INTO $table (id, v_str) VALUES (?, ?)")
+      _ <- insertStr(prepared, UnsetRowId, Some(str))
+      _ <- insertStr(prepared, UnsetRowId, None)(EncodeByName.noneAsUnset)
+      _ <- insertStr(prepared, RemovedRowId, Some(str))
+      _ <- insertStr(prepared, RemovedRowId, None)
+      unset <- select(UnsetRowId)
+      _ = unset.decode[Option[String]]("v_str") shouldEqual Some(str)
+      removed <- select(RemovedRowId)
+      _ = removed.decode[Option[String]]("v_str") shouldEqual None
+    } yield ()
+    program.unsafeRunSync()
+  }
+
+  private def insertStr(
+    prepared: PreparedStatement,
+    id: Int,
+    value: Option[String],
+  )(implicit
+    encode: EncodeByName[Option[String]],
+  ): IO[Unit] = {
+    session.execute(prepared.bind().encode("id", id).encode("v_str", value)).void
+  }
+
+  private def insertItem: String = s"INSERT INTO $table (id, v_str, v_int, v_strs) VALUES (?, ?, ?, ?)"
+}
+
+object CodecsIntegrationSpec {
+
+  val FullRowId = 1
+  val NullRowId = 2
+  val OptionRowId = 3
+  val ItemRowId = 4
+  val UpdatedItemRowId = 5
+  val DiscardedItemRowId = 6
+  val UnsetRowId = 7
+  val RemovedRowId = 8
+
+  val bool = true
+  val str = "str"
+  val short: Short = 7
+  val int = 42
+  val long: Long = 1L << 40
+  val float = 1.5f
+  val double = 2.5
+  val instant: Instant = Instant.parse("2020-01-02T03:04:05.678Z")
+  val decimal: BigDecimal = BigDecimal("123.456")
+  val strs: Set[String] = Set("a", "b")
+  val bytes: Array[Byte] = Array[Byte](1, 2, 3)
+  val duration: CqlDuration = CqlDuration.newInstance(1, 2, 3)
+  val date: LocalDate = LocalDate.of(2020, 1, 2)
+  val item: Item = Item(str, int, strs)
+
+  final case class Item(str: String, int: Int, strs: Set[String])
+
+  object Item {
+
+    implicit val encodeRowItem: EncodeRow[Item] = new EncodeRow[Item] {
+      override def apply[B <: SettableByName[B]](data: B, item: Item): B = {
+        data.encode("v_str", item.str).encode("v_int", item.int).encode("v_strs", item.strs)
+      }
+    }
+
+    implicit val decodeRowItem: DecodeRow[Item] = { data =>
+      Item(data.decode[String]("v_str"), data.decode[Int]("v_int"), data.decode[Set[String]]("v_strs"))
+    }
+  }
+
+  val DiscardingEncodeRow: EncodeRow[Item] = new EncodeRow[Item] {
+    override def apply[B <: SettableByName[B]](data: B, item: Item): B = {
+      val _ = data.encode("v_str", item.str)
+      data.encode("v_int", item.int).encode("v_strs", item.strs)
+    }
+  }
+}

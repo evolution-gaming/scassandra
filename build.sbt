@@ -66,7 +66,7 @@ lazy val root = (project in file("."))
   .settings(
     publish / skip := true,
   )
-  .aggregate(scassandra, tests)
+  .aggregate(scassandra, tests, scassandraV4, scassandraV4Compat, testsV4)
 
 lazy val scassandra = (project in file("scassandra"))
   .settings(name := "scassandra")
@@ -119,6 +119,69 @@ lazy val tests = (project in file("tests"))
       `testcontainers-cassandra` % Test,
       Slf4j.api % Test,
       Slf4j.`log4j-over-slf4j` % Test,
+      Logback.core % Test,
+      Logback.classic % Test,
+      scalatest % Test,
+    ),
+  )
+
+// scassandra-v4 modules are published under a new organization and use the Java driver 4
+lazy val v4Settings = Seq(
+  organization := "com.evolution",
+  // TODO: switch to Compatibility.BinaryCompatible once the first version is published
+  versionPolicyIntention := Compatibility.None,
+)
+
+lazy val scassandraV4 = (project in file("scassandra-v4"))
+  .settings(name := "scassandra-v4")
+  .settings(commonSettings)
+  .settings(v4Settings)
+  .settings(
+    libraryDependencies ++= Seq(
+      `java-driver-core`,
+      jffi,
+      Cats.core,
+      Cats.effect,
+      `cats-helper`,
+      sstream,
+      Pureconfig.core,
+      Pureconfig.cats,
+      scalatest % Test,
+      Cats.effectTestkit % Test,
+    ),
+  )
+
+lazy val scassandraV4Compat = (project in file("scassandra-v4-compat"))
+  .settings(name := "scassandra-v4-compat")
+  .settings(commonSettings)
+  .settings(v4Settings)
+  .settings(
+    Test / fork := true,
+    // to check that the documentation of the configuration translation is up to date
+    Test / unmanagedResourceDirectories += (LocalRootProject / baseDirectory).value / "docs",
+    libraryDependencies ++= Seq(
+      scalatest % Test,
+      `testcontainers-cassandra` % Test,
+      Logback.core % Test,
+      Logback.classic % Test,
+    ),
+  )
+  .dependsOn(scassandra, scassandraV4)
+
+lazy val testsV4 = (project in file("tests-v4"))
+  .settings(name := "tests-v4")
+  .settings(commonSettings)
+  .settings(
+    Seq(
+      publish / skip := true,
+      Test / fork := true,
+      Test / parallelExecution := false,
+    ),
+  )
+  .dependsOn(scassandraV4 % "test->test;compile->compile")
+  .settings(
+    libraryDependencies ++= Seq(
+      `testcontainers-cassandra` % Test,
       Logback.core % Test,
       Logback.classic % Test,
       scalatest % Test,

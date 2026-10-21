@@ -43,4 +43,4 @@ jobs:
       - name: integration tests against ${{ matrix.cassandra }}
         env:
           CASSANDRA_IMAGE: ${{ matrix.cassandra }}
-        run: sbt "tests/testFull"
+        run: sbt "tests/testFull; testsV4/testFull; scassandraV4Compat/testFull"

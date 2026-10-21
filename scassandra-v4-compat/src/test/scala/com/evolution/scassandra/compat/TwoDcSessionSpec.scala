@@ -1,0 +1,104 @@
+package com.evolution.scassandra.compat
+
+import cats.effect.IO
+import cats.effect.unsafe.implicits.global
+import com.datastax.oss.driver.api.core.config.DriverExecutionProfile
+import com.datastax.oss.driver.internal.core.loadbalancing.BasicLoadBalancingPolicy
+import com.dimafeng.testcontainers.CassandraContainer
+import com.evolution.scassandra.CassandraSession
+import com.evolutiongaming.nel.Nel
+import com.evolutiongaming.scassandra.CassandraCluster
+import com.evolutiongaming.scassandra.CassandraConfig as CassandraConfigV3
+import com.evolutiongaming.scassandra.util.FromGFuture
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.{BeforeAndAfterAll, Canceled, Outcome}
+import org.testcontainers.containers.Network
+import org.testcontainers.utility.DockerImageName
+
+import java.time.Duration
+import scala.jdk.CollectionConverters.*
+
+class TwoDcSessionSpec extends AnyFunSuite with Matchers with BeforeAndAfterAll {
+
+  private implicit val fromGFutureIO: FromGFuture[IO] = FromGFuture.lift1[IO]
+
+  // the nodes are reached by the IP addresses of their containers, which Docker on macOS does not route to the host
+  private val containersReachable: Boolean = !sys.props.getOrElse("os.name", "").toLowerCase.contains("mac")
+
+  private val network = Network.newNetwork()
+
+  private def node(dc: String, token: Long): CassandraContainer = {
+    val image = sys.env.getOrElse("CASSANDRA_IMAGE", "cassandra:3.11.7")
+    val container = CassandraContainer(DockerImageName.parse(image))
+    container.container
+      .withNetwork(network)
+      .withNetworkAliases(s"$dc-node")
+      .withEnv("CASSANDRA_CLUSTER_NAME", "two-dc")
+      .withEnv("CASSANDRA_DC", dc)
+      .withEnv("CASSANDRA_SEEDS", "dc1-node")
+      .withEnv("JVM_OPTS", s"-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.initial_token=$token")
+      .withStartupTimeout(Duration.ofMinutes(5))
+    container.start()
+    container
+  }
+
+  private lazy val nodes: List[CassandraContainer] = List(node("dc1", 0L), node("dc2", 1L))
+
+  private def ip(container: CassandraContainer): String =
+    container.container.getContainerInfo.getNetworkSettings.getNetworks.asScala.values.head.getIpAddress
+
+  private lazy val configV3 =
+    CassandraConfigV3.Default.copy(contactPoints = Nel(ip(nodes.head), ip(nodes(1))))
+
+  override def withFixture(test: NoArgTest): Outcome = {
+    if (containersReachable) super.withFixture(test)
+    else Canceled("the IP addresses of the containers are not reachable on macOS")
+  }
+
+  override protected def afterAll(): Unit = {
+    if (containersReachable) nodes.foreach(_.stop())
+    network.close()
+    super.afterAll()
+  }
+
+  test("driver 3 connects when the contact points are in different DCs and no local DC is set") {
+    val now = CassandraCluster.of[IO](configV3, clusterId = 0).use { cluster =>
+      cluster.connect.use { session =>
+        session.execute("SELECT now() FROM system.local").map { resultSet => Option(resultSet.one()) }
+      }
+    }
+
+    now.unsafeRunSync() should not be empty
+  }
+
+  test("translated driver 3 config connects when the contact points are in different DCs and no local DC is set") {
+    val translated =
+      CassandraConfigCompat.fromV3(configV3).fold(failures => fail(failures.prettyPrint()), identity)
+    val now = CassandraSession.make[IO](translated.config).use { session =>
+      session.execute("SELECT now() FROM system.local").map { resultSet => Option(resultSet.one()) }
+    }
+
+    now.unsafeRunSync() should not be empty
+  }
+
+  test("translated driver 3 config takes the local DC of the first configured contact point") {
+    def localDc(contactPoints: Nel[String]): Option[String] = {
+      val translated = CassandraConfigCompat
+        .fromV3(configV3.copy(contactPoints = contactPoints))
+        .fold(failures => fail(failures.prettyPrint()), identity)
+      val localDc = CassandraSession.make[IO](translated.config).use { session =>
+        IO {
+          session.unwrap.getContext.getLoadBalancingPolicy(DriverExecutionProfile.DEFAULT_NAME) match {
+            case policy: BasicLoadBalancingPolicy => Option(policy.getLocalDatacenter)
+            case _ => None
+          }
+        }
+      }
+      localDc.unsafeRunSync()
+    }
+
+    localDc(Nel(ip(nodes.head), ip(nodes(1)))) shouldEqual Some("dc1")
+    localDc(Nel(ip(nodes(1)), ip(nodes.head))) shouldEqual Some("dc2")
+  }
+}
