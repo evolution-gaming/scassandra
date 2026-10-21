@@ -10,9 +10,9 @@ import com.evolutiongaming.nel.Nel
 import com.evolutiongaming.scassandra.CassandraCluster
 import com.evolutiongaming.scassandra.CassandraConfig as CassandraConfigV3
 import com.evolutiongaming.scassandra.util.FromGFuture
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.{BeforeAndAfterAll, Canceled, Outcome}
 import org.testcontainers.containers.Network
 import org.testcontainers.utility.DockerImageName
 
@@ -22,6 +22,9 @@ import scala.jdk.CollectionConverters.*
 class TwoDcSessionSpec extends AnyFunSuite with Matchers with BeforeAndAfterAll {
 
   private implicit val fromGFutureIO: FromGFuture[IO] = FromGFuture.lift1[IO]
+
+  // the nodes are reached by the IP addresses of their containers, which Docker on macOS does not route to the host
+  private val containersReachable: Boolean = !sys.props.getOrElse("os.name", "").toLowerCase.contains("mac")
 
   private val network = Network.newNetwork()
 
@@ -48,8 +51,13 @@ class TwoDcSessionSpec extends AnyFunSuite with Matchers with BeforeAndAfterAll 
   private lazy val configV3 =
     CassandraConfigV3.Default.copy(contactPoints = Nel(ip(nodes.head), ip(nodes(1))))
 
+  override def withFixture(test: NoArgTest): Outcome = {
+    if (containersReachable) super.withFixture(test)
+    else Canceled("the IP addresses of the containers are not reachable on macOS")
+  }
+
   override protected def afterAll(): Unit = {
-    nodes.foreach(_.stop())
+    if (containersReachable) nodes.foreach(_.stop())
     network.close()
     super.afterAll()
   }
