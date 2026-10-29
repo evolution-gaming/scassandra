@@ -14,7 +14,7 @@ import org.scalatest.matchers.should.Matchers
 
 import java.nio.ByteBuffer
 import java.time.{Instant, LocalDate}
-import java.util.List as JavaList
+import java.util.{List as JavaList, UUID}
 import scala.jdk.CollectionConverters.*
 
 class CodecsSpec extends AnyFunSuite with Matchers {
@@ -34,6 +34,7 @@ class CodecsSpec extends AnyFunSuite with Matchers {
       .encode("v_bytes", bytes)
       .encode("v_duration", duration)
       .encode("v_date", date)
+      .encode("v_uuid", uuid)
 
     data.decode[Boolean]("v_bool") shouldEqual bool
     data.decode[String]("v_str") shouldEqual str
@@ -48,6 +49,7 @@ class CodecsSpec extends AnyFunSuite with Matchers {
     data.decode[Array[Byte]]("v_bytes").toList shouldEqual bytes.toList
     data.decode[CqlDuration]("v_duration") shouldEqual duration
     data.decode[LocalDate]("v_date") shouldEqual date
+    data.decode[UUID]("v_uuid") shouldEqual uuid
   }
 
   test("encode and decode by index") {
@@ -65,6 +67,7 @@ class CodecsSpec extends AnyFunSuite with Matchers {
       .encodeAt(10, bytes)
       .encodeAt(11, duration)
       .encodeAt(12, date)
+      .encodeAt(14, uuid)
 
     data.decodeAt[Boolean](0) shouldEqual bool
     data.decodeAt[String](1) shouldEqual str
@@ -79,6 +82,7 @@ class CodecsSpec extends AnyFunSuite with Matchers {
     data.decodeAt[Array[Byte]](10).toList shouldEqual bytes.toList
     data.decodeAt[CqlDuration](11) shouldEqual duration
     data.decodeAt[LocalDate](12) shouldEqual date
+    data.decodeAt[UUID](14) shouldEqual uuid
   }
 
   test("encode None as null and decode null as None") {
@@ -122,6 +126,7 @@ class CodecsSpec extends AnyFunSuite with Matchers {
     Option(byName.decode[Instant]("v_instant")) shouldEqual None
     Option(byName.decode[CqlDuration]("v_duration")) shouldEqual None
     Option(byName.decode[LocalDate]("v_date")) shouldEqual None
+    Option(byName.decode[UUID]("v_uuid")) shouldEqual None
     byName.decode[Boolean]("v_bool") shouldEqual false
     byName.decode[Int]("v_int") shouldEqual 0
     byName.decode[Double]("v_double") shouldEqual 0.0
@@ -130,6 +135,7 @@ class CodecsSpec extends AnyFunSuite with Matchers {
     a[NullPointerException] should be thrownBy byName.decode[Array[Byte]]("v_bytes")
     Option(byIdx.decodeAt[String](1)) shouldEqual None
     byIdx.decodeAt[Int](3) shouldEqual 0
+    Option(byIdx.decodeAt[UUID](14)) shouldEqual None
   }
 
   test("decoding bytes copies the remaining bytes only") {
@@ -266,6 +272,7 @@ object CodecsSpec {
     "v_duration" -> DataTypes.DURATION,
     "v_date" -> DataTypes.DATE,
     "v_list" -> DataTypes.listOf(DataTypes.TEXT),
+    "v_uuid" -> DataTypes.UUID,
   )
 
   def udtValue(): UdtValue = {
@@ -292,4 +299,5 @@ object CodecsSpec {
   val bytes: Array[Byte] = Array[Byte](1, 2, 3)
   val duration: CqlDuration = CqlDuration.newInstance(1, 2, 3)
   val date: LocalDate = LocalDate.of(2020, 1, 2)
+  val uuid: UUID = UUID.fromString("123e4567-e89b-12d3-a456-426614174000")
 }

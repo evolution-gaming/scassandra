@@ -8,6 +8,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 import java.time.temporal.ChronoUnit
 import java.time.{Instant, LocalDate as LocalDateJ}
+import java.util.UUID
 
 class EncodeDecodeByIdxSpec extends AnyWordSpec with Matchers {
 
@@ -53,6 +54,7 @@ class EncodeDecodeByIdxSpec extends AnyWordSpec with Matchers {
         ("Duration", of(Duration.newInstance(1, 1, 1))),
         ("LocalDate", of(LocalDate.fromYearMonthDay(2019, 10, 4))),
         ("LocalDateJ", of(LocalDateJ.of(2019, 10, 4))),
+        ("UUID", of(UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))),
       )
     } {
       s"encode & decode $name" in test()

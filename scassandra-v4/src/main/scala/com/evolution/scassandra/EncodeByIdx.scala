@@ -7,6 +7,7 @@ import com.datastax.oss.driver.api.core.data.{CqlDuration, SettableByIndex}
 
 import java.nio.ByteBuffer
 import java.time.{Instant, LocalDate}
+import java.util.UUID
 import scala.jdk.CollectionConverters.*
 
 /**
@@ -164,6 +165,12 @@ object EncodeByIdx {
   implicit val localDateEncodeByIdx: EncodeByIdx[LocalDate] = new EncodeByIdx[LocalDate] {
     override def apply[B <: SettableByIndex[B]](data: B, idx: Int, value: LocalDate): B = {
       data.setLocalDate(idx, value)
+    }
+  }
+
+  implicit val uuidEncodeByIdx: EncodeByIdx[UUID] = new EncodeByIdx[UUID] {
+    override def apply[B <: SettableByIndex[B]](data: B, idx: Int, value: UUID): B = {
+      data.setUuid(idx, value)
     }
   }
 
