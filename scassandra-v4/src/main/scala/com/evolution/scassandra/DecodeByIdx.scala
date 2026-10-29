@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.`type`.reflect.GenericType
 import com.datastax.oss.driver.api.core.data.{CqlDuration, GettableByIndex}
 
 import java.time.{Instant, LocalDate}
+import java.util.UUID
 import scala.jdk.CollectionConverters.*
 
 /**
@@ -111,6 +112,10 @@ object DecodeByIdx {
 
   implicit val localDateDecodeByIdx: DecodeByIdx[LocalDate] = (data: GettableByIndex, idx: Int) => {
     data.getLocalDate(idx)
+  }
+
+  implicit val uuidDecodeByIdx: DecodeByIdx[UUID] = (data: GettableByIndex, idx: Int) => {
+    data.getUuid(idx)
   }
 
   implicit class DecodeByIdxOps[A](val self: DecodeByIdx[A]) extends AnyVal {

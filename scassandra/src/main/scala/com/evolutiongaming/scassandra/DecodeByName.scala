@@ -4,6 +4,7 @@ import cats.Functor
 import com.datastax.driver.core.{Duration, GettableByNameData, LocalDate, TypeCodec}
 
 import java.time.{Instant, LocalDate as LocalDateJ}
+import java.util.UUID
 import scala.jdk.CollectionConverters.*
 
 /**
@@ -99,6 +100,10 @@ object DecodeByName {
 
   implicit val localDateJDecodeByName: DecodeByName[LocalDateJ] = DecodeByName[LocalDate].map { a =>
     LocalDateJ.ofEpochDay(a.getDaysSinceEpoch.toLong)
+  }
+
+  implicit val uuidDecodeByName: DecodeByName[UUID] = (data: GettableByNameData, name: String) => {
+    data.getUUID(name)
   }
 
   object Ops {

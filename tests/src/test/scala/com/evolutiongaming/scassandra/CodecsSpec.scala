@@ -8,6 +8,7 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
 import java.time.{Instant, LocalDate as LocalDateJ}
+import java.util.UUID
 
 class CodecsSpec extends AnyFunSuite with CassandraSuite with Matchers {
 
@@ -30,6 +31,7 @@ class CodecsSpec extends AnyFunSuite with CassandraSuite with Matchers {
     "v_duration",
     "v_date",
     "v_date_j",
+    "v_uuid",
   )
 
   override protected def beforeAll(): Unit = {
@@ -50,7 +52,8 @@ class CodecsSpec extends AnyFunSuite with CassandraSuite with Matchers {
         v_bytes BLOB,
         v_duration DURATION,
         v_date DATE,
-        v_date_j DATE
+        v_date_j DATE,
+        v_uuid UUID
       )
     """
     val program = for {
@@ -75,6 +78,7 @@ class CodecsSpec extends AnyFunSuite with CassandraSuite with Matchers {
         .encode("v_duration", duration)
         .encode("v_date", date)
         .encode("v_date_j", dateJ)
+        .encode("v_uuid", uuid)
       _ <- session.execute(bound)
       _ <- session.execute(s"INSERT INTO $table (id) VALUES (?)", Int.box(NullRowId))
     } yield ()
@@ -104,6 +108,7 @@ class CodecsSpec extends AnyFunSuite with CassandraSuite with Matchers {
     row.decode[Duration]("v_duration") shouldEqual duration
     row.decode[LocalDate]("v_date") shouldEqual date
     row.decode[LocalDateJ]("v_date_j") shouldEqual dateJ
+    row.decode[UUID]("v_uuid") shouldEqual uuid
   }
 
   test("decode by index") {
@@ -123,6 +128,7 @@ class CodecsSpec extends AnyFunSuite with CassandraSuite with Matchers {
     row.decodeAt[Duration](12) shouldEqual duration
     row.decodeAt[LocalDate](13) shouldEqual date
     row.decodeAt[LocalDateJ](14) shouldEqual dateJ
+    row.decodeAt[UUID](15) shouldEqual uuid
   }
 
   test("decode present values as Some") {
@@ -141,6 +147,7 @@ class CodecsSpec extends AnyFunSuite with CassandraSuite with Matchers {
     row.decode[Option[Duration]]("v_duration") shouldEqual Some(duration)
     row.decode[Option[LocalDate]]("v_date") shouldEqual Some(date)
     row.decode[Option[LocalDateJ]]("v_date_j") shouldEqual Some(dateJ)
+    row.decode[Option[UUID]]("v_uuid") shouldEqual Some(uuid)
   }
 
   test("decode null values as None") {
@@ -159,6 +166,7 @@ class CodecsSpec extends AnyFunSuite with CassandraSuite with Matchers {
     row.decode[Option[Duration]]("v_duration") shouldEqual None
     row.decode[Option[LocalDate]]("v_date") shouldEqual None
     row.decode[Option[LocalDateJ]]("v_date_j") shouldEqual None
+    row.decode[Option[UUID]]("v_uuid") shouldEqual None
     row.decodeAt[Option[String]](2) shouldEqual None
   }
 
@@ -199,4 +207,5 @@ object CodecsSpec {
   val duration: Duration = Duration.newInstance(1, 2, 3)
   val date: LocalDate = LocalDate.fromYearMonthDay(2020, 1, 2)
   val dateJ: LocalDateJ = LocalDateJ.of(2020, 1, 2)
+  val uuid: UUID = UUID.fromString("123e4567-e89b-12d3-a456-426614174000")
 }

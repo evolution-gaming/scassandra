@@ -5,7 +5,7 @@ import com.datastax.driver.core.{Duration, LocalDate, SettableData, TypeCodec}
 
 import java.nio.ByteBuffer
 import java.time.{Instant, LocalDate as LocalDateJ}
-import java.util.Date
+import java.util.{Date, UUID}
 import scala.jdk.CollectionConverters.*
 
 trait EncodeByName[-A] {
@@ -135,6 +135,12 @@ object EncodeByName {
 
   implicit val localDateJEncodeByName: EncodeByName[LocalDateJ] = EncodeByName[LocalDate].contramap { a =>
     LocalDate.fromDaysSinceEpoch(a.toEpochDay.toInt)
+  }
+
+  implicit val uuidEncodeByName: EncodeByName[UUID] = new EncodeByName[UUID] {
+    override def apply[B <: SettableData[B]](data: B, name: String, value: UUID): B = {
+      data.setUUID(name, value)
+    }
   }
 
   object Ops {

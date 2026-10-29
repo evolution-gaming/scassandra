@@ -10,6 +10,7 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
 import java.time.{Instant, LocalDate}
+import java.util.UUID
 
 class CodecsIntegrationSpec extends AnyFunSuite with CassandraSuite with Matchers {
 
@@ -29,6 +30,7 @@ class CodecsIntegrationSpec extends AnyFunSuite with CassandraSuite with Matcher
     "v_bytes",
     "v_duration",
     "v_date",
+    "v_uuid",
   )
 
   override protected def beforeAll(): Unit = {
@@ -48,7 +50,8 @@ class CodecsIntegrationSpec extends AnyFunSuite with CassandraSuite with Matcher
         v_strs SET<TEXT>,
         v_bytes BLOB,
         v_duration DURATION,
-        v_date DATE
+        v_date DATE,
+        v_uuid UUID
       )
     """
     val program = for {
@@ -72,6 +75,7 @@ class CodecsIntegrationSpec extends AnyFunSuite with CassandraSuite with Matcher
         .encode("v_bytes", bytes)
         .encode("v_duration", duration)
         .encode("v_date", date)
+        .encode("v_uuid", uuid)
       _ <- session.execute(bound)
       _ <- session.execute(SimpleStatement.newInstance(
         s"INSERT INTO $table (id) VALUES (?)",
@@ -104,6 +108,7 @@ class CodecsIntegrationSpec extends AnyFunSuite with CassandraSuite with Matcher
     row.decode[Array[Byte]]("v_bytes").toList shouldEqual bytes.toList
     row.decode[CqlDuration]("v_duration") shouldEqual duration
     row.decode[LocalDate]("v_date") shouldEqual date
+    row.decode[UUID]("v_uuid") shouldEqual uuid
   }
 
   test("decode by index") {
@@ -122,6 +127,7 @@ class CodecsIntegrationSpec extends AnyFunSuite with CassandraSuite with Matcher
     row.decodeAt[Array[Byte]](11).toList shouldEqual bytes.toList
     row.decodeAt[CqlDuration](12) shouldEqual duration
     row.decodeAt[LocalDate](13) shouldEqual date
+    row.decodeAt[UUID](14) shouldEqual uuid
   }
 
   test("decode null values as None") {
@@ -134,6 +140,7 @@ class CodecsIntegrationSpec extends AnyFunSuite with CassandraSuite with Matcher
     row.decode[Option[Array[Byte]]]("v_bytes") shouldEqual None
     row.decode[Option[CqlDuration]]("v_duration") shouldEqual None
     row.decode[Option[LocalDate]]("v_date") shouldEqual None
+    row.decode[Option[UUID]]("v_uuid") shouldEqual None
     row.decodeAt[Option[String]](2) shouldEqual None
   }
 
@@ -237,6 +244,7 @@ object CodecsIntegrationSpec {
   val bytes: Array[Byte] = Array[Byte](1, 2, 3)
   val duration: CqlDuration = CqlDuration.newInstance(1, 2, 3)
   val date: LocalDate = LocalDate.of(2020, 1, 2)
+  val uuid: UUID = UUID.fromString("123e4567-e89b-12d3-a456-426614174000")
   val item: Item = Item(str, int, strs)
 
   final case class Item(str: String, int: Int, strs: Set[String])
