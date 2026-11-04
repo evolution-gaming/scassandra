@@ -32,7 +32,7 @@ object Dependencies {
     val databind = "com.fasterxml.jackson.core" % "jackson-databind" % version
   }
 
-  val guava = "com.google.guava" % "guava" % "33.7.2-jre"
+  val guava = "com.google.guava" % "guava" % "33.8.0-jre"
 
   val scalatest = "org.scalatest" %% "scalatest" % "3.2.20"
   val `executor-tools` = "com.evolutiongaming" %% "executor-tools" % "1.0.5"
